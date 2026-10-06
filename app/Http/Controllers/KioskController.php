@@ -90,7 +90,7 @@ class KioskController extends Controller
             ], 429);
         }
 
-        $now = date('Y-m-d H:i:s');
+        $now = now()->format('Y-m-d H:i:s');
         $result = $scanner->scan($barcode, $now);
 
         if (($result['outcome'] ?? null) === 'not_found') {
@@ -103,7 +103,7 @@ class KioskController extends Controller
 
         if (! empty($result['teacher_id'])) {
             // Only the person who just scanned may open their weekly DTR.
-            $request->session()->put('kiosk_dtr', ['teacher_id' => $result['teacher_id'], 'until' => time() + self::DTR_WINDOW]);
+            $request->session()->put('kiosk_dtr', ['teacher_id' => $result['teacher_id'], 'until' => now()->getTimestamp() + self::DTR_WINDOW]);
         }
 
         unset($result['outcome'], $result['attendance_date']);
@@ -117,7 +117,7 @@ class KioskController extends Controller
         $teacherId = (int) $request->query('teacher_id');
         $grant = $request->session()->get('kiosk_dtr');
 
-        if (! $grant || (int) $grant['teacher_id'] !== $teacherId || $grant['until'] < time()) {
+        if (! $grant || (int) $grant['teacher_id'] !== $teacherId || $grant['until'] < now()->getTimestamp()) {
             return response()->json(['error' => 'Scan your ID first to view your own DTR.']);
         }
 
