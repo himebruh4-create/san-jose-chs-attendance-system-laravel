@@ -11,13 +11,15 @@
 //   dtrLogRejectedScan()   -> AttendanceData::logRejectedScan()
 //   getTeacherRecords()    -> AttendanceData::teacherRecords()
 //
-// tests/Feature/LegacyParityTest.php runs these functions side by side
-// with the originals on the real data; keep them identical unless a rule
-// is deliberately changed (and then change public/js/dtr-view.js, the
+// `php artisan legacy:parity` runs these functions side by side with the
+// originals on the real data; keep them identical unless a rule is
+// deliberately changed (and then change public/js/dtr-view.js, the
 // JavaScript twin, too).
 // ==========================================================
 
 namespace App\Domain\Attendance;
+
+use DateTime;
 
 // ==========================================================
 // ATTENDANCE RULES — single PHP source of truth (functions only).

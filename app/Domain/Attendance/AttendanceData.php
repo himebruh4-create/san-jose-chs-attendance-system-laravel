@@ -133,6 +133,7 @@ class AttendanceData
         DB::table('teacher_schedules')
             ->select('day', 'time_in', 'time_out')
             ->where('teacher_id', $teacherId)
+            ->orderBy('id')
             ->get()
             ->each(function ($row) use (&$schedules) {
                 $schedules[strtolower($row->day)] = (array) $row;
