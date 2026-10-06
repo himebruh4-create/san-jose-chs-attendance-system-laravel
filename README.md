@@ -101,3 +101,29 @@ Fixes
 - Attendance Report: no strict-mode GROUP BY crash; pagination keeps the month and search.
 - Inline buttons no longer break on names with apostrophes; print templates load assets locally.
 - Barcodes render as Code 39 on every page.
+
+## Deploying at the school (local network, no internet)
+
+Other devices open the system over the school's own router / Wi-Fi; no internet connection is needed.
+
+1. **Server PC**: wired to the router, on a UPS, with a fixed IP (DHCP reservation on the router), e.g. `192.168.1.10`.
+   Install XAMPP (PHP 8.3+) and this project, preferably **outside** `htdocs` (e.g. `C:\sjchs-attendance`).
+2. **Apache**: copy `deploy/apache-sjchs.conf` to `C:\xampp\apache\conf\extra\`, fix its paths, add
+   `Include conf/extra/httpd-sjchs.conf` to `httpd.conf`, run `C:\xampp\apache\bin\httpd.exe -t`, restart Apache.
+   On a dedicated server, change `Listen 8088` / `*:8088` to port 80. Only `public/` may be served — the config
+   denies the rest of the folder (it holds `.env`, logs and backups).
+3. **`.env`**: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=http://<server-ip>:<port>`, a MySQL password,
+   then `php artisan optimize` (run it again after every `.env` change or code update).
+4. **Scheduler**: Task Scheduler task running every minute:
+   `C:\xampp\php\php-win.exe C:\path\to\project\artisan schedule:run` (on the server, set it to run whether or
+   not a user is logged on).
+5. **Firewall**: allow Apache (`httpd.exe`) on the private network; do not open MySQL (3306) to other devices.
+6. **Clock**: scan times come from the server's clock. Without internet Windows cannot correct it — check it weekly.
+7. **Backups**: copy `storage/app/private/backups` to a USB drive or another PC regularly.
+8. **Kiosk camera**: browsers allow the webcam only on `http://localhost` or HTTPS. Run the kiosk on the server
+   PC itself (`http://localhost:<port>/kiosk`), or set up local HTTPS for a separate kiosk PC.
+
+**Updating**: `git pull`, `composer install --no-dev`, `php artisan migrate --force`, `php artisan optimize`.
+
+**Running tests on a configured machine**: `php artisan optimize:clear` first (tests refuse to run against any
+database not named `*_test`), then `php artisan optimize` again afterwards.

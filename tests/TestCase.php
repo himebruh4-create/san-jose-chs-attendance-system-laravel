@@ -21,6 +21,24 @@ abstract class TestCase extends BaseTestCase
         $this->seed(SystemSettingsSeeder::class);
     }
 
+    /**
+     * Tests empty the database before each run. When the configuration is
+     * cached (`php artisan optimize`), phpunit.xml's test database is
+     * ignored and the real one would be used, so refuse to touch any
+     * database whose name does not end in "_test".
+     */
+    protected function beforeRefreshingDatabase()
+    {
+        $database = (string) config('database.connections.'.config('database.default').'.database');
+
+        if (! str_ends_with($database, '_test')) {
+            throw new \RuntimeException(
+                "Refusing to run tests against \"{$database}\": tests wipe the database they use. "
+                .'Run `php artisan optimize:clear` (or `composer test`) and make sure phpunit.xml points at a *_test database.'
+            );
+        }
+    }
+
     protected function account(string $role = 'superadmin', array $attributes = []): Account
     {
         static $n = 0;
