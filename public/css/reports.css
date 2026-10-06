@@ -1,5 +1,5 @@
 
-    /* REPORT ANALYTICS PRINCIPAL */
+    /* REPORTS & ANALYTICS — Super Admin, Admin, Principal */
 
 body { font-family: Arial, sans-serif; margin: 0; background: #f5f0e1; }
 
@@ -26,7 +26,10 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f5f0e1; }
     font-weight: 600;
 }
 
-.tab-btn.active { background: #14390f; color: white; }
+.tab-btn.active {
+    background: #14390f;
+    color: white;
+}
 
 .tab-content { display: none; }
 
@@ -34,11 +37,16 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f5f0e1; }
 
 .chart-container { width: 100%; max-width: 700px; height: 360px; margin: 0 auto; position: relative; }
 
-.status-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-top: 20px; }
+.status-lists {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
 
 .status-box { border-radius: 10px; padding: 15px; }
 
-.status-box h3 { margin: 0 0 10px; font-size: 15px; }
+.status-box h3 { margin: 0 0 10px; font-size: 18px; }
 
 .status-box ul { margin: 0; padding-left: 18px; font-size: 16px; line-height: 1.6; max-height: 220px; overflow-y: auto; }
 
@@ -69,7 +77,11 @@ input[type="month"] {
 
 input[type="month"]:hover { border-color: #e8a317; }
 
-input[type="month"]:focus { border-color: #e8a317; box-shadow: 0 0 0 3px rgba(232, 163, 23, 0.2); background: white; }
+input[type="month"]:focus {
+    border-color: #e8a317;
+    box-shadow: 0 0 0 3px rgba(232, 163, 23, 0.2);
+    background: white;
+}
 
 .month-picker-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 

@@ -316,3 +316,9 @@ tbody tr:hover { background: #fbf8f0; }
 }
     
 
+
+/* Kiosk webcam photos in the adjustment form (new in the Laravel version) */
+.scan-photo-strip { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.scan-photo { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11.5px; color: #5c5238; }
+.scan-photo img, .scan-photo-missing { width: 96px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid #e6dcc4; background: #fffdf8; }
+.scan-photo-missing { display: flex; align-items: center; justify-content: center; color: #a89a6e; }
