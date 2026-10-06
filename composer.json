@@ -25,7 +25,8 @@
             "Database\\Seeders\\": "database/seeders/"
         },
         "files": [
-            "app/Domain/Attendance/rules.php"
+            "app/Domain/Attendance/rules.php",
+            "app/Support/helpers.php"
         ]
     },
     "autoload-dev": {

@@ -1,0 +1,167 @@
+
+body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #f5f0e1; color: #3a3527; }
+
+.main { margin-left: 240px; padding: 28px 32px 60px; }
+
+/* PAGE HEADER */
+
+.page-header { margin-bottom: 22px; }
+
+.page-header .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    color: #e8a317;
+    letter-spacing: 0.6px;
+}
+
+.page-header h1 {
+    margin: 4px 0 0;
+    font-size: 27px;
+    font-weight: 700;
+    color: #14390f;
+}
+
+.page-header p { margin: 6px 0 0; font-size: 13.5px; color: #8a7d5c; }
+
+/* STAT CARDS */
+
+.stats-wrapper { display: flex; flex-wrap: wrap; align-items: stretch; gap: 20px; margin-bottom: 20px; }
+
+.stat-headline {
+    background: linear-gradient(135deg, #14390f, #2d5a27);
+    color: white;
+    border-radius: 16px;
+    padding: 22px 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 220px;
+    box-shadow: 0 4px 16px rgba(20, 57, 15, 0.25);
+}
+
+.stat-label { font-size: 13px; opacity: 0.85; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+.stat-number { font-size: 42px; font-weight: 700; line-height: 1; }
+
+.stat-group {
+    background: white;
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 4px 16px rgba(20, 57, 15, 0.07);
+    border: 1px solid #efe8d6;
+    min-width: 300px;
+    flex: 1;
+}
+
+.stat-group-label { display: block; font-size: 12px; color: #8a7d5c; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 10px; }
+
+.stat-group-boxes { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.stat-box-mini { flex: 1; min-width: 90px; background: #fbf8f0; border-radius: 10px; padding: 12px; text-align: center; }
+
+.stat-mini-number { display: block; font-size: 24px; font-weight: 700; color: #14390f; }
+
+.stat-mini-label { display: block; font-size: 11.5px; color: #5c5238; margin-top: 4px; font-weight: 600; }
+
+.stat-box-mini.present .stat-mini-number { color: #1b5e20; }
+.stat-box-mini.late .stat-mini-number { color: #e65100; }
+.stat-box-mini.absent .stat-mini-number { color: #b71c1c; }
+.stat-box-mini.leave .stat-mini-number { color: #a3720f; }
+.stat-box-mini.pending .stat-mini-number { color: #616161; }
+
+/* CARD SHELL */
+
+.card {
+    background: white;
+    padding: 22px 24px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 16px rgba(20, 57, 15, 0.07);
+    border: 1px solid #efe8d6;
+}
+
+.card h3 { margin: 0 0 4px; font-size: 16px; font-weight: 700; color: #14390f; }
+
+.card p.card-sub { margin: 2px 0 14px; font-size: 12.5px; color: #8a7d5c; }
+
+.password-reset-alert { border-left: 4px solid #e8a317; background: #fffaf0; }
+
+.review-reminder-card { border-left: 4px solid #b26a00; background: #fffaf0; }
+.review-reminder-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.review-reminder-actions a,
+.review-reminder-actions button {
+    border: none; border-radius: 7px; padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; text-decoration: none; display: inline-block; font-family: inherit;
+}
+.review-reminder-actions a { background: #14390f; color: #fff; }
+.review-reminder-actions button { background: #efe8d6; color: #5c5238; }
+
+.reset-request-item { padding: 10px 0; border-bottom: 1px solid #efe8d6; }
+
+.reset-request-item:last-of-type { border-bottom: none; }
+
+.reset-request-item p { margin: 2px 0; font-size: 13.5px; color: #3a3527; }
+
+.reset-request-item p.reset-request-meta { color: #8a7d5c; font-size: 12.5px; }
+
+.reset-request-hint { margin-top: 10px; font-size: 12.5px; color: #8a7d5c; font-style: italic; }
+
+.charts-row { display: flex; flex-wrap: wrap; gap: 20px; }
+
+.charts-row .card { flex: 1; min-width: 320px; }
+
+.chart-container { width: 100%; max-width: 420px; height: 300px; margin: 0 auto; position: relative; }
+
+.chart-container.wide { max-width: 100%; }
+
+.leave-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1ede0; font-size: 14px; }
+
+.leave-item:last-child { border-bottom: none; }
+
+.leave-tag { background: #fdf3d9; color: #a3720f; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+
+.empty-note { color: #a89a6e; font-size: 13px; }
+
+/* LIVE ATTENDANCE (reuses admin/live-daily-logs.php markup) */
+
+.live-logs-card table { width: 100%; border-collapse: collapse; font-size: 13.5px; table-layout: fixed; margin-top: 14px; }
+
+.live-logs-card th {
+    background: #14390f;
+    color: white;
+    padding: 11px 10px;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.live-logs-card th:first-child { border-top-left-radius: 8px; }
+.live-logs-card th:last-child { border-top-right-radius: 8px; }
+
+.live-logs-card td { border-bottom: 1px solid #efe8d6; padding: 10px; text-align: center; word-wrap: break-word; }
+
+.live-logs-card tr:hover td { background: #fbf8f0; }
+
+.live-logs-wrapper { overflow-x: auto; }
+
+.log-empty-state { text-align: center; padding: 30px 10px; color: #a89a6e; font-size: 13.5px; }
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+    .stats-wrapper { flex-direction: column; }
+}
+
+@media (max-width: 700px) {
+    .main { margin-left: 0; padding: 20px 14px 50px; }
+}
+
+/* Below 992px the sidebar hides behind the mobile topbar (see
+   includes/sidebar.php); .main must reclaim its left margin and
+   clear the fixed topbar regardless of which narrower rule above
+   also applies. Placed last so padding-top always wins. */
+@media (max-width: 992px) {
+    .main { margin-left: 0; width: 100%; padding-top: 76px; }
+}
+
+

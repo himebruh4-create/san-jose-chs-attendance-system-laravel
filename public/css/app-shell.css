@@ -1,0 +1,342 @@
+/* Shared shell: sidebar, mobile top bar, main content, shared utilities.
+   Moved unchanged from the native-PHP includes/sidebar.php. */
+/* Safety net: applies to every page that includes this sidebar
+   (admin/superadmin/principal). The per-page fixes are what
+   actually remove the overflow sources; this just guarantees
+   the page itself never grows a horizontal scrollbar. */
+body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* ==============================
+   MOBILE TOP BAR / HAMBURGER
+============================== */
+
+.mobile-topbar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: linear-gradient(180deg, #14390f, #2d5a27);
+    color: #f5f0e1;
+    align-items: center;
+    padding: 0 15px;
+    z-index: 1100;
+    box-shadow: 0 2px 8px rgba(20, 57, 15, 0.25);
+    box-sizing: border-box;
+}
+
+.mobile-topbar .hamburger-btn {
+    background: transparent;
+    border: none;
+    color: #f2c94c;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 6px 10px;
+    margin-right: 10px;
+    border-radius: 6px;
+}
+
+.mobile-topbar .hamburger-btn:hover {
+    background: rgba(232, 163, 23, 0.18);
+}
+
+.mobile-topbar .mobile-topbar-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f2c94c;
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 999;
+}
+
+.sidebar-overlay.show {
+    display: block;
+}
+
+/* ==============================
+   SIDEBAR
+============================== */
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 240px;
+    height: 100vh;
+
+    background: linear-gradient(180deg, #14390f, #2d5a27);
+
+    color: white;
+    padding: 20px 15px;
+
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+    z-index: 1000;
+
+    box-shadow: 3px 0 12px rgba(20, 57, 15, 0.25);
+
+    transition: transform 0.25s ease;
+
+    /* Final safeguard: nothing inside the sidebar should ever be able
+       to trigger sideways scrolling of the sidebar itself. */
+    overflow-x: hidden;
+}
+
+/* Logo / Title */
+
+.sidebar-header {
+    text-align: center;
+    padding: 10px 5px 25px;
+    border-bottom: 1px solid rgba(232, 163, 23, 0.3);
+    margin-bottom: 20px;
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #f2c94c;
+    letter-spacing: 0.3px;
+}
+
+.sidebar-header p {
+    margin: 5px 0 0;
+    font-size: 12px;
+    opacity: 0.85;
+    color: #e8dcc0;
+}
+
+/* Navigation */
+
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.sidebar-menu a {
+    display: block;
+
+    padding: 12px 15px;
+
+    color: #f5f0e1;
+    text-decoration: none;
+
+    border-radius: 8px;
+
+    font-size: 15px;
+    line-height: 1.3;
+
+    overflow-wrap: break-word;
+    word-break: break-word;
+    box-sizing: border-box;
+    max-width: 100%;
+
+    transition: 0.2s ease;
+}
+
+.sidebar-menu a:hover {
+    background: rgba(232, 163, 23, 0.18);
+    color: #f2c94c;
+    transform: translateX(3px);
+}
+
+/* Active button */
+
+.sidebar-menu a.active {
+    background: rgba(232, 163, 23, 0.25);
+    color: #f2c94c;
+    font-weight: 600;
+}
+
+/* Logout */
+
+.sidebar-logout {
+    margin-top: auto;
+}
+
+.sidebar-logout a {
+    display: block;
+
+    padding: 12px 15px;
+
+    background: rgba(0,0,0,0.2);
+
+    color: #f5f0e1;
+    text-decoration: none;
+
+    border-radius: 8px;
+
+    text-align: center;
+
+    transition: 0.2s ease;
+}
+
+.sidebar-logout a:hover {
+    background: rgba(230, 81, 0, 0.35);
+    color: #fff3e0;
+}
+
+.sidebar-logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    margin-bottom: 8px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.sidebar-role-badge {
+    display: inline-block;
+    margin: 6px auto 0;
+    padding: 4px 14px;
+    background: rgba(232, 163, 23, 0.18);
+    color: #f2c94c;
+    border: 1px solid rgba(232, 163, 23, 0.4);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+}
+
+/* ==============================
+   MAIN CONTENT
+============================== */
+
+.main-content {
+    margin-left: 240px;
+    min-height: 100vh;
+    padding: 25px;
+    box-sizing: border-box;
+    background: #f5f0e1;
+    width: auto;
+    transition: margin-left 0.25s ease;
+}
+
+/* ==============================
+   RESPONSIVE / FULL SCREEN
+============================== */
+
+@media (max-width: 992px) {
+
+    .mobile-topbar {
+        display: flex;
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+        width: 260px;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 20px 15px;
+        padding-top: 76px; /* room for the fixed top bar */
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        padding: 16px 10px;
+        padding-top: 72px;
+    }
+
+    .sidebar {
+        width: 82%;
+        max-width: 280px;
+    }
+}
+
+
+/* Super Admin only: persistent Pending Review count */
+.sidebar-pending-badge {
+    display: inline-block;
+    margin-left: 8px;
+    min-width: 20px;
+    padding: 1px 7px;
+    border-radius: 20px;
+    background: #e8a317;
+    color: #14390f;
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.5;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+/* ==============================
+   MODAL BACKGROUND SCROLL LOCK (shared across every page/modal)
+   Toggled by the lockBodyScroll()/unlockBodyScroll() helpers below —
+   those are counter-based, so if a second modal opens while one is
+   already open, closing the second one doesn't unlock the first.
+============================== */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* ==============================
+   STICKY TABLE/CARD HEADERS (shared utility)
+   Add class="sticky-table-wrapper" to whichever element is the one
+   that actually scrolls (the wrapper around a <table>, not the
+   table itself, and not an outer non-scrolling card). Each page's
+   own <thead th> background/text color is left exactly as-is, so
+   headers stay legible and opaque over rows scrolled beneath them.
+   Works with vertical AND horizontal scrolling on the same wrapper.
+============================== */
+.sticky-table-wrapper {
+    overflow: auto;
+    position: relative;
+}
+
+.sticky-table-wrapper thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+/* ==============================
+   BUTTON SPACING (shared utility)
+   Any two buttons sitting next to each other get a small, consistent
+   gap automatically — e.g. table-row Edit/Archive pairs, which had
+   no spacing at all. Excludes containers that already provide their
+   own intentional flex `gap` (tabs, scroll controls, modal actions),
+   so spacing there isn't doubled up.
+============================== */
+:not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > button + button,
+:not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > .btn + .btn,
+:not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > a.btn + a.btn {
+    margin-left: 8px;
+}
+
+@media (max-width: 480px) {
+    :not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > button + button,
+    :not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > .btn + .btn,
+    :not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > a.btn + a.btn {
+        margin-left: 6px;
+    }
+}

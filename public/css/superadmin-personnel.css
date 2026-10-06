@@ -1,0 +1,573 @@
+
+/* ==============================================================
+   SUPER ADMIN — DESIGN TOKENS
+   Dark Green:  #14390f    Mid Green:  #2d5a27
+   Gold:        #e8a317    Bright Gold:#f2c94c
+   Cream BG:    #f5f0e1    Card BG:    #ffffff
+   Warm Ink:    #3a3527    Muted Ink:  #8a7d5c
+   Border:      #e6dcc4
+   ============================================================== */
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    background: #f5f0e1;
+    color: #3a3527;
+}
+
+.main {
+    margin-left: 240px;
+    padding: 28px 32px 60px;
+}
+
+/* ==========================
+   PAGE HEADER
+========================== */
+
+.page-header {
+    margin-bottom: 24px;
+}
+
+.page-header .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    color: #e8a317;
+    letter-spacing: 0.6px;
+}
+
+.page-header h1 {
+    margin: 4px 0 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #14390f;
+}
+
+.page-header p {
+    margin: 6px 0 0;
+    font-size: 13.5px;
+    color: #8a7d5c;
+}
+
+/* ==========================
+   CARD SHELL
+========================== */
+
+.card {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 16px;
+    margin-bottom: 22px;
+    box-shadow: 0 4px 16px rgba(20, 57, 15, 0.07);
+    border: 1px solid #efe8d6;
+}
+
+.card h2 {
+    margin: 0 0 4px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #14390f;
+}
+
+.card > p.card-subtitle {
+    margin: 0 0 18px;
+    font-size: 13px;
+    color: #8a7d5c;
+}
+
+/* ==========================
+   GENERIC FORM CONTROLS
+========================== */
+
+input[type="text"],
+input[type="date"],
+input[type="time"],
+input[type="file"],
+select,
+textarea {
+    padding: 10px 13px;
+    border: 1.5px solid #e6dcc4;
+    border-radius: 9px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: #fbf8f0;
+    color: #3a3527;
+    outline: none;
+    transition: 0.15s ease;
+    width: 100%;
+}
+
+select {
+    cursor: pointer;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: #e8a317;
+    box-shadow: 0 0 0 4px rgba(232, 163, 23, 0.14);
+    background: #ffffff;
+}
+
+label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #5c5238;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.field-group { margin-bottom: 14px; }
+
+/* ==========================
+   BUTTONS
+========================== */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px 18px;
+    height: 42px;
+    border: none;
+    border-radius: 9px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-primary { background: #14390f; color: #fff; }
+.btn-primary:hover { background: #2d5a27; transform: translateY(-1px); }
+
+.btn-gold { background: #e8a317; color: #3a2600; }
+.btn-gold:hover { background: #f2c94c; transform: translateY(-1px); }
+
+.btn-outline { background: #f1ede0; color: #5c5238; }
+.btn-outline:hover { background: #e6dcc4; }
+
+.btn-danger { background: #c62828; color: #fff; }
+.btn-danger:hover { background: #a31f1f; }
+
+.btn-sm { height: 34px; padding: 6px 12px; font-size: 12.5px; }
+
+.btn-block { width: 100%; }
+
+/* ==========================
+   FILTER / SEARCH BAR
+========================== */
+
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.filter-row .field-group { margin-bottom: 0; flex: 1 1 200px; }
+
+.filter-row input,
+.filter-row select { height: 42px; }
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* ==========================
+   TWO COLUMN DASHBOARD LAYOUT
+========================== */
+
+.dashboard-two-column {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 22px;
+    align-items: start;
+}
+
+.right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+/* ==========================
+   SECTION HEADER (used by leave / holiday cards)
+========================== */
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.section-header h2 { margin: 0; }
+
+.section-header p { margin: 4px 0 0; color: #8a7d5c; font-size: 13px; }
+
+.section-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.count-badge {
+    min-width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #14390f;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+/* ==========================
+   TABLE (SHARED)
+========================== */
+
+.table-scroll { overflow-x: auto; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+thead th {
+    text-align: left;
+    padding: 11px 12px;
+    background: #14390f;
+    color: #fff;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+}
+
+thead th:first-child { border-top-left-radius: 8px; }
+thead th:last-child { border-top-right-radius: 8px; }
+
+tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #efe8d6;
+    vertical-align: middle;
+}
+
+tbody tr:hover { background: #fbf8f0; }
+
+.mini-table-wrapper { max-height: 260px; overflow-y: auto; overflow-x: auto; }
+
+/* ==========================
+   PILL BADGES
+========================== */
+
+.pill {
+    display: inline-block;
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.pill-leave     { background: #fff3cd; color: #856404; }
+.pill-active    { background: #fdf3d9; color: #a3720f; }
+.pill-academic  { background: #e8f5e9; color: #1b5e20; }
+.pill-non-academic { background: #e3f2fd; color: #1565c0; }
+.pill-fulltime  { background: #fff3e0; color: #e65100; }
+.pill-parttime  { background: #f3e5f5; color: #6a1b9a; }
+.pill-contractual { background: #e0f2f1; color: #00695c; }
+
+/* Personnel Scheduled to Work multi-select (School Schedule Change modal) */
+.picker-help { margin: 0 0 8px; font-size: 12px; color: #8a7d5c; line-height: 1.4; }
+.personnel-picker { border: 1px solid #e6dcc4; border-radius: 10px; padding: 10px; background: #fbf8f0; }
+.personnel-picker input[type="text"] { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+.personnel-picker-tools { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.picker-count { margin-left: auto; font-size: 12px; font-weight: 600; color: #14390f; }
+.personnel-picker-list { max-height: 190px; overflow-y: auto; background: #fff; border: 1px solid #efe8d6; border-radius: 8px; }
+.personnel-option { display: flex; align-items: flex-start; gap: 9px; padding: 7px 10px; border-bottom: 1px solid #f4efe0; cursor: pointer; font-size: 13px; }
+.personnel-option:last-child { border-bottom: none; }
+.personnel-option:hover { background: #fbf8f0; }
+.personnel-option input { margin-top: 3px; width: auto; }
+.personnel-option small { display: block; color: #8a7d5c; font-size: 11.5px; }
+.personnel-picker-empty { padding: 14px; text-align: center; color: #a89a6e; font-size: 12.5px; }
+
+/* ==========================
+   EMPTY STATE
+========================== */
+
+.empty-state {
+    text-align: center;
+    padding: 40px 16px;
+    color: #5c5238;
+}
+
+.empty-state-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #e8f5e9;
+    color: #1b5e20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    font-size: 18px;
+}
+
+.empty-state strong { display: block; font-size: 15px; margin-bottom: 3px; }
+.empty-state p { margin: 0; color: #a89a6e; font-size: 13px; }
+
+/* ==========================
+   SCHEDULE GRID
+========================== */
+
+.schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.schedule-row {
+    background: #fbf8f0;
+    border: 1px solid #e6dcc4;
+    border-radius: 11px;
+    padding: 12px 13px;
+}
+
+.day-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-weight: 700;
+    color: #14390f;
+    font-size: 13px;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.day-check input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: #14390f;
+}
+
+.schedule-times { display: flex; flex-direction: column; gap: 8px; }
+
+.schedule-times label {
+    font-size: 10.5px;
+    margin-bottom: 3px;
+}
+
+.schedule-times input:disabled { background: #ecece4; cursor: not-allowed; }
+
+/* ==========================
+   PHOTO UPLOAD
+========================== */
+
+.photo-upload-box {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fbf8f0;
+    border: 1.5px dashed #e6dcc4;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.photo-upload-box .upload-fields { flex: 1; }
+
+.image-preview img {
+    width: 66px;
+    height: 66px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid #e8a317;
+    flex-shrink: 0;
+}
+
+/* ==========================
+   GENERATED FIELD (read only)
+========================== */
+
+.generated-field {
+    background: #f1ede0 !important;
+    color: #8a7d5c !important;
+    font-style: italic;
+}
+
+/* ==========================
+   MODALS
+========================== */
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 57, 15, 0.45);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.modal-backdrop.active { display: flex; }
+
+.modal, .holiday-modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 26px 28px;
+    width: min(520px, calc(100% - 32px));
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(20, 57, 15, 0.22);
+    position: relative;
+}
+
+.modal h3, .holiday-modal h2 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    color: #14390f;
+}
+
+.modal p, .holiday-modal p {
+    color: #8a7d5c;
+    font-size: 13px;
+    margin: 0 0 18px;
+}
+
+.modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: #f1ede0;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #14390f;
+    font-size: 16px;
+}
+
+.modal-close:hover { background: #e6dcc4; }
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+/* ==========================
+   ACTION BUTTON GROUP (teacher list)
+========================== */
+
+.action-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* ==========================
+   PAGINATION
+========================== */
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 22px 0 4px;
+}
+
+.pagination a, .pagination span {
+    padding: 8px 13px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 13px;
+    transition: 0.15s ease;
+}
+
+.pagination a { background: #14390f; color: #fff; }
+.pagination a:hover { background: #e8a317; color: #14390f; transform: translateY(-1px); }
+.pagination .active { background: #e8a317; color: #14390f; }
+
+/* ==========================
+   TOAST
+========================== */
+
+.toast {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background: #14390f;
+    color: white;
+    padding: 14px 20px;
+    border-radius: 10px;
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s;
+    z-index: 9999;
+    font-size: 13.5px;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+.toast.show { opacity: 1; visibility: visible; }
+
+/* ==========================
+   ERROR BOX
+========================== */
+
+.error-box {
+    background: #fdecea;
+    border: 1px solid #f0b5b0;
+    color: #c62828;
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 13.5px;
+}
+
+/* ==========================
+   RESPONSIVE
+========================== */
+
+@media (max-width: 1100px) {
+    .dashboard-two-column { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+    .main { margin-left: 0; padding: 20px 14px 50px; }
+    .filter-row .field-group { flex: 1 1 100%; }
+    .photo-upload-box { flex-direction: column; align-items: flex-start; }
+}
+
+/* Below 992px the sidebar hides behind the mobile topbar (see
+   includes/sidebar.php); .main must reclaim its left margin and
+   clear the fixed topbar regardless of which narrower rule above
+   also applies. Placed last so padding-top always wins. */
+@media (max-width: 992px) {
+    .main { margin-left: 0; width: 100%; padding-top: 76px; }
+}
+
+
+

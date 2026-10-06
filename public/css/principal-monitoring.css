@@ -1,0 +1,136 @@
+
+    /* ATTENDANCE MONITORING PRINCIPAL */
+
+body { font-family: Arial, sans-serif; margin: 0; background: #f5f0e1; }
+
+.main { margin-left: 240px; padding: 20px; }
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(20, 57, 15, 0.1);
+}
+
+.filter-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+
+.filter-group { display: flex; flex-direction: column; gap: 5px; }
+
+.filter-group label { font-size: 13px; font-weight: 600; color: #5c5238; }
+
+.filter-group select,
+.filter-group input {
+    padding: 9px 12px;
+    border: 1px solid #e6dcc4;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+    border-color: #e8a317;
+    box-shadow: 0 0 0 3px rgba(232, 163, 23, 0.2);
+}
+
+.apply-btn {
+    padding: 10px 20px;
+    background: #14390f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    height: fit-content;
+}
+
+.print-btn {
+    padding: 10px 20px;
+    background: #f1ede0;
+    color: #5c5238;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    height: fit-content;
+}
+
+/* ================= SCROLLABLE TABLE ================= */
+
+.table-scroll-wrapper {
+    max-height: 480px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #efe8d6;
+    border-radius: 10px;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+thead { background: #14390f; color: white; }
+
+thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #14390f;
+}
+
+th, td { padding: 10px; text-align: left; border-bottom: 1px solid #f1ede0; }
+
+tbody tr:hover { background: #fbf8f0; }
+
+.scroll-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.scroll-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: #14390f;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s ease;
+}
+
+.scroll-btn:hover { background: #2d5a27; }
+
+.status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+
+.status-present { background: #e8f5e9; color: #1b5e20; }
+.status-late { background: #fff3e0; color: #e65100; }
+.status-absent { background: #ffebee; color: #b71c1c; }
+.status-onleave { background: #fdf3d9; color: #a3720f; }
+.status-adjusted { background: #e3f2fd; color: #1565c0; }
+.status-schoolevent { background: #f3e5f5; color: #6a1b9a; }
+.status-pending { background: #f0f0f0; color: #616161; }
+
+.empty-state { text-align: center; padding: 40px 20px; color: #8a7d5c; }
+
+.results-count { color: #8a7d5c; font-size: 13px; margin-bottom: 12px; }
+
+/* ==========================
+   RESPONSIVE
+========================== */
+
+@media (max-width: 992px) {
+    .main {
+        margin-left: 0;
+        width: 100%;
+        padding: 76px 16px 30px;
+    }
+}
+
+

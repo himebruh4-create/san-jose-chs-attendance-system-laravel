@@ -1,0 +1,414 @@
+/* =========================================================
+   ATTENDANCE KIOSK (was the inline script of teacher-dashboard.php)
+
+   Changes from the native-PHP version:
+   - the barcode box is cleared after EVERY scan (a failed scan used to
+     leave its barcode in the box, so the next person's scan re-sent it)
+   - the box keeps keyboard focus, so a USB scanner always types into it
+   - a scan that cannot reach the server says so on screen
+   - Late / On-Time comes from the response's `status` field
+   - names and messages are escaped before being shown
+   - a webcam photo is taken with each scan (when a camera is available)
+   ========================================================= */
+
+let activeTeacherId = localStorage.getItem("activeTeacherId")
+    ? Number(localStorage.getItem("activeTeacherId"))
+    : null;
+
+const modal = document.getElementById("modal");
+const barcodeInput = document.getElementById("barcodeInput");
+let modalTimer = null;
+
+/* =========================
+   MODAL
+========================= */
+
+function hideModal(){
+    modal.style.display = "none";
+    document.body.classList.remove('modal-open');
+    focusBarcode();
+}
+
+modal.addEventListener("click", function(e){
+    if (e.target === modal) {
+        hideModal();
+    }
+});
+
+function showModal(title, message, autoClose = true){
+    document.getElementById("title").innerText = title;
+    document.getElementById("message").innerHTML = message;
+    modal.style.display = "flex";
+    document.body.classList.add('modal-open');
+
+    clearTimeout(modalTimer);
+
+    if (autoClose) {
+        modalTimer = setTimeout(() => {
+            hideModal();
+        }, 3000);
+    }
+}
+
+/* =========================
+   KEEP THE BARCODE BOX FOCUSED
+   A USB scanner types like a keyboard: if the box loses focus, the
+   next scan goes nowhere.
+========================= */
+
+function focusBarcode() {
+    if (document.getElementById("sidebarDrawer").classList.contains("open")) return;
+    barcodeInput.focus();
+}
+
+barcodeInput.addEventListener("blur", function () {
+    setTimeout(focusBarcode, 150);
+});
+
+document.addEventListener("click", function (e) {
+    if (!e.target.closest("a, button, .eye-icon")) focusBarcode();
+});
+
+/* =========================
+   WEBCAM
+   Browsers only allow the camera on http://localhost or https://.
+========================= */
+
+const camera = {
+    video: document.getElementById("cameraPreview"),
+    status: document.getElementById("cameraStatus"),
+    canvas: document.createElement("canvas"),
+    ready: false
+};
+
+function setCameraStatus(text, ok) {
+    camera.status.textContent = text;
+    camera.status.className = "camera-status " + (ok ? "camera-ok" : "camera-off");
+}
+
+function startCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraStatus("Camera unavailable on this connection — scans are saved without a photo", false);
+        return;
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
+        .then(function (stream) {
+            camera.video.srcObject = stream;
+            camera.video.play();
+            camera.ready = true;
+            setCameraStatus("Camera on — a photo is taken with each scan", true);
+        })
+        .catch(function () {
+            setCameraStatus("Camera not available — scans are saved without a photo", false);
+        });
+}
+
+function capturePhoto() {
+    if (!camera.ready || !camera.video.videoWidth) return "";
+
+    const width = 480;
+    const height = Math.round(width * camera.video.videoHeight / camera.video.videoWidth);
+    camera.canvas.width = width;
+    camera.canvas.height = height;
+    camera.canvas.getContext("2d").drawImage(camera.video, 0, 0, width, height);
+
+    return camera.canvas.toDataURL("image/jpeg", 0.7);
+}
+
+/* =========================
+   BARCODE PROCESS
+========================= */
+
+let scanInProgress = false;
+
+function pillHTML(status) {
+    if (status === "On-Time") return `<span class="status-pill status-ontime"><i class="fa-solid fa-circle-check"></i> On-Time</span>`;
+    if (status === "Late") return `<span class="status-pill status-late"><i class="fa-solid fa-triangle-exclamation"></i> Late</span>`;
+    return `<span class="status-none">-</span>`;
+}
+
+function processBarcode() {
+
+    if (scanInProgress) return;
+
+    const barcode = barcodeInput.value.trim();
+    if (!barcode) return;
+
+    // Clear right away: whatever happens next, the box is ready for the
+    // next person.
+    barcodeInput.value = "";
+    scanInProgress = true;
+
+    const body = new URLSearchParams();
+    body.set("barcode", barcode);
+    body.set("photo", capturePhoto());
+
+    fetch(appUrl("kiosk/scan"), {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (!data.success) {
+            showModal(data.title || "Not Recorded", escapeHtml(data.message || "Your scan was not recorded. Please try again."));
+            return;
+        }
+
+        const teacherId = Number(data.teacher_id);
+        const now = data.time;
+
+        /* -----------------------------
+           TABLE UPDATE FIRST
+           (row must exist before we touch its eye icon)
+        ----------------------------- */
+
+        const table = document.getElementById("attendanceTable");
+
+        const emptyRow = table.querySelector(".empty-row");
+        if (emptyRow) {
+            emptyRow.closest("tr").remove();
+        }
+
+        let row = document.querySelector(`tr[data-teacher="${teacherId}"]`);
+
+        if (!row) {
+
+            row = document.createElement("tr");
+            row.setAttribute("data-teacher", teacherId);
+
+            row.innerHTML = `
+                <td>${escapeHtml(data.fullname)}</td>
+                <td>${escapeHtml(data.date)}</td>
+                <td>-</td>
+                <td>-</td>
+                <td><span class="status-none">-</span></td>
+                <td>-</td>
+                <td>-</td>
+                <td><span class="status-none">-</span></td>
+                <td>
+                    <i class="fa-solid fa-eye-slash eye-icon locked"
+                    data-teacher="${teacherId}"
+                    onclick="viewDTR(this)"></i>
+                </td>
+            `;
+
+            table.insertBefore(row, table.children[1]);
+        }
+
+        if (data.title === "AM Arrival") {
+            row.children[2].innerText = now;
+            row.children[4].innerHTML = pillHTML(data.status);
+        }
+
+        if (data.title === "AM Departure") {
+            row.children[3].innerText = now;
+        }
+
+        if (data.title === "PM Arrival") {
+            row.children[5].innerText = now;
+            row.children[7].innerHTML = pillHTML(data.status);
+        }
+
+        if (data.title === "PM Departure") {
+            row.children[6].innerText = now;
+        }
+
+        // always move row to top
+        table.insertBefore(row, table.children[1]);
+
+        /* -----------------------------
+           EYE ICON LOGIC
+        ----------------------------- */
+
+        const previousTeacher = activeTeacherId;
+
+        activeTeacherId = teacherId;
+        localStorage.setItem("activeTeacherId", activeTeacherId);
+
+        if (previousTeacher && previousTeacher !== activeTeacherId) {
+            updateEyeIcon(previousTeacher, false);
+        }
+
+        updateEyeIcon(activeTeacherId, true);
+
+        /* -----------------------------
+           MODAL
+        ----------------------------- */
+
+        const logo = appUrl("img/logo.png");
+        const photoHTML = data.photo
+            ? `<div class="photo-preview"><img src="${appUrl("photos/" + encodeURIComponent(data.photo))}" onerror="this.onerror=null; this.src='${logo}';"></div>`
+            : `<div class="photo-preview"><img src="${logo}"></div>`;
+
+        const messageHTML = `
+            <b>Name:</b> ${escapeHtml(data.fullname)}<br>
+            <b>Date:</b> ${escapeHtml(data.date)}<br>
+            <b>Time:</b> ${escapeHtml(now)}<br>
+            <b>Message:</b> ${escapeHtml(data.message)}
+        `;
+
+        showModal(data.title, photoHTML + messageHTML, true);
+    })
+    .catch(err => {
+        console.error("Scan request failed:", err);
+        showModal("Not Recorded", "The attendance server could not be reached, so this scan was <b>not saved</b>. Please scan again. If this keeps happening, tell the Super Admin.");
+    })
+    .finally(() => {
+        scanInProgress = false;
+        focusBarcode();
+    });
+}
+
+/* =========================
+   VIEW DTR — only the person who just scanned (checked by the server)
+========================= */
+
+function viewDTR(el){
+
+    const id = parseInt(el.getAttribute("data-teacher"));
+
+    if (id !== activeTeacherId) {
+        showModal("Access Denied", "You can only view your own DTR after scanning.");
+        return;
+    }
+
+    fetch(appUrl("kiosk/dtr") + "?teacher_id=" + encodeURIComponent(id))
+    .then(res => {
+        if (!res.ok) {
+            throw new Error(`Server responded with status ${res.status}`);
+        }
+        return res.json();
+    })
+    .then(data => {
+
+        if (data.error) {
+            showModal("Error", escapeHtml(data.error));
+            return;
+        }
+
+        let html = `
+        <h2 style="margin-bottom:5px;">WEEKLY TIME RECORD</h2>
+        <h3 style="margin-top:0; color:#8a7d5c;">${escapeHtml(data.fullname)}</h3>
+
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <tr style="background:#14390f;color:white;">
+            <th>Date</th>
+            <th>AM In</th>
+            <th>AM Out</th>
+            <th>PM In</th>
+            <th>PM Out</th>
+        </tr>`;
+
+        data.records.forEach(r => {
+            html += `
+            <tr>
+                <td>${escapeHtml(r.date)}</td>
+                <td>${escapeHtml(r.am_arrival || '-')}</td>
+                <td>${escapeHtml(r.am_departure || '-')}</td>
+                <td>${escapeHtml(r.pm_arrival || '-')}</td>
+                <td>${escapeHtml(r.pm_departure || '-')}</td>
+            </tr>`;
+        });
+
+        html += `</table>`;
+        html += `<p style="margin-top:15px;font-weight:bold;color:#14390f;">
+        Week Covered: ${escapeHtml(data.week_start)} - ${escapeHtml(data.week_end)}</p>`;
+
+        showModal("Weekly DTR", html, false);
+    })
+    .catch(error => {
+        console.error("View DTR Error:", error);
+        showModal("Error", "Unable to load the weekly DTR right now. Please try again.");
+    });
+}
+
+function updateEyeIcon(teacherId, unlocked) {
+
+    const icon = document.querySelector(`.eye-icon[data-teacher="${teacherId}"]`);
+
+    if (!icon) {
+        return;
+    }
+
+    if (unlocked) {
+        icon.classList.remove("fa-eye-slash", "locked");
+        icon.classList.add("fa-eye");
+    } else {
+        icon.classList.remove("fa-eye");
+        icon.classList.add("fa-eye-slash", "locked");
+    }
+}
+
+window.addEventListener("load", function () {
+    if (activeTeacherId) {
+        updateEyeIcon(activeTeacherId, true);
+    }
+    startCamera();
+    focusBarcode();
+});
+
+/* =========================
+   SIDEBAR TOGGLE (the kiosk's own drawer)
+========================= */
+
+function toggleSidebar() {
+    document.getElementById("sidebarDrawer").classList.toggle("open");
+    document.getElementById("sidebarOverlay").classList.toggle("active");
+}
+
+function closeSidebar() {
+    document.getElementById("sidebarDrawer").classList.remove("open");
+    document.getElementById("sidebarOverlay").classList.remove("active");
+    focusBarcode();
+}
+
+/* =========================
+   LIVE CLOCK
+========================= */
+
+function updateLiveClock() {
+
+    const now = new Date();
+
+    const time = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    });
+
+    const date = now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
+    document.getElementById("liveClockTime").innerText = time;
+    document.getElementById("liveClockDate").innerText = date;
+}
+
+updateLiveClock();
+setInterval(updateLiveClock, 1000);
+
+/* =========================
+   ENTER KEY SUPPORT
+========================= */
+
+barcodeInput.addEventListener("keydown", function(e){
+    if (e.key === "Enter") {
+        e.preventDefault();
+        processBarcode();
+    }
+});
+
+/* =========================
+   BARCODE INPUT: NUMBERS ONLY, MAX 6 DIGITS
+========================= */
+
+barcodeInput.addEventListener("input", function () {
+    this.value = this.value.replace(/\D/g, "").slice(0, 6);
+});

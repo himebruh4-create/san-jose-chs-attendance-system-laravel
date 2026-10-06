@@ -97,6 +97,10 @@ return [
 
     'cipher' => 'AES-256-CBC',
 
+    // First-run setup (/setup) is only reachable from the server PC itself
+    // (localhost) unless this is true.
+    'setup_allow_remote' => (bool) env('SETUP_ALLOW_REMOTE', false),
+
     'key' => env('APP_KEY'),
 
     'previous_keys' => [
