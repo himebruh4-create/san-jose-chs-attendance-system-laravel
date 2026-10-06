@@ -58,11 +58,16 @@ the kiosk: these photos are personal data under the Data Privacy Act (RA 10173).
 
 ## Scheduled tasks
 
-Create a Windows Task Scheduler task (or a cron entry) that runs every minute:
+On Windows, create the Task Scheduler task that runs every minute with:
 
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\install-scheduler.ps1    # add -Php <path> if PHP is not in C:\xampp\php
 ```
-php C:\path\to\sjchs-attendance-laravel\artisan schedule:run
-```
+
+On Linux, add a cron entry: `* * * * * php /path/to/sjchs-attendance-laravel/artisan schedule:run`.
+
+Do not point the task at `php-win.exe`: a console window then flashes on screen every minute. The script runs
+`php.exe` inside a hidden console instead.
 
 It runs `backup:run` daily at 18:30 (keeps the newest 30 verified backups in `storage/app/private/backups`)
 and `attendance:prune-scan-photos` daily at 02:00. Copy backups off the server regularly.
@@ -114,9 +119,8 @@ Other devices open the system over the school's own router / Wi-Fi; no internet 
    denies the rest of the folder (it holds `.env`, logs and backups).
 3. **`.env`**: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=http://<server-ip>:<port>`, a MySQL password,
    then `php artisan optimize` (run it again after every `.env` change or code update).
-4. **Scheduler**: Task Scheduler task running every minute:
-   `C:\xampp\php\php-win.exe C:\path\to\project\artisan schedule:run` (on the server, set it to run whether or
-   not a user is logged on).
+4. **Scheduler**: run `deploy\install-scheduler.ps1` (see [Scheduled tasks](#scheduled-tasks)), then in Task
+   Scheduler set the task to run whether or not a user is logged on.
 5. **Firewall**: allow Apache (`httpd.exe`) on the private network; do not open MySQL (3306) to other devices.
 6. **Clock**: scan times come from the server's clock. Without internet Windows cannot correct it — check it weekly.
 7. **Backups**: copy `storage/app/private/backups` to a USB drive or another PC regularly.
