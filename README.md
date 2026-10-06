@@ -1,58 +1,103 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# San Jose CHS Attendance System (Laravel)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Barcode attendance and Daily Time Record (DTR) system for San Jose Community High School personnel.
+A Laravel 13 rewrite of the native-PHP system (`san-jose-chs-attendance-system`), with the same screens,
+the same attendance rules and all of its data.
 
-## About Laravel
+## Requirements
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.3 or newer with `pdo_mysql`, `mbstring`, `gd`, `fileinfo`, `openssl` (XAMPP with PHP 8.3+ works; XAMPP 8.2 does not)
+- MySQL 8 or MariaDB 10.4+
+- Composer (only to install; no Node.js or build step is needed)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Everything the pages load (icons, Chart.js, JsBarcode) is in `public/vendor`, so the system works with no internet.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Install
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+copy .env.example .env          # then edit DB_* and APP_URL
+php artisan key:generate
+php artisan migrate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Then either:
 
-## Contributing
+- **Bring over the old system's data** (the old database must be on the same MySQL server, default name `san_jose_chs`):
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+  ```bash
+  php artisan legacy:import            # add --fresh to replace data already imported
+  ```
 
-## Code of Conduct
+  Every legacy row is copied with its ID, and the command fails (changing nothing) unless every row is accounted
+  for. Attendance rows of personnel that no longer exist go to `archived_attendance` with all their columns.
+  Existing passwords keep working.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- **Or start empty**: `php artisan db:seed`, then open `http://localhost/setup` **on the server PC itself** to create
+  the first Super Admin (or run `php artisan account:create-superadmin you@example.com`).
 
-## Security Vulnerabilities
+`php artisan legacy:parity` compares the ported attendance rules with the original PHP code on the real data
+(15,779 checks on the 2026-10-05 data, all identical).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Setting up the kiosk
 
-## License
+Only registered browsers can record scans.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+1. On the kiosk PC, log in as Super Admin.
+2. **Settings → Kiosk Devices → Register this browser as a kiosk.**
+3. Log out and open `/kiosk`. Revoke a kiosk from the same card.
+
+**Barcode scanner:** a USB scanner in keyboard mode, set to read **Code 39** (the symbology printed on the ID
+badges) and to send **Enter** after each code. The scan box stays focused and is cleared after every scan.
+
+**Webcam:** the kiosk takes a photo with each scan (accepted or refused). Browsers only allow the camera on
+`http://localhost` or `https://`, so either run the kiosk on the server PC itself or serve the system over HTTPS.
+Without a camera, scans are still recorded and marked "no photo". Photos are kept for 90 days, are only visible
+to the Super Admin (in the Attendance Adjustments form), and are stored outside the web root. Post a notice at
+the kiosk: these photos are personal data under the Data Privacy Act (RA 10173).
+
+## Scheduled tasks
+
+Create a Windows Task Scheduler task (or a cron entry) that runs every minute:
+
+```
+php C:\path\to\sjchs-attendance-laravel\artisan schedule:run
+```
+
+It runs `backup:run` daily at 18:30 (keeps the newest 30 verified backups in `storage/app/private/backups`)
+and `attendance:prune-scan-photos` daily at 02:00. Copy backups off the server regularly.
+
+## Tests
+
+```bash
+# needs an empty MySQL database named sjchs_attendance_test
+php artisan test
+```
+
+## What changed from the native-PHP system
+
+Security
+- Every page and data endpoint checks the role; Admin's monthly report, the DTR data endpoints, live logs and
+  weekly summaries no longer answer without a login.
+- Removed: the public barcode lookup (`get-teacher-barcode.php`), the SQL-injectable `teacher-crud.php`, the
+  unauthenticated auto-absent script, and other unused files.
+- Scans only from registered kiosk devices; repeated unknown barcodes pause the kiosk; the kiosk's "view my DTR"
+  is enforced by the server, not the browser.
+- CSRF protection on every form and POST; session ID regenerated at login; login locks for 5 minutes after 5
+  failures; the security-question step allows 5 tries per 15 minutes; changing a password signs out other sessions.
+- First Super Admin is created on a localhost-only setup page instead of an environment variable.
+- Output escaped everywhere (several pages inserted names into HTML unescaped); security headers on every response.
+- Personnel photos and kiosk photos are re-encoded and stored privately, served only to authorized users.
+- Audit log of logins and every change (Settings → Audit Log); adjustments record who approved them.
+
+Data
+- `attendance` has a primary key, one unique key on (teacher_id, date), a foreign key, TIME columns, and no legacy
+  columns; permanently deleting a person moves their attendance to `archived_attendance` instead of orphaning it.
+- Names keep the casing typed (the old lower-case/re-capitalize step turned "II" into "Ii").
+
+Fixes
+- Kiosk: a failed scan no longer leaves its barcode in the box (the next person's scan re-sent it); network
+  errors are shown instead of silently ignored.
+- Attendance Report: no strict-mode GROUP BY crash; pagination keeps the month and search.
+- Inline buttons no longer break on names with apostrophes; print templates load assets locally.
+- Barcodes render as Code 39 on every page.
