@@ -49,7 +49,7 @@ class DatabaseBackup
 
     public static function mysqldumpPath(): ?string
     {
-        if ($configured = env('MYSQLDUMP_PATH')) {
+        if ($configured = config('database.mysqldump_path')) {
             return is_file($configured) ? $configured : null;
         }
 

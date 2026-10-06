@@ -39,7 +39,7 @@ class LegacyParity extends Command
 
     public function handle(): int
     {
-        $code = rtrim($this->option('code') ?: env('LEGACY_CODE_PATH', base_path('../san-jose-chs-attendance-system')), '/\\');
+        $code = rtrim($this->option('code') ?: config('database.legacy_code_path'), '/\\');
 
         if (! is_file($code.'/dtr/report-core.php')) {
             $this->error("Native-PHP code not found at {$code}");

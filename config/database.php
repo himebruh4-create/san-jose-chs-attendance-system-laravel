@@ -17,7 +17,13 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'mysql'),
+
+    // Full path to mysqldump(.exe) for backups; found automatically when empty.
+    'mysqldump_path' => env('MYSQLDUMP_PATH'),
+
+    // Native-PHP project folder, used only by `php artisan legacy:parity`.
+    'legacy_code_path' => env('LEGACY_CODE_PATH', base_path('../san-jose-chs-attendance-system')),
 
     /*
     |--------------------------------------------------------------------------
