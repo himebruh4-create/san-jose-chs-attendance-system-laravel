@@ -1,6 +1,6 @@
 
 /* ==============================================================
-   MONTHLY REPORT — ADMIN
+   ATTENDANCE REPORT — SUPER ADMIN + ADMIN
    Dark Green:  #14390f    Mid Green:  #2d5a27
    Gold:        #e8a317    Bright Gold:#f2c94c
    Cream BG:    #f5f0e1    Card BG:    #ffffff
@@ -328,6 +328,8 @@ input[type="month"]:focus {
 .modal-close:hover { background: #e6dcc4; }
 
 .chart-container { width: 100%; max-width: 650px; height: 360px; position: relative; }
+
+#monthlyChart { width: 100% !important; height: 100% !important; display: block; }
 
 /* RESPONSIVE */
 

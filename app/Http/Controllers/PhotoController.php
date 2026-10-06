@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\KioskDevice;
+use App\Support\PersonnelPhotos;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -20,7 +21,7 @@ class PhotoController extends Controller
 
         abort_unless($allowed, 403);
 
-        $path = 'personnel-photos/'.basename($filename);
+        $path = PersonnelPhotos::DIR.'/'.basename($filename);
 
         abort_unless(Storage::disk('local')->exists($path), 404);
 
