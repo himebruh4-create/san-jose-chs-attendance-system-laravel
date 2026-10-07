@@ -125,7 +125,12 @@ Other devices open the system over the school's own router / Wi-Fi; no internet 
 6. **Clock**: scan times come from the server's clock. Without internet Windows cannot correct it — check it weekly.
 7. **Backups**: copy `storage/app/private/backups` to a USB drive or another PC regularly.
 8. **Kiosk camera**: browsers allow the webcam only on `http://localhost` or HTTPS. Run the kiosk on the server
-   PC itself (`http://localhost:<port>/kiosk`), or set up local HTTPS for a separate kiosk PC.
+   PC itself (`http://localhost:<port>/kiosk`), or use the HTTPS site (port 8443) for a separate kiosk device:
+   `powershell -ExecutionPolicy Bypass -File deploy\make-ssl-cert.ps1 -ExtraIp <ips the PC uses on other networks>`
+   issues `C:\xampp\apache\conf\sjchs-ssl\server.crt` for the PC's IPs and name; restart Apache. Install
+   `sjchs-ca.crt` from that folder once on each kiosk as a trusted root certificate: open
+   `http://<server-ip>:8088/certificate` on the kiosk to download it with install steps (the path is
+   `CA_CERTIFICATE_PATH` in `.env`; never copy `sjchs-ca.key` off the server). If the server's IP changes, rerun the script and restart Apache; kiosks need no change.
 
 **Updating**: `git pull`, `composer install --no-dev`, `php artisan migrate --force`, `php artisan optimize`.
 

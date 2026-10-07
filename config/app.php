@@ -101,6 +101,14 @@ return [
     // (localhost) unless this is true.
     'setup_allow_remote' => (bool) env('SETUP_ALLOW_REMOTE', false),
 
+    // The local CA certificate made by deploy/make-ssl-cert.ps1, offered for
+    // download on /certificate so kiosk devices can trust the HTTPS site.
+    // Only a certificate is ever served from here, never a private key.
+    'ca_certificate_path' => env('CA_CERTIFICATE_PATH', 'C:/xampp/apache/conf/sjchs-ssl/sjchs-ca.crt'),
+
+    // Port of the HTTPS site (deploy/apache-sjchs.conf); /certificate links to it.
+    'https_port' => (int) env('HTTPS_PORT', 8443),
+
     'key' => env('APP_KEY'),
 
     'previous_keys' => [

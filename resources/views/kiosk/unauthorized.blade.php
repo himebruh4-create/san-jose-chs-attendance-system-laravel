@@ -21,6 +21,11 @@
         <strong>Settings &rarr; Kiosk Devices</strong>, and click
         <strong>Register this browser as a kiosk</strong>.
     </p>
+    <p class="subtitle" style="text-align:left;">
+        If this is not the server PC, install the
+        <a href="{{ route('certificate') }}" style="color:#14390f;">kiosk certificate</a>
+        first so the webcam works over HTTPS.
+    </p>
     <a href="{{ route('login') }}" class="login-btn" style="display:block; text-decoration:none; box-sizing:border-box; text-align:center;">
         <i class="fa-solid fa-right-to-bracket"></i> Go to Login
     </a>

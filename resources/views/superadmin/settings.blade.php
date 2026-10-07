@@ -536,6 +536,8 @@
                 <p class="subtitle">
                     Only computers registered here can record attendance scans. To set up a kiosk, log in as Super Admin
                     on that computer, register it here, then log out and open the kiosk page.
+                    A kiosk other than the server needs the HTTPS address for its webcam: install the
+                    <a href="{{ route('certificate') }}" target="_blank">kiosk certificate</a> on it first.
                 </p>
             </div>
         </div>

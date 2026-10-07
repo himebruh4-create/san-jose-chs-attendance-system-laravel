@@ -57,6 +57,10 @@
         <a href="{{ route('password.forgot') }}" style="color:#8a7d5c; font-size:12.5px; text-decoration:none;">
             Forgot Password?
         </a>
+        <span style="color:#d6cbb0; margin:0 6px;">|</span>
+        <a href="{{ route('certificate') }}" style="color:#8a7d5c; font-size:12.5px; text-decoration:none;">
+            Kiosk Certificate
+        </a>
     </div>
 
     <button class="back-btn" onclick="window.location.href='{{ route('kiosk') }}'">

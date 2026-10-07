@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SetupController;
+use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\Data;
 use App\Http\Controllers\KioskController;
 use App\Http\Controllers\PhotoController;
@@ -46,6 +47,10 @@ Route::middleware('kiosk')->group(function () {
     Route::post('/kiosk/scan', [KioskController::class, 'scan'])->middleware('throttle:120,1')->name('kiosk.scan');
     Route::get('/kiosk/dtr', [KioskController::class, 'weeklyDtr'])->name('kiosk.dtr');
 });
+
+// Local CA certificate for kiosk devices (public: needed before anyone signs in).
+Route::get('/certificate', [CertificateController::class, 'show'])->name('certificate');
+Route::get('/certificate/download', [CertificateController::class, 'download'])->name('certificate.download');
 
 // Personnel photos: shown on the kiosk after a scan and on the admin pages.
 Route::get('/photos/{filename}', [PhotoController::class, 'personnel'])
