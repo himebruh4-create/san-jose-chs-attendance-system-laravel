@@ -1,7 +1,7 @@
 
     /* REPORTS & ANALYTICS — Super Admin, Admin, Principal */
 
-body { font-family: Arial, sans-serif; margin: 0; background: #f5f0e1; }
+body { margin: 0; background: #f5f0e1; }
 
 .main { margin-left: 240px; padding: 20px; }
 
@@ -67,7 +67,7 @@ input[type="month"] {
     border: 1px solid #e6dcc4;
     border-radius: 8px;
     font-size: 14px;
-    font-family: Arial, sans-serif;
+    font-family: inherit;
     color: #5c5238;
     background: #fbf8f0;
     outline: none;

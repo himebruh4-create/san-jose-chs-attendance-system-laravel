@@ -532,6 +532,25 @@ tbody tr:nth-child(1) td {
     margin-top: 0;
 }
 
+/* Shrinks from full width to nothing while the modal counts down to closing. */
+.modal-content {
+    position: relative;
+}
+
+.modal-countdown {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    background: #e8a317;
+    transform-origin: left center;
+}
+
+.modal-countdown[hidden] {
+    display: none;
+}
+
 /* Scan result: ID photo on record beside the webcam snapshot of this scan. */
 .photo-pair {
     display: flex;

@@ -9,7 +9,7 @@
 
 * { box-sizing: border-box; }
 
-body { margin: 0; font-family: Arial, sans-serif; background: #f5f0e1; color: #333; }
+body { margin: 0; background: #f5f0e1; color: #333; }
 
 .main-content { margin-left: 240px; min-height: 100vh; padding: 30px; }
 

@@ -136,6 +136,7 @@
     <div class="modal-content" onclick="event.stopPropagation()">
         <h2 id="title"></h2>
         <div id="message"></div>
+        <div id="modalCountdown" class="modal-countdown" hidden></div>
     </div>
 </div>
 

@@ -1,10 +1,14 @@
 /* Shared shell: sidebar, mobile top bar, main content, shared utilities.
    Moved unchanged from the native-PHP includes/sidebar.php. */
-/* Safety net: applies to every page that includes this sidebar
-   (admin/superadmin/principal). The per-page fixes are what
-   actually remove the overflow sources; this just guarantees
-   the page itself never grows a horizontal scrollbar. */
+/* Page base for every signed-in page (admin/superadmin/principal): the
+   font, margin and background live here, once, so no page can fall back
+   to the browser's serif font or white 8px margin. Page stylesheets set
+   only their own content styles. overflow-x is a safety net: the page
+   itself never grows a horizontal scrollbar. */
 body {
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f5f0e1;
     max-width: 100%;
     overflow-x: hidden;
 }
@@ -73,11 +77,13 @@ body {
     top: 0;
     width: 240px;
     height: 100vh;
+    height: 100dvh; /* mobile browsers: the visible height, so Logout is never under the address bar */
 
     background: linear-gradient(180deg, #14390f, #2d5a27);
 
     color: white;
-    padding: 20px 15px;
+    font-family: 'Segoe UI', Arial, sans-serif; /* identical on every page, whatever the page sets */
+    padding: 14px 12px;
 
     box-sizing: border-box;
 
@@ -90,18 +96,21 @@ body {
 
     transition: transform 0.25s ease;
 
-    /* Final safeguard: nothing inside the sidebar should ever be able
-       to trigger sideways scrolling of the sidebar itself. */
-    overflow-x: hidden;
+    /* The sidebar itself never scrolls (in either direction), not even
+       programmatically (clip): the header with the logo and Logout always
+       stay in view, and only the menu scrolls. */
+    overflow: hidden;
+    overflow: clip;
 }
 
 /* Logo / Title */
 
 .sidebar-header {
     text-align: center;
-    padding: 10px 5px 25px;
+    padding: 4px 5px 14px;
     border-bottom: 1px solid rgba(232, 163, 23, 0.3);
-    margin-bottom: 20px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
 }
 
 .sidebar-header h2 {
@@ -112,7 +121,7 @@ body {
 }
 
 .sidebar-header p {
-    margin: 5px 0 0;
+    margin: 3px 0 0;
     font-size: 12px;
     opacity: 0.85;
     color: #e8dcc0;
@@ -120,19 +129,34 @@ body {
 
 /* Navigation */
 
+/* Takes the height left between the header and Logout. Fits without
+   scrolling on a ~768px-tall laptop screen; on shorter screens it scrolls
+   (wheel / touch) with the scrollbar hidden. */
 .sidebar-menu {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    flex: 1 1 auto;
+    min-height: 0;
     min-width: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-width: none;
 }
 
-.sidebar-menu a {
-    display: block;
+.sidebar-menu::-webkit-scrollbar {
+    display: none;
+}
 
-    padding: 12px 15px;
+/* A row: the label, then the count badge (if any) right after it on the
+   same line. */
+.sidebar-menu a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+
+    padding: 9px 8px 9px 12px;
 
     color: #f5f0e1;
     text-decoration: none;
@@ -150,30 +174,42 @@ body {
     transition: 0.2s ease;
 }
 
-.sidebar-menu a:hover {
-    background: rgba(232, 163, 23, 0.18);
-    color: #f2c94c;
-    transform: translateX(3px);
+.sidebar-menu a > span:first-child {
+    min-width: 0;
 }
 
-/* Active button */
+/* Hover is deliberately unlike the active item (no gold text, no gold bar),
+   and only on devices that really hover: on touch screens a tap leaves
+   :hover stuck on the tapped spot, and a pointer resting over the menu
+   while a page loads would otherwise look like a second current page. */
+@media (hover: hover) {
+    .sidebar-menu a:not(.active):hover {
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateX(3px);
+    }
+}
+
+/* Active button: the current page only (set server-side by routeIs) */
 
 .sidebar-menu a.active {
     background: rgba(232, 163, 23, 0.25);
     color: #f2c94c;
     font-weight: 600;
+    box-shadow: inset 3px 0 0 #e8a317;
 }
 
 /* Logout */
 
 .sidebar-logout {
     margin-top: auto;
+    padding-top: 10px;
+    flex-shrink: 0;
 }
 
 .sidebar-logout a {
     display: block;
 
-    padding: 12px 15px;
+    padding: 10px 15px;
 
     background: rgba(0,0,0,0.2);
 
@@ -204,7 +240,7 @@ body {
 
 .sidebar-role-badge {
     display: inline-block;
-    margin: 6px auto 0;
+    margin: 4px auto 0;
     padding: 4px 14px;
     background: rgba(232, 163, 23, 0.18);
     color: #f2c94c;
@@ -273,18 +309,18 @@ body {
 }
 
 
-/* Super Admin only: persistent Pending Review count */
+/* Super Admin only: persistent Pending Review count, on the label's line */
 .sidebar-pending-badge {
     display: inline-block;
-    margin-left: 8px;
-    min-width: 20px;
-    padding: 1px 7px;
+    flex: none;
+    min-width: 18px;
+    padding: 0 5px;
     border-radius: 20px;
     background: #e8a317;
     color: #14390f;
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 700;
-    line-height: 1.5;
+    line-height: 18px;
     text-align: center;
     box-sizing: border-box;
 }

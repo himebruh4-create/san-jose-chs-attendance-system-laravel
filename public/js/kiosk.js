@@ -17,14 +17,42 @@ let activeTeacherId = localStorage.getItem("activeTeacherId")
     : null;
 
 const modal = document.getElementById("modal");
+const modalCountdownBar = document.getElementById("modalCountdown");
 const barcodeInput = document.getElementById("barcodeInput");
 let modalTimer = null;
+let modalCountdown = null;
 
 /* =========================
    MODAL
+   Scan results close on their own: an accepted scan after 5 s; a rejected
+   scan or a typed (flagged) entry after 7 s, so there is time to read why.
+   Other messages keep 3 s; the weekly DTR stays until closed. A bar at the
+   bottom shrinks over the countdown. A click/tap outside closes it at once,
+   and so does the next barcode (see the input listener at the bottom).
 ========================= */
 
+const MODAL_CLOSE_MS = {
+    message: 3000,
+    accepted: 5000,
+    needsAttention: 7000
+};
+
+function isModalOpen() {
+    return modal.style.display === "flex";
+}
+
+function stopModalCountdown() {
+    clearTimeout(modalTimer);
+    modalTimer = null;
+
+    if (modalCountdown) {
+        modalCountdown.cancel();
+        modalCountdown = null;
+    }
+}
+
 function hideModal(){
+    stopModalCountdown();
     modal.style.display = "none";
     document.body.classList.remove('modal-open');
     focusBarcode();
@@ -36,19 +64,30 @@ modal.addEventListener("click", function(e){
     }
 });
 
-function showModal(title, message, autoClose = true){
+/** closeAfterMs: milliseconds before it closes by itself, or false to stay open. */
+function showModal(title, message, closeAfterMs = MODAL_CLOSE_MS.message){
+    stopModalCountdown();
+
     document.getElementById("title").innerText = title;
     document.getElementById("message").innerHTML = message;
     modal.style.display = "flex";
     document.body.classList.add('modal-open');
 
-    clearTimeout(modalTimer);
+    modalCountdownBar.hidden = !closeAfterMs;
 
-    if (autoClose) {
-        modalTimer = setTimeout(() => {
-            hideModal();
-        }, 3000);
+    if (closeAfterMs) {
+        modalTimer = setTimeout(hideModal, closeAfterMs);
+
+        if (modalCountdownBar.animate) {
+            modalCountdown = modalCountdownBar.animate(
+                [{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }],
+                { duration: closeAfterMs, easing: "linear", fill: "forwards" }
+            );
+        }
     }
+
+    // The barcode box keeps focus behind the modal, so the next scan is captured.
+    focusBarcode();
 }
 
 /* =========================
@@ -199,6 +238,9 @@ function processBarcode() {
     const barcode = barcodeInput.value.trim();
     if (!barcode) return;
 
+    // The next person does not wait for the previous result to time out.
+    if (isModalOpen()) hideModal();
+
     // Clear right away: whatever happens next, the box is ready for the
     // next person.
     barcodeInput.value = "";
@@ -221,7 +263,7 @@ function processBarcode() {
     .then(data => {
 
         if (!data.success) {
-            showModal(data.title || "Not Recorded", rejectionHTML(data, snapshot, escapeHtml(data.message || "Your scan was not recorded. Please try again.")));
+            showModal(data.title || "Not Recorded", rejectionHTML(data, snapshot, escapeHtml(data.message || "Your scan was not recorded. Please try again.")), MODAL_CLOSE_MS.needsAttention);
             return;
         }
 
@@ -315,11 +357,12 @@ function processBarcode() {
             ${typedManually ? `<div class="scan-flag"><i class="fa-solid fa-keyboard"></i> Entered manually — flagged for verification.</div>` : ""}
         `;
 
-        showModal(data.title, photoPairHTML(data.photo, snapshot) + messageHTML, true);
+        showModal(data.title, photoPairHTML(data.photo, snapshot) + messageHTML,
+            typedManually ? MODAL_CLOSE_MS.needsAttention : MODAL_CLOSE_MS.accepted);
     })
     .catch(err => {
         console.error("Scan request failed:", err);
-        showModal("Not Recorded", rejectionHTML(null, snapshot, "The attendance server could not be reached, so this scan was <b>not saved</b>. Please scan again. If this keeps happening, tell the Super Admin."));
+        showModal("Not Recorded", rejectionHTML(null, snapshot, "The attendance server could not be reached, so this scan was <b>not saved</b>. Please scan again. If this keeps happening, tell the Super Admin."), MODAL_CLOSE_MS.needsAttention);
     })
     .finally(() => {
         scanInProgress = false;
@@ -480,6 +523,12 @@ barcodeInput.addEventListener("keydown", function(e){
 
 barcodeInput.addEventListener("input", function () {
     this.value = this.value.replace(/\D/g, "").slice(0, 6);
+
+    // A new barcode is coming in (scanned, typed or pasted): clear the
+    // previous result off the screen straight away.
+    if (this.value !== "" && isModalOpen()) {
+        hideModal();
+    }
 
     if (this.value === "") {
         digitKeyTimes = [];

@@ -11,7 +11,6 @@
 * { box-sizing: border-box; }
 
 body {
-    font-family: 'Segoe UI', Arial, sans-serif;
     margin: 0;
     background: #f5f0e1;
     color: #3a3527;
@@ -334,11 +333,18 @@ tbody tr:hover { background: #fbf8f0; }
    SCHEDULE GRID
 ========================== */
 
+/* Add and Edit Personnel: two equal columns, filled left to right
+   (Monday | Tuesday, Wednesday | Thursday, Friday | Saturday). Rows stretch,
+   so both cards in a row are the same height. One column on phones. */
 .schedule-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     margin-top: 6px;
+}
+
+@media (max-width: 600px) {
+    .schedule-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 .schedule-row {
