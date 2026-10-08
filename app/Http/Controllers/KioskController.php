@@ -6,7 +6,9 @@ use App\Domain\Attendance\Scanner;
 use App\Domain\Attendance\ScanPhotos;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Throwable;
 
 /**
  * The attendance kiosk (was teacher-dashboard.php, save-attendance.php and
@@ -97,8 +99,22 @@ class KioskController extends Controller
             RateLimiter::hit($missKey, 60);
         }
 
+        // Recorded after the attendance rules have decided, and never allowed
+        // to fail the scan: the attendance (if any) is already saved.
         if (in_array($result['outcome'] ?? null, ['accepted', 'duplicate', 'complete', 'not_found'], true)) {
-            ScanPhotos::record($request->input('photo'), $result, $barcode, $now, $device->id);
+            $inputMethod = ScanPhotos::inputMethod($request->input('input_method'));
+
+            try {
+                ScanPhotos::record($request->input('photo'), $result, $barcode, $now, $device->id, $inputMethod);
+            } catch (Throwable $e) {
+                Log::error('Kiosk scan photo/flags could not be recorded.', [
+                    'teacher_id' => $result['teacher_id'] ?? null,
+                    'outcome' => $result['outcome'],
+                    'input_method' => $inputMethod,
+                    'kiosk_device_id' => $device->id,
+                    'exception' => $e,
+                ]);
+            }
         }
 
         if (! empty($result['teacher_id'])) {

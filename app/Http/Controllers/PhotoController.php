@@ -37,9 +37,12 @@ class PhotoController extends Controller
 
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
+        // no-store: the Super Admin may be on a shared office PC, so the
+        // browser must not keep a copy of anyone's scan photo. File
+        // responses default to "public"; a scan photo never is.
         return response()->file(Storage::disk('local')->path($path), [
             'Content-Type' => 'image/jpeg',
-            'Cache-Control' => 'private, max-age=86400',
-        ]);
+            'Cache-Control' => 'no-store',
+        ])->setPrivate();
     }
 }

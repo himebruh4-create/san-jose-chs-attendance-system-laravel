@@ -52,7 +52,7 @@ badges) and to send **Enter** after each code. The scan box stays focused and is
 
 **Webcam:** the kiosk takes a photo with each scan (accepted or refused). Browsers only allow the camera on
 `http://localhost` or `https://`, so either run the kiosk on the server PC itself or serve the system over HTTPS.
-Without a camera, scans are still recorded and marked "no photo". Photos are kept for 90 days, are only visible
+Without a camera, scans are still recorded and marked "no photo". Photos are kept for 30 days, are only visible
 to the Super Admin (in the Attendance Adjustments form), and are stored outside the web root. Post a notice at
 the kiosk: these photos are personal data under the Data Privacy Act (RA 10173).
 
@@ -61,10 +61,13 @@ the kiosk: these photos are personal data under the Data Privacy Act (RA 10173).
 On Windows, create the Task Scheduler task that runs every minute with:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File deploy\install-scheduler.ps1    # add -Php <path> if PHP is not in C:\xampp\php
+powershell -ExecutionPolicy Bypass -File deploy\install-scheduler.ps1    # add -Php <path> if PHP is not C:\php\php.exe
 ```
 
 On Linux, add a cron entry: `* * * * * php /path/to/sjchs-attendance-laravel/artisan schedule:run`.
+
+The script refuses a PHP older than 8.3 (XAMPP's bundled PHP may be 8.2, which cannot run this system); use the
+same PHP 8.3+ that Apache runs.
 
 Do not point the task at `php-win.exe`: a console window then flashes on screen every minute. The script runs
 `php.exe` inside a hidden console instead.

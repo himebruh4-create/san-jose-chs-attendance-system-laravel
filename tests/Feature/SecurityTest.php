@@ -141,6 +141,28 @@ class SecurityTest extends TestCase
         $this->withCredentials()->withCookie(KioskDevice::COOKIE, $token)->postJson('/kiosk/scan', ['barcode' => $teacher->barcode])->assertForbidden();
     }
 
+    public function test_revoking_a_kiosk_from_settings_asks_in_a_modal_and_reports_the_result(): void
+    {
+        [$device] = KioskDevice::register('Front "Gate" Kiosk', 'tests');
+        $this->actingAs($this->account('superadmin'));
+
+        // Confirmed in the page's modal (the name travels as escaped data), not a browser confirm().
+        $this->get(route('superadmin.settings', ['tab' => 'kiosk']))->assertOk()
+            ->assertSee('data-kiosk-name="Front &quot;Gate&quot; Kiosk"', false)
+            ->assertSee('id="revokeKioskModal"', false)
+            ->assertDontSee('confirm(', false);
+
+        $this->post(route('superadmin.settings.kiosk.revoke'), ['id' => $device->id])
+            ->assertRedirect(route('superadmin.settings', ['tab' => 'kiosk']))
+            ->assertSessionHas('message', 'Kiosk "Front "Gate" Kiosk" can no longer record attendance.')
+            ->assertSessionHas('message_type', 'success');
+        $this->assertNotNull($device->fresh()->revoked_at);
+
+        $this->post(route('superadmin.settings.kiosk.revoke'), ['id' => $device->id])
+            ->assertSessionHas('message', 'Kiosk not found or already revoked.')
+            ->assertSessionHas('message_type', 'error');
+    }
+
     public function test_the_kiosk_dtr_only_shows_the_person_who_just_scanned(): void
     {
         $a = $this->teacher();

@@ -403,6 +403,30 @@
         </div>
     </div>
 
+    <!-- REVOKE KIOSK MODAL -->
+    <div class="modal-backdrop" id="revokeKioskModal">
+        <div class="modal">
+            <button class="modal-close" type="button" onclick="closeRevokeKioskModal()">×</button>
+            <h3>Revoke Kiosk</h3>
+            <p style="color: #8a7d5c; font-size: 14px;">
+                Are you sure you want to revoke <strong id="revokeKioskName" style="color:#14390f;"></strong>?
+                It will stop recording attendance immediately.
+            </p>
+            <p style="color: #8a7d5c; font-size: 13px;">
+                To use this computer as a kiosk again, register it again from this page.
+            </p>
+
+            <form method="POST" action="{{ route('superadmin.settings.kiosk.revoke') }}">
+                @csrf
+                <input type="hidden" name="id" id="revokeKioskId">
+                <div class="modal-actions" style="margin-top: 15px;">
+                    <button type="button" onclick="closeRevokeKioskModal()">Cancel</button>
+                    <button type="submit" style="background: #c62828; color: white;">Revoke</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- RECYCLE BIN: PERMANENTLY DELETE MODAL -->
     <div class="modal-backdrop" id="recycleBinDeleteModal">
         <div class="modal">
@@ -580,11 +604,9 @@
                         <td>{{ $kiosk->revoked_at ? 'Revoked '.$kiosk->revoked_at->format('M j, Y') : 'Active' }}</td>
                         <td>
                             @unless ($kiosk->revoked_at)
-                                <form method="POST" action="{{ route('superadmin.settings.kiosk.revoke') }}" onsubmit="return confirm('Revoke this kiosk? It will stop recording attendance immediately.');">
-                                    @csrf
-                                    <input type="hidden" name="id" value="{{ $kiosk->id }}">
-                                    <button type="submit" class="deactivate-option-btn">Revoke</button>
-                                </form>
+                                <button type="button" class="deactivate-option-btn"
+                                        data-kiosk-id="{{ $kiosk->id }}" data-kiosk-name="{{ $kiosk->name }}"
+                                        onclick="openRevokeKioskModal(this)">Revoke</button>
                             @endunless
                         </td>
                     </tr>

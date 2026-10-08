@@ -14,6 +14,7 @@
             ['superadmin.dashboard', 'Dashboard'],
             ['superadmin.attendance-report', 'Attendance Report'],
             ['superadmin.adjustments', 'Attendance Adjustments'],
+            ['superadmin.scan-photos', 'Scan Photos'],
             ['superadmin.personnel', 'Personnel Management'],
             ['superadmin.reports', 'Reports'],
             ['superadmin.settings', 'Settings'],

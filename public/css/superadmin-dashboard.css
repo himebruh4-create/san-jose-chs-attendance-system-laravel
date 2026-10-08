@@ -144,6 +144,28 @@ body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #f5f0e
 
 .live-logs-wrapper { overflow-x: auto; }
 
+/* Print Daily Attendance (same button as the Admin dashboard), under the logs */
+.print-btn-container { margin-top: 16px; text-align: right; }
+
+.print-btn {
+    padding: 11px 20px;
+    font-size: 13.5px;
+    font-weight: 700;
+    background: #e8a317;
+    color: #3a2600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.print-btn:hover { background: #f2c94c; transform: translateY(-1px); }
+
+.print-btn:active { transform: scale(0.97); }
+
 .log-empty-state { text-align: center; padding: 30px 10px; color: #a89a6e; font-size: 13.5px; }
 
 /* RESPONSIVE */

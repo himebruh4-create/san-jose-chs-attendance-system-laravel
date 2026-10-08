@@ -123,7 +123,15 @@
     </div>
 
     <div class="card live-logs-card live-logs-wrapper">
-        @include('partials.live-logs')
+        <div id="printArea">
+            @include('partials.live-logs')
+        </div>
+
+        <div class="print-btn-container">
+            <button type="button" onclick="printAttendance()" class="print-btn">
+                <i class="fa-solid fa-print"></i> Print Daily Attendance
+            </button>
+        </div>
     </div>
 
 </div>
@@ -131,6 +139,10 @@
 
 @push('scripts')
 @include('partials.dashboard-charts-script')
+<script>
+const printedBy = @json(auth()->user()->email);
+</script>
+<script src="{{ asset_v('js/print-daily-attendance.js') }}"></script>
 <script>
 /* Pending Review reminder (dismissible per review period). Dismissing hides
    only this card — the sidebar count stays while items remain unresolved. */

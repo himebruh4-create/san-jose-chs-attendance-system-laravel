@@ -40,7 +40,7 @@ class Scanner
         $t = DB::table('teachers')
             ->where('barcode', $barcode)
             ->where('is_deleted', 0)
-            ->first(['id', 'fullname', 'photo']);
+            ->first(['id', 'fullname', 'department', 'photo']);
 
         if (! $t) {
             return ['success' => false, 'outcome' => 'not_found', 'title' => 'Not Found', 'message' => 'Invalid barcode.'];
@@ -72,7 +72,7 @@ class Scanner
             'break' => dtrBreakForSchedule(BreakConfig::load(), $todaySchedule),
         ]);
 
-        $base = ['teacher_id' => $teacherId, 'fullname' => $fullname, 'photo' => $photo, 'time' => $clock];
+        $base = ['teacher_id' => $teacherId, 'fullname' => $fullname, 'position' => $t->department, 'photo' => $photo, 'time' => $clock];
 
         // ---- Rejected: not stored, the kiosk explains why, logged for review.
         if ($route['action'] === 'reject') {

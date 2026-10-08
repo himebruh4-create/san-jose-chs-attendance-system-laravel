@@ -193,6 +193,11 @@ body {
 
 .page-header {
     margin-bottom: 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px 24px;
 }
 
 .page-header .eyebrow {
@@ -527,20 +532,59 @@ tbody tr:nth-child(1) td {
     margin-top: 0;
 }
 
-.photo-preview {
-    text-align: center;
-    margin-bottom: 18px;
+/* Scan result: ID photo on record beside the webcam snapshot of this scan. */
+.photo-pair {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 16px;
 }
 
-.photo-preview img {
-    width: 160px;
-    height: 160px;
+.photo-pair figure {
+    margin: 0;
+    flex: 0 1 160px;
+    min-width: 0;
+}
+
+.photo-pair img,
+.photo-pair .photo-missing {
+    width: 100%;
+    aspect-ratio: 1 / 1;
     object-fit: cover;
     border-radius: 14px;
     border: 3px solid #e8a317;
     display: block;
-    margin: 0 auto;
     box-shadow: 0 4px 14px rgba(20,57,15,0.2);
+}
+
+.photo-pair .photo-missing {
+    background: #e4e2dc;
+    border-color: #cfccc3;
+    box-shadow: none;
+    color: #77736a;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10px;
+}
+
+.photo-pair figcaption {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #8a7d5c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+.scan-flag {
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: #8a5a00;
 }
 
 #message {
@@ -570,12 +614,9 @@ tbody tr:nth-child(1) td {
     .scan-card { padding: 24px; }
 }
 
+/* Part of the page header: scrolls away with the page. */
 .live-clock {
-    position: fixed;
-    top: 20px;
-    right: 30px;
     text-align: right;
-    z-index: 15;
 }
 
 .live-clock .clock-time {
@@ -594,7 +635,7 @@ tbody tr:nth-child(1) td {
 }
 
 @media (max-width: 700px) {
-    .live-clock { top: 14px; right: 16px; }
+    .live-clock { text-align: left; }
     .live-clock .clock-time { font-size: 18px; }
     .live-clock .clock-date { font-size: 13px; }
 }
@@ -622,14 +663,18 @@ body::before {
 
 .camera-box {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
 }
 
 .camera-box video {
-    width: 160px;
-    height: 120px;
+    width: 320px;
+    height: 240px;
+    max-width: 100%;
     object-fit: cover;
     border-radius: 10px;
     background: #14390f;
@@ -642,6 +687,7 @@ body::before {
     font-weight: 600;
     padding: 8px 12px;
     border-radius: 8px;
+    text-align: center;
 }
 
 .camera-status.camera-ok {
@@ -655,6 +701,5 @@ body::before {
 }
 
 @media (max-width: 600px) {
-    .camera-box { flex-direction: column; align-items: stretch; }
-    .camera-box video { width: 100%; height: auto; aspect-ratio: 4 / 3; }
+    .camera-box video { width: 100%; max-width: 320px; height: auto; aspect-ratio: 4 / 3; }
 }

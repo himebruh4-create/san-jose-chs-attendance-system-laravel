@@ -30,7 +30,8 @@ class KioskDeviceController extends Controller
         $cookie = Cookie::make(KioskDevice::COOKIE, $token, 60 * 24 * 365 * 5, null, null, $request->isSecure(), true, false, 'lax');
 
         return redirect()->route('superadmin.settings', ['tab' => 'kiosk'])
-            ->with('success', "This browser is now the kiosk \"{$device->name}\". Log out and open the kiosk page to start scanning.")
+            ->with('message_type', 'success')
+            ->with('message', "This browser is now the kiosk \"{$device->name}\". Log out and open the kiosk page to start scanning.")
             ->withCookie($cookie);
     }
 
@@ -39,7 +40,8 @@ class KioskDeviceController extends Controller
         $device = KioskDevice::query()->whereKey((int) $request->input('id'))->whereNull('revoked_at')->first();
 
         if (! $device) {
-            return back()->with('error', 'Kiosk not found or already revoked.');
+            return redirect()->route('superadmin.settings', ['tab' => 'kiosk'])
+                ->with('message', 'Kiosk not found or already revoked.')->with('message_type', 'error');
         }
 
         $device->forceFill(['revoked_at' => now()])->save();
@@ -47,6 +49,6 @@ class KioskDeviceController extends Controller
         Audit::log('kiosk.revoked', 'kiosk_device', $device->id, ['name' => $device->name]);
 
         return redirect()->route('superadmin.settings', ['tab' => 'kiosk'])
-            ->with('success', "Kiosk \"{$device->name}\" can no longer record attendance.");
+            ->with('message', "Kiosk \"{$device->name}\" can no longer record attendance.")->with('message_type', 'success');
     }
 }

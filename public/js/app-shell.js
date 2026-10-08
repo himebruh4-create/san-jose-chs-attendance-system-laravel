@@ -111,6 +111,71 @@ function closeSidebar() {
     document.body.style.overflow = '';
 }
 
+/* =========================================================
+   SHARED MESSAGE MODAL
+   Use instead of the browser's alert(): showMessageModal(text) or
+   showMessageModal(text, { title: 'Something Went Wrong', type: 'error' }).
+   Self-contained (builds its own markup and styles) so it works on
+   every page. Closes with OK, Escape, or a click outside the box.
+   ========================================================= */
+function showMessageModal(message, options) {
+    options = options || {};
+    var isError = options.type === 'error';
+
+    var old = document.getElementById('appMessageModal');
+    if (old) { old.remove(); unlockBodyScroll(); }
+
+    var wrap = document.createElement('div');
+    wrap.id = 'appMessageModal';
+    wrap.setAttribute('role', 'dialog');
+    wrap.setAttribute('aria-modal', 'true');
+    wrap.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; ' +
+        'justify-content:center; align-items:center; z-index:100000; padding:20px;';
+
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fffdf8; width:420px; max-width:100%; border-radius:14px; padding:24px; ' +
+        'box-shadow:0 10px 35px rgba(0,0,0,0.3); font-family:inherit;';
+
+    var title = document.createElement('h3');
+    title.textContent = options.title || (isError ? 'Something Went Wrong' : 'Notice');
+    title.style.cssText = 'margin:0 0 10px; font-size:18px; color:' + (isError ? '#c62828' : '#14390f') + ';';
+
+    var text = document.createElement('p');
+    text.textContent = message || '';
+    text.style.cssText = 'margin:0 0 20px; color:#5c5238; font-size:14px; line-height:1.5; white-space:pre-line;';
+
+    var actions = document.createElement('div');
+    actions.style.cssText = 'text-align:right;';
+
+    var ok = document.createElement('button');
+    ok.type = 'button';
+    ok.textContent = 'OK';
+    ok.style.cssText = 'border:none; padding:10px 24px; border-radius:8px; cursor:pointer; font-size:14px; ' +
+        'font-weight:bold; color:#fff; background:#14390f;';
+
+    function close() {
+        document.removeEventListener('keydown', onKey);
+        wrap.remove();
+        unlockBodyScroll();
+    }
+    function onKey(event) {
+        if (event.key === 'Escape' || event.key === 'Enter') { event.preventDefault(); close(); }
+    }
+
+    ok.addEventListener('click', close);
+    wrap.addEventListener('click', function (event) { if (event.target === wrap) { close(); } });
+    document.addEventListener('keydown', onKey);
+
+    actions.appendChild(ok);
+    box.appendChild(title);
+    box.appendChild(text);
+    box.appendChild(actions);
+    wrap.appendChild(box);
+    document.body.appendChild(wrap);
+    lockBodyScroll();
+    ok.focus();
+}
+
 /* Escapes text for safe insertion into innerHTML templates. */
 function escapeHtml(value) {
     return String(value === null || value === undefined ? '' : value)

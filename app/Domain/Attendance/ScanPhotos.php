@@ -20,14 +20,29 @@ class ScanPhotos
     private const MAX_BYTES = 1_500_000;
 
     /** Days a photo is kept before `attendance:prune-scan-photos` deletes it. */
-    public const RETENTION_DAYS = 90;
+    public const RETENTION_DAYS = 30;
+
+    /** How the barcode reached the kiosk; a typed one carries the manual_entry flag. */
+    public const INPUT_SCANNED = 'scanned';
+
+    public const INPUT_TYPED = 'typed';
+
+    /**
+     * The kiosk's reported input method. Anything other than "typed",
+     * including nothing at all, counts as scanned so a broken client never
+     * blocks attendance.
+     */
+    public static function inputMethod(mixed $value): string
+    {
+        return $value === self::INPUT_TYPED ? self::INPUT_TYPED : self::INPUT_SCANNED;
+    }
 
     /**
      * Stores the photo (if any) and its scan_photos row. A missing or
      * unreadable photo still records the row, with path = null, so a scan
      * without a picture is visible to the reviewer.
      */
-    public static function record(?string $dataUrl, array $scan, string $barcode, string $scannedAt, ?int $kioskDeviceId): ?int
+    public static function record(?string $dataUrl, array $scan, string $barcode, string $scannedAt, ?int $kioskDeviceId, string $inputMethod = self::INPUT_SCANNED): ?int
     {
         $path = self::storeImage($dataUrl, $scannedAt);
 
@@ -39,6 +54,7 @@ class ScanPhotos
             'scanned_at' => $scannedAt,
             'outcome' => $scan['outcome'] ?? ($scan['success'] ? 'accepted' : 'rejected'),
             'scan_kind' => $scan['kind'] ?? null,
+            'input_method' => self::inputMethod($inputMethod),
             'path' => $path,
             'kiosk_device_id' => $kioskDeviceId,
         ]);
@@ -78,10 +94,16 @@ class ScanPhotos
         return $path;
     }
 
-    /** Deletes photos (files and rows) older than the retention period. */
+    /**
+     * Deletes photos (files and rows) older than the retention period. Scans
+     * from the current week are always kept, whatever $days is, because the
+     * Principal's Scan Verification card counts them.
+     */
     public static function prune(int $days = self::RETENTION_DAYS): int
     {
-        $cutoff = now()->subDays($days)->toDateTimeString();
+        $byAge = now()->subDays($days);
+        $weekStart = ScanVerificationCounts::weekStart();
+        $cutoff = ($byAge->lt($weekStart) ? $byAge : $weekStart)->toDateTimeString();
         $deleted = 0;
 
         DB::table('scan_photos')->where('scanned_at', '<', $cutoff)->orderBy('id')

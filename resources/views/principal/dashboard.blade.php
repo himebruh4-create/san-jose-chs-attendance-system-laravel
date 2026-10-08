@@ -106,6 +106,36 @@
                 @endif
             </div>
 
+            {{-- Counts only, read-only: scan photos are personal data (RA 10173) that only the Super Admin sees. --}}
+            <div class="dashboard-card scan-verification-card" id="scanVerificationCard">
+                <h2>Scan Verification</h2>
+                <p class="subtitle">Kiosk scans this week (since Monday)</p>
+
+                <div class="sv-flagged" data-sv-flagged-block @if ($scanVerification['flagged_week'] === 0) hidden @endif>
+                    <span class="sv-big" data-sv="flagged_week">{{ $scanVerification['flagged_week'] }}</span>
+                    <span class="sv-big-label">Flagged scans this week</span>
+                    <div class="sv-flag-row">
+                        <div><strong data-sv="repeat_week">{{ $scanVerification['repeat_week'] }}</strong><span>Repeat scan</span></div>
+                        <div><strong data-sv="rapid_week">{{ $scanVerification['rapid_week'] }}</strong><span>Rapid scan</span></div>
+                        <div><strong data-sv="unknown_week">{{ $scanVerification['unknown_week'] }}</strong><span>Unknown barcode</span></div>
+                        <div><strong data-sv="nophoto_week">{{ $scanVerification['nophoto_week'] }}</strong><span>No photo</span></div>
+                        <div><strong data-sv="manual_week">{{ $scanVerification['manual_week'] }}</strong><span>Manual entry</span></div>
+                    </div>
+                    <p class="sv-note">A scan can have more than one flag.</p>
+                </div>
+
+                <p class="empty-note" data-sv-empty @if ($scanVerification['flagged_week'] !== 0) hidden @endif>No flagged scans this week</p>
+
+                <p class="sv-line {{ $scanVerification['unreviewed'] > 0 ? 'sv-amber' : '' }}" data-sv-unreviewed-line>
+                    Waiting for review: <strong data-sv="unreviewed">{{ $scanVerification['unreviewed'] }}</strong>
+                </p>
+
+                <p class="sv-footer">
+                    Photos are reviewed by the Super Admin.
+                    <span>Loaded <span data-sv-loaded>{{ \Illuminate\Support\Carbon::parse($scanVerification['loaded_at'])->format('g:i A') }}</span></span>
+                </p>
+            </div>
+
             <div class="dashboard-card">
                 <h2>Quick Access</h2>
                 <div class="shortcut-grid">
@@ -167,5 +197,30 @@ new Chart(document.getElementById('todayChart'), {
         plugins: { legend: { position: 'bottom' } }
     }
 });
+
+/* Scan Verification card: refresh the counts every 5 minutes. */
+(function () {
+    const card = document.getElementById('scanVerificationCard');
+
+    function render(counts) {
+        card.querySelectorAll('[data-sv]').forEach(function (el) {
+            el.textContent = counts[el.dataset.sv];
+        });
+        card.querySelector('[data-sv-flagged-block]').hidden = counts.flagged_week === 0;
+        card.querySelector('[data-sv-empty]').hidden = counts.flagged_week !== 0;
+        card.querySelector('[data-sv-unreviewed-line]').classList.toggle('sv-amber', counts.unreviewed > 0);
+        card.querySelector('[data-sv-loaded]').textContent = new Date(counts.loaded_at)
+            .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' });
+    }
+
+    setInterval(async function () {
+        try {
+            const response = await fetch(@json(route('principal.scan-verification-counts')));
+            if (response.ok) { render(await response.json()); }
+        } catch (e) {
+            console.error('Scan verification refresh failed:', e);
+        }
+    }, 5 * 60 * 1000);
+})();
 </script>
 @endpush

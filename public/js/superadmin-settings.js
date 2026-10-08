@@ -312,6 +312,22 @@ function closeDeleteAccountModal() {
     unlockBodyScroll();
 }
 
+/* =========================================================
+   KIOSK DEVICES
+   ========================================================= */
+
+function openRevokeKioskModal(button) {
+    document.getElementById('revokeKioskId').value = button.dataset.kioskId;
+    document.getElementById('revokeKioskName').textContent = button.dataset.kioskName;
+    document.getElementById('revokeKioskModal').classList.add('active');
+    lockBodyScroll();
+}
+
+function closeRevokeKioskModal() {
+    document.getElementById('revokeKioskModal').classList.remove('active');
+    unlockBodyScroll();
+}
+
 function openAddAccountModal() {
     document.getElementById('addAccountModal').classList.add('active');
     lockBodyScroll();

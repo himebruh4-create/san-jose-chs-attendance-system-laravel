@@ -18,11 +18,6 @@
     <i class="fa-solid fa-bars"></i>
 </div>
 
-<div class="live-clock">
-    <div class="clock-time" id="liveClockTime">--:--:-- --</div>
-    <div class="clock-date" id="liveClockDate">Loading...</div>
-</div>
-
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
 <div class="sidebar" id="sidebarDrawer">
@@ -46,9 +41,15 @@
 <div class="dashboard-content">
 
     <div class="page-header">
-        <div class="eyebrow">Personnel Attendance</div>
-        <h1>Attendance Dashboard</h1>
-        <p>Scan or enter your barcode to record your time in and out for today.</p>
+        <div class="page-title">
+            <div class="eyebrow">Personnel Attendance</div>
+            <h1>Attendance Dashboard</h1>
+            <p>Scan or enter your barcode to record your time in and out for today.</p>
+        </div>
+        <div class="live-clock">
+            <div class="clock-time" id="liveClockTime">--:--:-- --</div>
+            <div class="clock-date" id="liveClockDate">Loading...</div>
+        </div>
     </div>
 
     <div class="scan-card" id="scanSection">

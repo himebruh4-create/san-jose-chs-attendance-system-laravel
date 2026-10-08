@@ -20,7 +20,7 @@ async function printIndividualReport(teacher) {
     window.currentDTRTeacher = teacher;
 
     if (!teacher || !teacher.records) {
-        alert("No records found!");
+        showMessageModal("No attendance records were found for this person.", { title: "No Records Found" });
         return;
     }
 
@@ -57,7 +57,7 @@ async function printIndividualReport(teacher) {
         if (result.success) databaseLeaves = result.leaves || [];
     } catch (error) {
         console.error("Failed to load teacher leaves:", error);
-        alert("Unable to load teacher leave records.");
+        showMessageModal("Unable to load teacher leave records.", { type: "error" });
         return;
     }
 
@@ -75,7 +75,7 @@ async function printIndividualReport(teacher) {
         if (result.success) databaseAdjustments = result.adjustments || [];
     } catch (error) {
         console.error("Failed to load attendance adjustments:", error);
-        alert("Unable to load attendance adjustment records.");
+        showMessageModal("Unable to load attendance adjustment records.", { type: "error" });
         return;
     }
 
@@ -91,7 +91,7 @@ async function printIndividualReport(teacher) {
         if (result.success) databaseHolidays = result.events || [];
     } catch (error) {
         console.error("Failed to load school events:", error);
-        alert("Unable to load school event records.");
+        showMessageModal("Unable to load school event records.", { type: "error" });
         return;
     }
 
@@ -109,7 +109,7 @@ async function printIndividualReport(teacher) {
         if (result.success) databaseConfirmedAbsences = result.absences || [];
     } catch (error) {
         console.error("Failed to load confirmed absences:", error);
-        alert("Unable to load confirmed absence records.");
+        showMessageModal("Unable to load confirmed absence records.", { type: "error" });
         return;
     }
 
@@ -127,7 +127,7 @@ async function printIndividualReport(teacher) {
         if (result.success) teacherSchedule = result.schedule || {};
     } catch (error) {
         console.error("Failed to load teacher schedule:", error);
-        alert("Unable to load teacher schedule.");
+        showMessageModal("Unable to load teacher schedule.", { type: "error" });
         return;
     }
 
@@ -1889,7 +1889,7 @@ function printDTRWithRemarks(
     const teacher = overrideTeacher || window.currentDTRTeacher;
 
     if (!teacher) {
-        alert("Personnel information was not found.");
+        showMessageModal("Personnel information was not found.", { type: "error" });
         return;
     }
 
@@ -3543,7 +3543,7 @@ function printDTRWithRemarks(
 async function printAllDTR(teacherReports, monthStart, monthEnd) {
 
     if (!teacherReports || teacherReports.length === 0) {
-        alert("No personnel found for this month.");
+        showMessageModal("No personnel found for this month.", { title: "Nothing to Print" });
         return;
     }
 

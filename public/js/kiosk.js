@@ -9,6 +9,7 @@
    - Late / On-Time comes from the response's `status` field
    - names and messages are escaped before being shown
    - a webcam photo is taken with each scan (when a camera is available)
+     and shown in the result next to the person's ID photo
    ========================================================= */
 
 let activeTeacherId = localStorage.getItem("activeTeacherId")
@@ -122,6 +123,69 @@ function capturePhoto() {
 
 let scanInProgress = false;
 
+/* =========================
+   MANUAL ENTRY DETECTION
+   A USB scanner types the whole barcode in one burst, a few milliseconds
+   per digit; a person typing is far slower, and a pasted barcode has no
+   digit keystrokes at all. Sent with the scan as `input_method`; the
+   server flags typed scans for the Super Admin.
+========================= */
+
+const SCANNER_MAX_KEY_GAP_MS = 50;
+let digitKeyTimes = [];
+
+function wasTypedManually(barcode) {
+    const times = digitKeyTimes;
+    digitKeyTimes = [];
+
+    if (times.length !== barcode.length || times.length < 2) return true;
+
+    const averageGap = (times[times.length - 1] - times[0]) / (times.length - 1);
+    return averageGap > SCANNER_MAX_KEY_GAP_MS;
+}
+
+/* =========================
+   SCAN RESULT PHOTOS
+   Left: the ID photo on record (school logo when there is none).
+   Right: the webcam snapshot sent with this scan.
+========================= */
+
+function photoPairHTML(recordPhoto, snapshot) {
+    const logo = appUrl("img/logo.png");
+    const recordSrc = recordPhoto ? appUrl("photos/" + encodeURIComponent(recordPhoto)) : logo;
+    const snapshotHTML = snapshot
+        ? `<img src="${snapshot}" alt="Photo taken at this scan">`
+        : `<div class="photo-missing">No photo captured</div>`;
+
+    return `
+        <div class="photo-pair">
+            <figure>
+                <img src="${recordSrc}" alt="ID photo on record" onerror="this.onerror=null; this.src='${logo}';">
+                <figcaption>On record</figcaption>
+            </figure>
+            <figure>
+                ${snapshotHTML}
+                <figcaption>Just now</figcaption>
+            </figure>
+        </div>`;
+}
+
+/** "07:28 AM" -> "7:28 AM" */
+function shortTime(time) {
+    return String(time || "").replace(/^0(?=\d:)/, "");
+}
+
+function rejectionHTML(data, snapshot, reason) {
+    const name = data && data.fullname
+        ? `<b>Name:</b> ${escapeHtml(data.fullname)}<br>`
+        : "";
+
+    return photoPairHTML(data && data.photo, snapshot) + `
+        ${name}
+        <b>Reason:</b> ${reason}
+    `;
+}
+
 function pillHTML(status) {
     if (status === "On-Time") return `<span class="status-pill status-ontime"><i class="fa-solid fa-circle-check"></i> On-Time</span>`;
     if (status === "Late") return `<span class="status-pill status-late"><i class="fa-solid fa-triangle-exclamation"></i> Late</span>`;
@@ -140,9 +204,13 @@ function processBarcode() {
     barcodeInput.value = "";
     scanInProgress = true;
 
+    const typedManually = wasTypedManually(barcode);
+    const snapshot = capturePhoto();
+
     const body = new URLSearchParams();
     body.set("barcode", barcode);
-    body.set("photo", capturePhoto());
+    body.set("photo", snapshot);
+    body.set("input_method", typedManually ? "typed" : "scanned");
 
     fetch(appUrl("kiosk/scan"), {
         method: "POST",
@@ -153,7 +221,7 @@ function processBarcode() {
     .then(data => {
 
         if (!data.success) {
-            showModal(data.title || "Not Recorded", escapeHtml(data.message || "Your scan was not recorded. Please try again."));
+            showModal(data.title || "Not Recorded", rejectionHTML(data, snapshot, escapeHtml(data.message || "Your scan was not recorded. Please try again.")));
             return;
         }
 
@@ -238,23 +306,20 @@ function processBarcode() {
            MODAL
         ----------------------------- */
 
-        const logo = appUrl("img/logo.png");
-        const photoHTML = data.photo
-            ? `<div class="photo-preview"><img src="${appUrl("photos/" + encodeURIComponent(data.photo))}" onerror="this.onerror=null; this.src='${logo}';"></div>`
-            : `<div class="photo-preview"><img src="${logo}"></div>`;
-
         const messageHTML = `
             <b>Name:</b> ${escapeHtml(data.fullname)}<br>
-            <b>Date:</b> ${escapeHtml(data.date)}<br>
-            <b>Time:</b> ${escapeHtml(now)}<br>
+            ${data.position ? `<b>Position:</b> ${escapeHtml(data.position)}<br>` : ""}
+            <b>Scan:</b> ${escapeHtml(data.title)} &middot; ${escapeHtml(shortTime(now))}<br>
+            ${data.status ? `<b>Status:</b> ${pillHTML(data.status)}<br>` : ""}
             <b>Message:</b> ${escapeHtml(data.message)}
+            ${typedManually ? `<div class="scan-flag"><i class="fa-solid fa-keyboard"></i> Entered manually — flagged for verification.</div>` : ""}
         `;
 
-        showModal(data.title, photoHTML + messageHTML, true);
+        showModal(data.title, photoPairHTML(data.photo, snapshot) + messageHTML, true);
     })
     .catch(err => {
         console.error("Scan request failed:", err);
-        showModal("Not Recorded", "The attendance server could not be reached, so this scan was <b>not saved</b>. Please scan again. If this keeps happening, tell the Super Admin.");
+        showModal("Not Recorded", rejectionHTML(null, snapshot, "The attendance server could not be reached, so this scan was <b>not saved</b>. Please scan again. If this keeps happening, tell the Super Admin."));
     })
     .finally(() => {
         scanInProgress = false;
@@ -399,6 +464,10 @@ setInterval(updateLiveClock, 1000);
 ========================= */
 
 barcodeInput.addEventListener("keydown", function(e){
+    if (/^\d$/.test(e.key)) {
+        digitKeyTimes.push(performance.now());
+    }
+
     if (e.key === "Enter") {
         e.preventDefault();
         processBarcode();
@@ -411,4 +480,8 @@ barcodeInput.addEventListener("keydown", function(e){
 
 barcodeInput.addEventListener("input", function () {
     this.value = this.value.replace(/\D/g, "").slice(0, 6);
+
+    if (this.value === "") {
+        digitKeyTimes = [];
+    }
 });

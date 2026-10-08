@@ -5,12 +5,16 @@ namespace Tests\Feature;
 use App\Models\KioskDevice;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\TestWith;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
  * Kiosk scanning end to end: routing, the repeat guard, lunch scans,
- * completed shifts, archived personnel, recording switch and photos.
+ * completed shifts, archived personnel, recording switch, photos and the
+ * manual-entry (typed barcode) flag.
  */
 class KioskScanTest extends TestCase
 {
@@ -24,13 +28,21 @@ class KioskScanTest extends TestCase
         $this->token = $this->kioskToken();
     }
 
-    private function scan(string $barcode, string $at, ?string $photo = null)
+    private function scan(string $barcode, string $at, ?string $photo = null, ?string $inputMethod = null)
     {
         $this->travelTo(Carbon::parse($at));
 
         return $this->withCredentials()
             ->withCookie(KioskDevice::COOKIE, $this->token)
-            ->postJson('/kiosk/scan', array_filter(['barcode' => $barcode, 'photo' => $photo]));
+            ->postJson('/kiosk/scan', array_filter(['barcode' => $barcode, 'photo' => $photo, 'input_method' => $inputMethod]));
+    }
+
+    /** @return array<string, int> The Principal's flag counts for the current week. */
+    private function principalFlagCounts(): array
+    {
+        return $this->actingAs($this->account('principal'))
+            ->getJson('/principal/dashboard/scan-verification')
+            ->json();
     }
 
     public function test_a_regular_teachers_day_in_lunch_out_lunch_in_and_out(): void
@@ -39,7 +51,7 @@ class KioskScanTest extends TestCase
         $t = $this->teacher();
 
         $this->scan($t->barcode, '2026-10-05 06:58:00')
-            ->assertJson(['success' => true, 'title' => 'AM Arrival', 'kind' => 'IN', 'status' => 'On-Time']);
+            ->assertJson(['success' => true, 'title' => 'AM Arrival', 'kind' => 'IN', 'status' => 'On-Time', 'position' => 'Teacher I']);
 
         $this->scan($t->barcode, '2026-10-05 12:16:00')
             ->assertJson(['success' => true, 'title' => 'AM Departure', 'kind' => 'BREAK_OUT']);
@@ -149,7 +161,10 @@ class KioskScanTest extends TestCase
         // Only a Super Admin can view it.
         $this->actingAs($this->account('admin'))->get(route('photos.scan', $photos[0]->id))->assertRedirect(route('admin.dashboard'));
         $this->flushSession();
-        $this->actingAs($this->account('superadmin'))->get(route('photos.scan', $photos[0]->id))->assertOk();
+        // Never kept in the browser cache (shared office PC).
+        $this->actingAs($this->account('superadmin'))->get(route('photos.scan', $photos[0]->id))
+            ->assertOk()
+            ->assertHeader('Cache-Control', 'no-store, private');
     }
 
     public function test_a_non_image_photo_is_ignored(): void
@@ -160,5 +175,88 @@ class KioskScanTest extends TestCase
             ->assertJson(['success' => true]);
 
         $this->assertNull(DB::table('scan_photos')->value('path'));
+    }
+
+    public function test_a_typed_barcode_is_saved_and_flagged_as_a_manual_entry(): void
+    {
+        $t = $this->teacher();
+
+        $this->scan($t->barcode, '2026-10-05 06:55:00', inputMethod: 'typed')
+            ->assertJson(['success' => true, 'title' => 'AM Arrival']);
+
+        $this->assertDatabaseHas('attendance', ['teacher_id' => $t->id, 'date' => '2026-10-05', 'am_arrival' => '06:55:00']);
+        $this->assertDatabaseHas('scan_photos', ['teacher_id' => $t->id, 'outcome' => 'accepted', 'input_method' => 'typed']);
+        $this->assertSame(1, $this->principalFlagCounts()['manual_week']);
+    }
+
+    public function test_a_scanned_barcode_is_not_flagged_as_a_manual_entry(): void
+    {
+        $t = $this->teacher();
+
+        $this->scan($t->barcode, '2026-10-05 06:55:00', inputMethod: 'scanned')->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('scan_photos', ['teacher_id' => $t->id, 'outcome' => 'accepted', 'input_method' => 'scanned']);
+        $this->assertSame(0, $this->principalFlagCounts()['manual_week']);
+    }
+
+    #[TestWith([null])]
+    #[TestWith(['keyboard'])]
+    #[TestWith(['TYPED'])]
+    public function test_a_missing_or_unknown_input_method_counts_as_scanned_and_attendance_is_saved(?string $inputMethod): void
+    {
+        $t = $this->teacher();
+
+        $this->scan($t->barcode, '2026-10-05 06:55:00', inputMethod: $inputMethod)
+            ->assertJson(['success' => true, 'title' => 'AM Arrival']);
+
+        $this->assertDatabaseHas('attendance', ['teacher_id' => $t->id, 'date' => '2026-10-05', 'am_arrival' => '06:55:00']);
+        $this->assertDatabaseHas('scan_photos', ['teacher_id' => $t->id, 'input_method' => 'scanned']);
+    }
+
+    public function test_a_typed_repeat_scan_carries_both_the_repeat_and_manual_entry_flags(): void
+    {
+        $t = $this->teacher();
+
+        $this->scan($t->barcode, '2026-10-05 06:50:00', inputMethod: 'typed')->assertJson(['success' => true]);
+        $this->scan($t->barcode, '2026-10-05 06:52:00', inputMethod: 'typed')->assertJson(['success' => false, 'title' => 'Duplicate Scan']);
+
+        $this->assertDatabaseHas('scan_photos', ['teacher_id' => $t->id, 'outcome' => 'duplicate', 'input_method' => 'typed']);
+        $counts = $this->principalFlagCounts();
+        $this->assertSame(1, $counts['repeat_week']);
+        $this->assertSame(2, $counts['manual_week']);
+        $this->assertSame(2, $counts['flagged_week']);
+    }
+
+    public function test_the_same_person_scanning_twice_within_seconds_is_a_repeat_not_a_rapid_scan(): void
+    {
+        $t = $this->teacher();
+
+        $this->scan($t->barcode, '2026-10-05 06:55:00')->assertJson(['success' => true]);
+        $this->scan($t->barcode, '2026-10-05 06:55:03')->assertJson(['success' => false, 'title' => 'Duplicate Scan']);
+
+        $counts = $this->principalFlagCounts();
+        $this->assertSame(1, $counts['repeat_week']);
+        $this->assertSame(0, $counts['rapid_week']);
+    }
+
+    public function test_a_scan_is_still_saved_when_its_photo_record_fails_and_the_error_is_logged(): void
+    {
+        $t = $this->teacher();
+        Log::spy();
+        Storage::shouldReceive('disk')->andThrow(new RuntimeException('Disk full'));
+        $image = imagecreatetruecolor(40, 30);
+        ob_start();
+        imagejpeg($image);
+        $dataUrl = 'data:image/jpeg;base64,'.base64_encode(ob_get_clean());
+
+        $this->scan($t->barcode, '2026-10-05 06:55:00', $dataUrl, 'typed')
+            ->assertOk()
+            ->assertJson(['success' => true, 'title' => 'AM Arrival']);
+
+        $this->assertDatabaseHas('attendance', ['teacher_id' => $t->id, 'date' => '2026-10-05', 'am_arrival' => '06:55:00']);
+        $this->assertDatabaseCount('scan_photos', 0);
+        Log::shouldHaveReceived('error')->once()->withArgs(
+            fn (string $message, array $context) => $context['input_method'] === 'typed' && $context['teacher_id'] === $t->id
+        );
     }
 }

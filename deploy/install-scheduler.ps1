@@ -4,12 +4,15 @@
 # php-win.exe instead: it has no console, so every `cmd.exe` that Laravel starts (it probes the terminal size with
 # `stty` and `mode CON` on each run) opens its own window, which flashes on screen once a minute.
 #
+# The PHP used must be 8.3 or newer (the version Apache runs this system with). XAMPP's bundled PHP may be
+# older (8.2 cannot start the app), so the default is C:\php\php.exe; the script refuses anything older.
+#
 # Usage (from the project folder, in PowerShell):
 #   powershell -ExecutionPolicy Bypass -File deploy\install-scheduler.ps1
-#   powershell -ExecutionPolicy Bypass -File deploy\install-scheduler.ps1 -Php D:\xampp\php\php.exe
+#   powershell -ExecutionPolicy Bypass -File deploy\install-scheduler.ps1 -Php D:\php\php.exe
 
 param(
-    [string] $Php = 'C:\xampp\php\php.exe',
+    [string] $Php = 'C:\php\php.exe',
     [string] $ProjectPath = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
     [string] $TaskName = 'SJCHS Attendance Scheduler'
 )
@@ -18,6 +21,15 @@ $ErrorActionPreference = 'Stop'
 
 if (-not (Test-Path $Php)) { throw "php.exe not found at $Php (pass -Php <path>)." }
 if ((Split-Path $Php -Leaf) -ieq 'php-win.exe') { throw 'Use php.exe, not php-win.exe (see the comment at the top of this script).' }
+
+# -n: ignore php.ini, so a broken extension line cannot hide the version.
+$phpVersionId = & $Php -n -r 'echo PHP_VERSION_ID;'
+$phpVersion = & $Php -n -r 'echo PHP_VERSION;'
+if ($LASTEXITCODE -ne 0 -or "$phpVersionId" -notmatch '^\d+$') { throw "Could not run $Php to check its PHP version." }
+if ([int] $phpVersionId -lt 80300) {
+    throw "$Php is PHP $phpVersion, but this system needs PHP 8.3 or newer. Pass -Php <path to a PHP 8.3+ php.exe>, for example the one Apache uses (see LoadModule php_module in C:\xampp\apache\conf\extra\httpd-xampp.conf)."
+}
+Write-Host "Using PHP $phpVersion at $Php."
 
 $artisan = Join-Path $ProjectPath 'artisan'
 if (-not (Test-Path $artisan)) { throw "artisan not found in $ProjectPath." }

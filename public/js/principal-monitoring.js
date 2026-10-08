@@ -17,7 +17,7 @@ function printAttendanceMonitoring() {
     const table = document.getElementById("attendanceMonitoringTable");
 
     if (!table) {
-        alert("There is nothing to print yet — apply filters first.");
+        showMessageModal("There is nothing to print yet — apply filters first.", { title: "Nothing to Print" });
         return;
     }
 

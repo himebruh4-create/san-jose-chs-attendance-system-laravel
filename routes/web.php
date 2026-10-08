@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [SuperAdmin\DashboardController::class, 'show'])->name('dashboard');
         Route::get('/attendance-report', [SuperAdmin\AttendanceReportController::class, 'show'])->name('attendance-report');
         Route::get('/adjustments', [SuperAdmin\AdjustmentsPageController::class, 'show'])->name('adjustments');
+        Route::get('/scan-photos', [SuperAdmin\ScanPhotosController::class, 'show'])->name('scan-photos');
         Route::get('/reports', [SuperAdmin\ReportsController::class, 'show'])->name('reports');
 
         Route::get('/personnel', [SuperAdmin\PersonnelController::class, 'index'])->name('personnel');
@@ -102,6 +103,7 @@ Route::middleware('auth')->group(function () {
     // ------------------------------------------------------------ Principal
     Route::prefix('principal')->name('principal.')->middleware('role:principal')->group(function () {
         Route::get('/dashboard', [Principal\DashboardController::class, 'show'])->name('dashboard');
+        Route::get('/dashboard/scan-verification', Principal\ScanVerificationController::class)->name('scan-verification-counts');
         Route::get('/monitoring', [Principal\MonitoringController::class, 'show'])->name('monitoring');
         Route::get('/personnel', [Principal\PersonnelController::class, 'show'])->name('personnel');
         Route::get('/reports', [Principal\ReportsController::class, 'show'])->name('reports');

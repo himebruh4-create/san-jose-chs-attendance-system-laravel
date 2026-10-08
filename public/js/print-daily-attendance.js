@@ -1,5 +1,5 @@
-/* Print Daily Attendance (Admin dashboard). Moved from admin/admin-dashboard.php;
-   the page defines printedBy. */
+/* Print Daily Attendance (Admin and Super Admin dashboards). Moved from
+   admin/admin-dashboard.php; the page defines printedBy. */
 
 function printAttendance() {
     const content = document.getElementById("printArea").innerHTML;
