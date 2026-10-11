@@ -2,8 +2,6 @@
 
 body { margin: 0; background: #f5f0e1; }
 
-.main { margin-left: 240px; padding: 20px; }
-
 .card {
     background: white;
     padding: 20px;
@@ -99,7 +97,7 @@ body { margin: 0; background: #f5f0e1; }
     background: white;
     border-radius: 14px;
     padding: 20px 22px;
-    width: min(420px, calc(100% - 32px));
+    width: min(90vw, 420px);
     box-shadow: 0 20px 60px rgba(20, 57, 15, 0.2);
     position: relative;
 }
@@ -180,7 +178,7 @@ body { margin: 0; background: #f5f0e1; }
 
 #departmentOptionsCard table.dept-table thead th { position: sticky; top: 0; z-index: 1; }
 
-@media (max-width: 600px) {
+@media (max-width: 767.98px) {
     #departmentOptionsCard .table-scroll { max-height: 260px; }
 }
 
@@ -192,7 +190,7 @@ body { margin: 0; background: #f5f0e1; }
 
 #recycleBinCard table.dept-table thead th { position: sticky; top: 0; z-index: 1; }
 
-@media (max-width: 600px) {
+@media (max-width: 767.98px) {
     #recycleBinCard .table-scroll { max-height: 260px; }
 }
 
@@ -207,7 +205,7 @@ body { margin: 0; background: #f5f0e1; }
 
 #databaseBackupCard a.add-option-btn { display: inline-block; text-decoration: none; }
 
-@media (max-width: 600px) {
+@media (max-width: 767.98px) {
     #databaseBackupCard .table-scroll { max-height: 260px; }
 }
 
@@ -252,20 +250,6 @@ table.dept-table tbody tr:hover { background: #fbf8f0; }
     border-radius: 8px;
     margin-bottom: 6px;
 }
-
-/* ==========================
-   RESPONSIVE
-========================== */
-
-@media (max-width: 992px) {
-    .main {
-        margin-left: 0;
-        width: 100%;
-        padding: 76px 16px 30px;
-    }
-}
-
-
 
 /* Kiosk Devices + Audit Log cards (new in the Laravel version) */
 .kiosk-current { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 12px; background: #e8f5e9; color: #1b5e20; font-size: 11.5px; font-weight: 700; }

@@ -97,7 +97,7 @@
 #viewerCaption { text-align: center; color: #14390f; font-weight: 600; margin: 12px 0; }
 .viewer-close { display: block; margin: 0 auto; padding: 8px 18px; border: none; border-radius: 10px; background: #14390f; color: #fff; cursor: pointer; }
 
-@media (max-width: 600px) {
+@media (max-width: 767.98px) {
     .scan-photos-header h1 { font-size: 22px; }
     .scan-photos-filters select { flex: 1 1 100%; }
     .scan-photo-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }

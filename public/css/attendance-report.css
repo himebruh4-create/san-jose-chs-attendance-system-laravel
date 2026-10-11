@@ -12,8 +12,6 @@
 
 body { margin: 0; background: #f5f0e1; color: #3a3527; }
 
-.main { margin-left: 240px; padding: 28px 32px 60px; }
-
 /* PAGE HEADER */
 
 .page-header { margin-bottom: 22px; }
@@ -304,7 +302,7 @@ input[type="month"]:focus {
     background: #fff;
     border-radius: 14px;
     padding: 22px 24px;
-    width: min(500px, calc(100% - 32px));
+    width: min(90vw, 500px);
     max-height: 85vh;
     overflow-y: auto;
     box-shadow: 0 20px 60px rgba(20, 57, 15, 0.22);
@@ -333,12 +331,11 @@ input[type="month"]:focus {
 
 /* RESPONSIVE */
 
-@media (max-width: 1000px) {
+@media (max-width: 1023.98px) {
     .summary-box { flex-direction: column; align-items: flex-start; }
 }
 
-@media (max-width: 700px) {
-    .main { margin-left: 0; padding: 20px 14px 50px; }
+@media (max-width: 767.98px) {
     .search-bar-row { flex-direction: column; align-items: stretch; }
     .month-picker-row { flex-direction: column; align-items: stretch; }
     .teacher-header { flex-direction: column; align-items: flex-start; }
@@ -346,13 +343,6 @@ input[type="month"]:focus {
     .report-header-row { flex-direction: column; align-items: flex-start; }
 }
 
-/* Below 992px the sidebar hides behind the mobile topbar (see
-   includes/sidebar.php); .main must reclaim its left margin and
-   clear the fixed topbar regardless of which narrower rule above
-   also applies. Placed last so padding-top always wins. */
-@media (max-width: 992px) {
-    .main { margin-left: 0; width: 100%; padding-top: 76px; }
-}
 
     
 

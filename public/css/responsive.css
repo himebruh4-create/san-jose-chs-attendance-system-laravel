@@ -1,0 +1,494 @@
+/* ==============================================================
+   RESPONSIVE — shared by every signed-in page (layouts/app.blade.php
+   loads it after the page's own stylesheet, so these rules adjust any
+   page's styles at the same specificity).
+
+   Breakpoints (the same everywhere in the app):
+     480px   small phones
+     768px   tablets
+     1024px  small laptops (below it the sidebar becomes a drawer)
+     1366px  laptops
+     1920px  large desktops
+   The page shell itself (sidebar, .main / .main-content offset and
+   padding, 1600px content cap) lives in app-shell.css.
+
+   Everything is screen-only: printed documents (badges, rosters, DTRs,
+   summaries) are separate documents and never see these rules.
+   ============================================================== */
+
+@media screen {
+
+    /* ------------------------------
+       BASE
+       Zero specificity: a page that sets its own box-sizing keeps it.
+    ------------------------------ */
+
+    :where(body[data-role]) *,
+    :where(body[data-role]) *::before,
+    :where(body[data-role]) *::after {
+        box-sizing: border-box;
+    }
+
+    :where(body[data-role]) :is(img, svg, video, canvas) {
+        max-width: 100%;
+    }
+
+    /* Page titles scale between phone and monitor */
+    .page-header h1,
+    .main > h1,
+    .main-content > h1,
+    .adjustments-header h1,
+    .scan-photos-header h1,
+    .page-header-row h1 {
+        font-size: clamp(1.375rem, 1.05rem + 1.1vw, 1.875rem);
+        overflow-wrap: break-word;
+    }
+
+    /* ------------------------------
+       STAT CARDS
+       Total Personnel + two stat groups (Super Admin / Admin dashboards,
+       Admin / Principal personnel lists):
+       one row from 1366px, then 2 + 1, then stacked below 768px.
+    ------------------------------ */
+
+    .stats-wrapper:has(> .stat-headline) {
+        display: grid;
+        grid-template-columns: minmax(200px, 0.6fr) minmax(0, 1fr) minmax(0, 1.4fr);
+        gap: 20px;
+    }
+
+    .stats-wrapper:has(> .stat-headline) > * {
+        min-width: 0;
+    }
+
+    .stat-group-boxes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 76px), 1fr));
+        gap: 10px;
+    }
+
+    .stat-box-mini {
+        min-width: 0;
+        padding: 12px 6px;
+    }
+
+    /* ------------------------------
+       DASHBOARD CARD ROWS
+       Two cards side by side; a row of three goes 3 across from 1366px
+       (2 + 1 full width below that). One column on phones.
+    ------------------------------ */
+
+    .charts-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .charts-row .card {
+        min-width: 0;
+        margin-bottom: 0;
+    }
+
+    /* Charts fill their card; the height follows the screen size
+       (Chart.js runs with responsive: true, maintainAspectRatio: false). */
+    .chart-container {
+        max-width: 100%;
+        height: clamp(240px, 12vw + 120px, 340px);
+    }
+
+    /* ------------------------------
+       TABLES
+    ------------------------------ */
+
+    /* Daily logs: the list scrolls sideways inside its card */
+    .live-logs-card #printArea {
+        overflow-x: auto;
+    }
+
+    /* ------------------------------
+       FORMS
+    ------------------------------ */
+
+    :where(body[data-role]) :is(input, select, textarea) {
+        max-width: 100%;
+    }
+
+    .search-bar-row input[type="text"] {
+        min-width: min(100%, 220px);
+    }
+
+    .search-form input[type="text"] {
+        min-width: 0;
+        flex: 1 1 200px;
+    }
+
+    .kiosk-register-row input {
+        min-width: min(100%, 240px);
+        flex: 1 1 240px;
+    }
+
+    /* ------------------------------
+       HEADERS, TABS AND TOOLBARS WRAP INSTEAD OF OVERFLOWING
+    ------------------------------ */
+
+    .tabs,
+    .adjustments-header,
+    .section-header,
+    .leave-item,
+    .upcoming-event,
+    .schedule-change-head {
+        flex-wrap: wrap;
+    }
+
+    .adjustments-header {
+        gap: 12px 20px;
+    }
+
+    .leave-item,
+    .upcoming-event {
+        gap: 6px 12px;
+    }
+
+    /* ------------------------------
+       MODALS (.modal-backdrop > .modal / .holiday-modal)
+       Width is min(90vw, page max). The box scrolls inside 90% of the
+       screen height while its close button (top) and action buttons
+       (bottom) stay in view.
+    ------------------------------ */
+
+    .modal-backdrop {
+        padding: clamp(8px, 3vw, 20px);
+    }
+
+    .modal-backdrop > .modal,
+    .modal-backdrop > .holiday-modal {
+        --modal-pad-y: 24px;
+        --modal-pad-x: clamp(16px, 4vw, 28px);
+        max-width: 90vw;
+        max-height: 90vh;
+        max-height: 90dvh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: var(--modal-pad-y) var(--modal-pad-x);
+    }
+
+    /* The action bar supplies the bottom spacing, so it sits flush with
+       the box's bottom edge */
+    .modal-backdrop > .modal:has(.modal-actions),
+    .modal-backdrop > .holiday-modal:has(.modal-actions) {
+        padding-bottom: 0;
+    }
+
+    .modal-backdrop .modal-close {
+        position: sticky;
+        top: 8px;
+        float: right;
+        z-index: 3;
+        width: 44px;
+        height: 44px;
+        margin: calc(8px - var(--modal-pad-y)) calc(8px - var(--modal-pad-x)) 4px 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(20, 57, 15, 0.16);
+    }
+
+    .modal-backdrop .modal-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        flex-wrap: wrap;
+        background: #fff;
+        border-top: 1px solid #f1ede0;
+        margin: 18px calc(-1 * var(--modal-pad-x)) 0;
+        padding: 12px var(--modal-pad-x) var(--modal-pad-y);
+    }
+
+    /* Attendance Adjustment modals: fixed header and footer, the form
+       between them scrolls. */
+    .adjustment-modal-backdrop {
+        padding: clamp(8px, 3vw, 20px);
+    }
+
+    .adjustment-modal {
+        display: flex;
+        flex-direction: column;
+        max-height: 90vh;
+        max-height: 90dvh;
+        overflow: hidden;
+    }
+
+    .adjustment-modal-header,
+    .adjustment-modal-footer {
+        flex: none;
+    }
+
+    .adjustment-modal-header {
+        gap: 12px;
+        padding: clamp(16px, 3vw, 22px) clamp(16px, 4vw, 25px);
+    }
+
+    .adjustment-modal > .adjustment-form {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: clamp(16px, 4vw, 25px);
+    }
+
+    .adjustment-modal-footer {
+        flex-wrap: wrap;
+        padding: 14px clamp(16px, 4vw, 25px);
+    }
+
+    .adjustment-close-btn {
+        flex: none;
+        min-width: 44px;
+        min-height: 44px;
+        margin: -10px -12px 0 0;
+    }
+
+    /* DTR Date Remarks (built by dtr-view.js, which injects its own
+       styles; the #dtrRemarkModal prefix outranks them). */
+    #dtrRemarkModal .dtr-remark-overlay {
+        padding: clamp(8px, 3vw, 20px);
+    }
+
+    #dtrRemarkModal .dtr-remark-box {
+        --modal-pad: clamp(16px, 4vw, 25px);
+        width: min(90vw, 600px);
+        max-height: 90vh;
+        max-height: 90dvh;
+        overscroll-behavior: contain;
+        padding: 0 var(--modal-pad);
+    }
+
+    #dtrRemarkModal .dtr-remark-header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        gap: 12px;
+        background: #fff;
+        margin: 0 calc(-1 * var(--modal-pad)) 10px;
+        padding: var(--modal-pad) var(--modal-pad) 10px;
+    }
+
+    #dtrRemarkModal .dtr-close-btn {
+        flex: none;
+        min-width: 44px;
+        min-height: 44px;
+        line-height: 1;
+    }
+
+    #dtrRemarkModal .dtr-remark-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        flex-wrap: wrap;
+        background: #fff;
+        border-top: 1px solid #eee;
+        margin: 25px calc(-1 * var(--modal-pad)) 0;
+        padding: 12px var(--modal-pad) var(--modal-pad);
+    }
+
+    #dtrRemarkModal .remove-dtr-remark {
+        min-height: 40px;
+    }
+
+    /* Message boxes built in JS (app-shell.js, dtr-view.js) */
+    #appMessageModal > div,
+    #dtrErrorModal > div {
+        max-height: 90vh;
+        max-height: 90dvh;
+        overflow-y: auto;
+    }
+
+    /* Scan Photos enlarged view */
+    .scan-photo-viewer {
+        width: min(90vw, 960px);
+        max-height: 90vh;
+        max-height: 90dvh;
+        overflow-y: auto;
+        padding: clamp(10px, 3vw, 18px);
+    }
+
+    .viewer-close {
+        position: sticky;
+        bottom: 0;
+        min-height: 44px;
+    }
+}
+
+/* ------------------------------
+   LAPTOPS AND UP (1366px+)
+------------------------------ */
+
+@media screen and (min-width: 1366px) {
+    .charts-row:has(> .card:nth-child(3):last-child) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* ------------------------------
+   BELOW 1366px
+------------------------------ */
+
+@media screen and (max-width: 1365.98px) {
+    .stats-wrapper:has(> .stat-headline) {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    }
+
+    .stats-wrapper:has(> .stat-headline) > :last-child {
+        grid-column: 1 / -1;
+    }
+
+    .charts-row > .card:nth-child(3):last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+/* ------------------------------
+   TABLETS AND PHONES (below 1024px), and any touch screen:
+   finger-sized buttons, one-line table headers.
+------------------------------ */
+
+@media screen and (max-width: 1023.98px), screen and (pointer: coarse) {
+    .btn,
+    .btn-sm,
+    .review-btn,
+    .delete-adjustment-btn,
+    .confirm-absent-btn,
+    .deactivate-option-btn,
+    .add-adjustment-btn,
+    .cancel-adjustment-btn,
+    .save-adjustment-btn,
+    .dtr-btn,
+    .generate-report-btn,
+    .print-roster-btn,
+    .print-btn,
+    .apply-btn,
+    .tab-btn,
+    .dept-tab-btn,
+    .add-option-btn,
+    .toggle-btn,
+    .filter-btn,
+    .search-form button,
+    .modal-actions button,
+    .review-reminder-actions a,
+    .review-reminder-actions button {
+        min-height: 44px;
+    }
+
+    .btn,
+    .btn-sm {
+        height: auto;
+    }
+
+    .clear-link,
+    .page-btn,
+    .pagination a,
+    .pagination span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .scroll-btn,
+    .day-step {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+@media screen and (max-width: 1023.98px) {
+    /* Headers stay on one line, so a wide table scrolls sideways in its
+       wrapper instead of squashing its columns. */
+    :is(.table-scroll, .table-scroll-wrapper, .adjustments-table-wrapper,
+        .pending-scroll-wrapper, .mini-table-wrapper, .live-logs-card) th {
+        white-space: nowrap;
+    }
+}
+
+/* ------------------------------
+   BELOW 768px (tablet portrait and phones)
+------------------------------ */
+
+@media screen and (max-width: 767.98px) {
+    .stats-wrapper:has(> .stat-headline),
+    .charts-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* 16px form text stops phones from zooming in on focus */
+    :where(body[data-role]) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+        font-size: 16px;
+    }
+
+    .live-logs-card table {
+        table-layout: auto;
+        min-width: 600px;
+    }
+
+    .search-form input[type="text"] {
+        max-width: none;
+        flex-basis: 100%;
+    }
+
+    /* Principal: Attendance Monitoring filters stack */
+    .filter-row .filter-group {
+        flex: 1 1 100%;
+    }
+
+    .filter-row .filter-group :is(input, select) {
+        width: 100%;
+    }
+
+    .filter-row .apply-btn,
+    .filter-row .print-btn {
+        flex: 1 1 auto;
+    }
+
+    .section-header-actions {
+        flex-shrink: 1;
+    }
+
+    /* DTR Date Remarks rows go to one column (the same layout dtr-view.js
+       switches to at 600px) */
+    #dtrRemarkModal .dtr-remark-row {
+        grid-template-columns: 1fr 40px;
+    }
+
+    #dtrRemarkModal .remark-normal-date,
+    #dtrRemarkModal .dtr-remark-row > div:nth-child(2),
+    #dtrRemarkModal .dtr-other-input {
+        grid-column: 1 / 2;
+    }
+
+    #dtrRemarkModal .leave-fields,
+    #dtrRemarkModal .ob-fields {
+        grid-column: 1 / 2;
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ------------------------------
+   SMALL PHONES (below 480px)
+------------------------------ */
+
+@media screen and (max-width: 479.98px) {
+    .card,
+    .dashboard-card {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .modal-actions > button,
+    .modal-actions > .btn,
+    .adjustment-modal-footer > button,
+    #dtrRemarkModal .dtr-remark-actions > button {
+        flex: 1 1 auto;
+    }
+}

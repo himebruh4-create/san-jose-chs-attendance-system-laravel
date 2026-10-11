@@ -622,12 +622,12 @@ tbody tr:nth-child(1) td {
 
 /* Responsive */
 
-@media (max-width: 700px) {
+@media (max-width: 767.98px) {
     .dashboard-content { padding: 24px 18px 24px 70px; }
     .menu-trigger { top: 14px; left: 14px; width: 42px; height: 42px; }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 767.98px) {
     .barcode-section { flex-direction: column; align-items: stretch; }
     .barcode-section button { justify-content: center; }
     .scan-card { padding: 24px; }
@@ -653,7 +653,7 @@ tbody tr:nth-child(1) td {
     margin-top: 2px;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 767.98px) {
     .live-clock { text-align: left; }
     .live-clock .clock-time { font-size: 18px; }
     .live-clock .clock-date { font-size: 13px; }
@@ -719,6 +719,103 @@ body::before {
     color: #8a5a00;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 767.98px) {
     .camera-box video { width: 100%; max-width: 320px; height: auto; aspect-ratio: 4 / 3; }
+}
+
+/* ==============================================================
+   RESPONSIVE (screen only)
+   Breakpoints match the rest of the app: 480, 768, 1024, 1366, 1920.
+   Laptop: everything fits on one screen. Wall monitor: content is
+   centered and the scan result is large enough to read from a step
+   or two away.
+   ============================================================== */
+
+@media screen {
+    .dashboard-content {
+        max-width: 1680px;
+        margin-inline: auto;
+    }
+
+    .menu-trigger,
+    .sidebar-close {
+        width: 46px;
+        height: 46px;
+    }
+
+    .table-card-header {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .eye-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .camera-box video {
+        width: clamp(280px, 22vw, 480px);
+        height: auto;
+        aspect-ratio: 4 / 3;
+    }
+
+    /* Scan result / weekly DTR modal */
+    .modal {
+        padding: clamp(8px, 3vw, 20px);
+    }
+
+    .modal-content {
+        width: min(90vw, clamp(650px, 50vw, 1100px));
+        max-width: none;
+        max-height: 90vh;
+        max-height: 90dvh;
+        padding: clamp(20px, 2.4vw, 46px) clamp(18px, 3vw, 52px);
+    }
+
+    .modal-content h2 {
+        font-size: clamp(1.4rem, 0.85rem + 1.25vw, 2.75rem);
+    }
+
+    #message {
+        font-size: clamp(14px, 0.55rem + 0.6vw, 24px);
+        overflow-x: auto;
+    }
+
+    .photo-pair figure {
+        flex-basis: clamp(130px, 13vw, 300px);
+    }
+
+    .photo-pair figcaption,
+    .scan-flag {
+        font-size: clamp(12px, 0.45rem + 0.4vw, 17px);
+    }
+}
+
+/* Large desktop monitors: bigger clock, title and barcode field */
+@media screen and (min-width: 1920px) {
+    .page-header h1 { font-size: 38px; }
+    .page-header p { font-size: 17px; }
+    .live-clock .clock-time { font-size: 40px; }
+    .barcode-section input { font-size: 26px; padding: 24px 26px; }
+    .barcode-section button { font-size: 20px; padding: 24px 40px; }
+    .scan-card-header h2 { font-size: 22px; }
+    .scan-card-header p,
+    .scan-hint { font-size: 15px; }
+    table { font-size: 15px; }
+}
+
+/* Phones: the content starts under the menu button instead of beside it */
+@media screen and (max-width: 479.98px) {
+    .dashboard-content { padding: 72px 14px 24px; }
+    .scan-card { padding: 20px 16px; }
+    .page-header h1 { font-size: 24px; }
+    .barcode-section input { font-size: 18px; padding: 16px 18px; }
+    .barcode-section button { padding: 16px 20px; }
+    #message { padding: 12px; }
+    #message th,
+    #message td { padding: 8px 6px; }
+    .photo-pair { gap: 10px; }
 }

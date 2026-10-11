@@ -656,7 +656,7 @@
 
 <div class="adjustment-modal-backdrop" id="confirmAbsentModal">
 
-    <div class="adjustment-modal" style="width: min(420px, 92%);">
+    <div class="adjustment-modal" style="width: min(90vw, 420px);">
 
         <div class="adjustment-modal-header">
 
@@ -699,7 +699,7 @@
 
 <div class="adjustment-modal-backdrop" id="deleteAdjustmentModal">
 
-    <div class="adjustment-modal" style="width: min(420px, 92%);">
+    <div class="adjustment-modal" style="width: min(90vw, 420px);">
 
         <div class="adjustment-modal-header">
 
@@ -741,7 +741,7 @@
 <!-- APPLICATION ERROR MODAL -->
 <div class="adjustment-modal-backdrop" id="appErrorModal">
 
-    <div class="adjustment-modal" style="width: min(420px, 92%);">
+    <div class="adjustment-modal" style="width: min(90vw, 420px);">
 
         <div class="adjustment-modal-header">
             <div>

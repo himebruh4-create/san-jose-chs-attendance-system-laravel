@@ -11,8 +11,6 @@
 
 body { margin: 0; background: #f5f0e1; color: #333; }
 
-.main-content { margin-left: 240px; min-height: 100vh; padding: 30px; }
-
 .adjustments-header {
     display: flex;
     justify-content: space-between;
@@ -108,7 +106,7 @@ tbody tr:hover { background: #fbf8f0; }
 .adjustment-modal-backdrop.active { display: flex; }
 
 .adjustment-modal {
-    width: min(700px, 92%);
+    width: min(90vw, 700px);
     max-height: 90vh;
     overflow-y: auto;
     background: white;
@@ -132,7 +130,7 @@ tbody tr:hover { background: #fbf8f0; }
 
 .adjustment-close-btn:hover { color: #14390f; }
 
-.adjustment-form { padding: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.adjustment-form { padding: 25px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 
 .form-group { display: flex; flex-direction: column; }
 
@@ -311,8 +309,8 @@ tbody tr:hover { background: #fbf8f0; }
    RESPONSIVE
 ========================== */
 
-@media (max-width: 700px) {
-    .adjustment-form { grid-template-columns: 1fr; }
+@media (max-width: 767.98px) {
+    .adjustment-form { grid-template-columns: minmax(0, 1fr); }
 }
     
 

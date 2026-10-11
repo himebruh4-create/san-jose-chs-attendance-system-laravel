@@ -11,6 +11,8 @@
 <link rel="stylesheet" href="{{ asset_v('css/app-shell.css') }}">
 <script src="{{ asset_v('js/app-shell.js') }}"></script>
 @stack('head')
+{{-- Last, so its shared screen-size rules can adjust any page's own styles. --}}
+<link rel="stylesheet" href="{{ asset_v('css/responsive.css') }}">
 </head>
 <body data-role="{{ auth()->user()?->role }}" @yield('body-attributes')>
 

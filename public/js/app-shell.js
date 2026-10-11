@@ -91,6 +91,19 @@ function unlockBodyScroll() {
     }
 }
 
+/* Below 1024px the sidebar is a drawer behind the hamburger — the same
+   breakpoint as app-shell.css. */
+var SIDEBAR_DRAWER_QUERY = '(max-width: 1023.98px)';
+
+function isSidebarDrawer() {
+    return window.matchMedia(SIDEBAR_DRAWER_QUERY).matches;
+}
+
+function setHamburgerExpanded(isOpen) {
+    var button = document.querySelector('.hamburger-btn');
+    if (button) button.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+
 function toggleSidebar() {
     var sidebar = document.getElementById('mainSidebar');
     var overlay = document.getElementById('sidebarOverlay');
@@ -99,6 +112,7 @@ function toggleSidebar() {
     var isOpen = sidebar.classList.toggle('open');
     overlay.classList.toggle('show', isOpen);
     document.body.style.overflow = isOpen ? 'hidden' : '';
+    setHamburgerExpanded(isOpen);
 }
 
 function closeSidebar() {
@@ -109,6 +123,7 @@ function closeSidebar() {
     sidebar.classList.remove('open');
     overlay.classList.remove('show');
     document.body.style.overflow = '';
+    setHamburgerExpanded(false);
 }
 
 /* =========================================================
@@ -190,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Auto-close the mobile sidebar when a nav link is tapped
     document.querySelectorAll('.sidebar-menu a').forEach(function (link) {
         link.addEventListener('click', function () {
-            if (window.innerWidth <= 992) {
+            if (isSidebarDrawer()) {
                 closeSidebar();
             }
         });
@@ -199,7 +214,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // If the window is resized back to desktop while the mobile
     // sidebar is open, reset it so it doesn't stay stuck open.
     window.addEventListener('resize', function () {
-        if (window.innerWidth > 992) {
+        if (!isSidebarDrawer()) {
+            closeSidebar();
+        }
+    });
+
+    // Escape closes the open drawer, like tapping the overlay.
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && document.querySelector('.sidebar.open')) {
             closeSidebar();
         }
     });

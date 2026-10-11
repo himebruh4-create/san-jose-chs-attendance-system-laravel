@@ -1,8 +1,6 @@
 
 body { margin: 0; background: #f5f0e1; color: #3a3527; }
 
-.main { margin-left: 240px; padding: 28px 32px 60px; }
-
 .page-header { margin-bottom: 22px; }
 
 .page-header .eyebrow { font-size: 12px; font-weight: 700; color: #e8a317; letter-spacing: 0.6px; }
@@ -80,7 +78,7 @@ body { margin: 0; background: #f5f0e1; color: #3a3527; }
 
 .account-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 24px;
     align-items: start;
 }
@@ -130,9 +128,8 @@ body { margin: 0; background: #f5f0e1; color: #3a3527; }
 
 .security-note:first-of-type { margin-top: 0; }
 
-@media (max-width: 992px) {
-    .main { margin-left: 0; width: 100%; padding: 76px 16px 30px; }
-    .account-grid { grid-template-columns: 1fr; }
+@media (max-width: 1023.98px) {
+    .account-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 .toast {
@@ -171,7 +168,7 @@ body { margin: 0; background: #f5f0e1; color: #3a3527; }
     background: #fff;
     border-radius: 14px;
     padding: 22px 24px;
-    width: min(420px, 100%);
+    width: min(90vw, 420px);
     box-shadow: 0 20px 60px rgba(20, 57, 15, 0.22);
 }
 

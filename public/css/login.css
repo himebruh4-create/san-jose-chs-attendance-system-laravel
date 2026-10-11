@@ -201,4 +201,18 @@ body::before {
     background: #e6dcc4;
 }
 
+/* ==========================
+   RESPONSIVE (screen only)
+========================== */
 
+@media screen and (max-width: 767.98px) {
+    /* Gap around the card on phones */
+    body { padding: 16px; }
+
+    /* 16px form text stops phones from zooming in on focus */
+    .login-card input { font-size: 16px; }
+}
+
+@media screen and (max-width: 479.98px) {
+    .login-card { padding: 32px 22px; }
+}

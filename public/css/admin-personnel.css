@@ -12,8 +12,6 @@
 
 body { margin: 0; background: #f5f0e1; color: #3a3527; }
 
-.main { margin-left: 240px; padding: 28px 32px 60px; }
-
 /* PAGE HEADER */
 
 .page-header { margin-bottom: 22px; }
@@ -180,21 +178,9 @@ table.teacher-table tbody tr:hover td { background: #fbf8f0; }
 
 /* RESPONSIVE */
 
-@media (max-width: 1000px) {
-    .stats-wrapper { flex-direction: column; }
-}
-
-@media (max-width: 700px) {
-    .main { margin-left: 0; padding: 20px 14px 50px; }
+@media (max-width: 767.98px) {
     .search-form { flex-direction: column; align-items: stretch; }
 }
 
-/* Below 992px the sidebar hides behind the mobile topbar (see
-   includes/sidebar.php); .main must reclaim its left margin and
-   clear the fixed topbar regardless of which narrower rule above
-   also applies. Placed last so padding-top always wins. */
-@media (max-width: 992px) {
-    .main { margin-left: 0; width: 100%; padding-top: 76px; }
-}
 
 

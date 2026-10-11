@@ -32,7 +32,7 @@
 
 <!-- Mobile top bar (hamburger) -->
 <div class="mobile-topbar">
-    <button type="button" class="hamburger-btn" onclick="toggleSidebar()" aria-label="Open menu">&#9776;</button>
+    <button type="button" class="hamburger-btn" onclick="toggleSidebar()" aria-label="Open menu" aria-controls="mainSidebar" aria-expanded="false">&#9776;</button>
     <span class="mobile-topbar-title">San Jose CHS</span>
 </div>
 

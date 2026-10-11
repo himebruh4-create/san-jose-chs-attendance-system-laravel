@@ -16,11 +16,6 @@ body {
     color: #3a3527;
 }
 
-.main {
-    margin-left: 240px;
-    padding: 28px 32px 60px;
-}
-
 /* ==========================
    PAGE HEADER
 ========================== */
@@ -185,7 +180,7 @@ label {
 
 .dashboard-two-column {
     display: grid;
-    grid-template-columns: 1.15fr 1fr;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     gap: 22px;
     align-items: start;
 }
@@ -343,7 +338,7 @@ tbody tr:hover { background: #fbf8f0; }
     margin-top: 6px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 767.98px) {
     .schedule-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -438,7 +433,7 @@ tbody tr:hover { background: #fbf8f0; }
     background: #fff;
     border-radius: 16px;
     padding: 26px 28px;
-    width: min(520px, calc(100% - 32px));
+    width: min(90vw, 520px);
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 60px rgba(20, 57, 15, 0.22);
@@ -557,23 +552,15 @@ tbody tr:hover { background: #fbf8f0; }
    RESPONSIVE
 ========================== */
 
-@media (max-width: 1100px) {
-    .dashboard-two-column { grid-template-columns: 1fr; }
+@media (max-width: 1365.98px) {
+    .dashboard-two-column { grid-template-columns: minmax(0, 1fr); }
 }
 
-@media (max-width: 700px) {
-    .main { margin-left: 0; padding: 20px 14px 50px; }
+@media (max-width: 767.98px) {
     .filter-row .field-group { flex: 1 1 100%; }
     .photo-upload-box { flex-direction: column; align-items: flex-start; }
 }
 
-/* Below 992px the sidebar hides behind the mobile topbar (see
-   includes/sidebar.php); .main must reclaim its left margin and
-   clear the fixed topbar regardless of which narrower rule above
-   also applies. Placed last so padding-top always wins. */
-@media (max-width: 992px) {
-    .main { margin-left: 0; width: 100%; padding-top: 76px; }
-}
 
 
 

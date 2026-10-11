@@ -3,8 +3,6 @@
 
 body { margin: 0; background: #f5f0e1; }
 
-.main { margin-left: 240px; padding: 20px; }
-
 .card {
     background: white;
     padding: 20px;
@@ -37,9 +35,14 @@ body { margin: 0; background: #f5f0e1; }
 
 .chart-container { width: 100%; max-width: 700px; height: 360px; margin: 0 auto; position: relative; }
 
+/* Report charts use the card's full width and grow taller on big screens */
+@media screen {
+    .card .chart-container { max-width: 1200px; height: clamp(260px, 18vw + 100px, 460px); }
+}
+
 .status-lists {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
     gap: 15px;
     margin-top: 20px;
 }
@@ -109,20 +112,4 @@ input[type="month"]:focus {
 
 .print-roster-btn:hover { background: #f2c94c; }
 
-/* ==========================
-   RESPONSIVE
-========================== */
-
-@media (max-width: 992px) {
-    .main {
-        margin-left: 0;
-        width: 100%;
-        padding: 76px 16px 30px;
-    }
-}
-
-@media (max-width: 480px) {
-    .chart-container { height: 260px; }
-}
-
-
+/* RESPONSIVE: page layout is in app-shell.css, shared screen-size rules in responsive.css. */

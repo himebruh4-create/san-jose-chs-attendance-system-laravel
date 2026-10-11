@@ -3,8 +3,6 @@
 
 body { margin: 0; background: #f5f0e1; }
 
-.main { margin-left: 240px; padding: 20px; }
-
 .card {
     background: white;
     padding: 20px;
@@ -121,16 +119,4 @@ tbody tr:hover { background: #fbf8f0; }
 
 .results-count { color: #8a7d5c; font-size: 13px; margin-bottom: 12px; }
 
-/* ==========================
-   RESPONSIVE
-========================== */
-
-@media (max-width: 992px) {
-    .main {
-        margin-left: 0;
-        width: 100%;
-        padding: 76px 16px 30px;
-    }
-}
-
-
+/* RESPONSIVE: page layout is in app-shell.css, shared screen-size rules in responsive.css. */

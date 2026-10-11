@@ -3,8 +3,6 @@
 
 body { margin: 0; background: #f5f0e1; }
 
-.main-content { margin-left: 240px; padding: 25px; }
-
 .page-header-row {
     display: flex;
     justify-content: space-between;
@@ -41,11 +39,19 @@ body { margin: 0; background: #f5f0e1; }
 
 /* STAT CARDS */
 
-.stats-wrapper { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 8px; }
+/* Six cards: 6 across, 3 across below 1366px, 2 across below 768px */
+.stats-wrapper { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 15px; margin-bottom: 8px; }
+
+@media (max-width: 1365.98px) {
+    .stats-wrapper { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767.98px) {
+    .stats-wrapper { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 .stat-card {
-    flex: 1;
-    min-width: 150px;
+    min-width: 0;
     border-radius: 12px;
     padding: 18px;
     color: white;
@@ -84,10 +90,10 @@ body { margin: 0; background: #f5f0e1; }
 
 /* TWO COLUMN LAYOUT */
 
-.dashboard-columns { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
+.dashboard-columns { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 
-@media (max-width: 900px) {
-    .dashboard-columns { grid-template-columns: 1fr; }
+@media (max-width: 1023.98px) {
+    .dashboard-columns { grid-template-columns: minmax(0, 1fr); }
 }
 
 .dashboard-card h2 { margin-top: 0; font-size: 18px; color: #14390f; }

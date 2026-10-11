@@ -43,6 +43,11 @@ body {
     padding: 6px 10px;
     margin-right: 10px;
     border-radius: 6px;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .mobile-topbar .hamburger-btn:hover {
@@ -257,8 +262,13 @@ body {
 
 /* ==============================
    MAIN CONTENT
+   The one layout for every page's content wrapper (.main or
+   .main-content): page stylesheets set only their own content styles,
+   never the sidebar offset or page padding.
+   Breakpoints used across the app: 480, 768, 1024, 1366, 1920.
 ============================== */
 
+.main,
 .main-content {
     margin-left: 240px;
     min-height: 100vh;
@@ -269,11 +279,24 @@ body {
     transition: margin-left 0.25s ease;
 }
 
+@media screen {
+    .main,
+    .main-content {
+        --page-gutter: clamp(14px, 2.5vw, 32px);
+        padding: 28px var(--page-gutter) 60px;
+        /* On wide monitors the content stops at 1600px and is centered
+           in the space to the right of the sidebar. */
+        padding-inline: max(var(--page-gutter), calc((100% - 240px - 1600px) / 2));
+    }
+}
+
 /* ==============================
    RESPONSIVE / FULL SCREEN
+   Below 1024px the sidebar becomes a drawer behind the hamburger
+   (app-shell.js uses the same breakpoint).
 ============================== */
 
-@media (max-width: 992px) {
+@media (max-width: 1023.98px) {
 
     .mobile-topbar {
         display: flex;
@@ -288,17 +311,36 @@ body {
         transform: translateX(0);
     }
 
+    .main,
     .main-content {
         margin-left: 0;
         width: 100%;
-        padding: 20px 15px;
-        padding-top: 76px; /* room for the fixed top bar */
+        padding: 76px 15px 40px; /* top: room for the fixed top bar */
+    }
+}
+
+@media screen and (max-width: 1023.98px) {
+    .main,
+    .main-content {
+        padding: 76px var(--page-gutter) 40px;
+    }
+
+    /* Drawer links are finger-sized */
+    .sidebar-menu a {
+        min-height: 44px;
+    }
+
+    .sidebar-logout a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
     }
 }
 
 @media (max-width: 480px) {
+    .main,
     .main-content {
-        padding: 16px 10px;
         padding-top: 72px;
     }
 
