@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\KioskDevice;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -22,6 +23,16 @@ class ScanPhotosPageTest extends TestCase
             'scan_kind' => 'IN',
             'path' => 'scan-photos/2026/10/05/'.uniqid().'.jpg',
         ]);
+    }
+
+    /** A scan photo whose JPEG really exists on the (faked) private disk. */
+    private function storedPhoto(string $bytes = 'jpeg-bytes'): int
+    {
+        Storage::fake('local');
+        $path = 'scan-photos/2026/10/05/stored.jpg';
+        Storage::disk('local')->put($path, $bytes);
+
+        return $this->photo(['path' => $path]);
     }
 
     public function test_the_super_admin_sees_one_days_photos_newest_first(): void
@@ -105,6 +116,32 @@ class ScanPhotosPageTest extends TestCase
         $this->actingAs($this->account('admin'))->get(route('superadmin.scan-photos'))->assertRedirect(route('admin.dashboard'));
         $this->flushSession();
         $this->actingAs($this->account('principal'))->get(route('superadmin.scan-photos'))->assertRedirect(route('principal.dashboard'));
+    }
+
+    public function test_a_logged_out_request_for_a_scan_photo_returns_401(): void
+    {
+        $photoId = $this->storedPhoto();
+
+        $this->get(route('photos.scan', $photoId))->assertUnauthorized();
+    }
+
+    public function test_the_principal_is_redirected_away_from_a_scan_photo(): void
+    {
+        $photoId = $this->storedPhoto();
+
+        $this->actingAs($this->account('principal'))
+            ->get(route('photos.scan', $photoId))
+            ->assertRedirectToRoute('principal.dashboard');
+    }
+
+    public function test_the_super_admin_gets_the_scan_photo_image(): void
+    {
+        $photoId = $this->storedPhoto('fake-jpeg-bytes');
+
+        $response = $this->actingAs($this->account('superadmin'))->get(route('photos.scan', $photoId));
+
+        $response->assertHeader('Content-Type', 'image/jpeg');
+        $this->assertSame('fake-jpeg-bytes', $response->streamedContent());
     }
 
     public function test_an_invalid_date_is_rejected(): void
