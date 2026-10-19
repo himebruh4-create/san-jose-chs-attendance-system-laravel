@@ -148,10 +148,10 @@
                         </td>
 
                         <td>
-                            <div class="action-group">
+                            <div class="action-group action-buttons">
 
-                                <button type="button" class="btn btn-outline btn-sm edit-button" data-id="{{ (int) $teacher['id'] }}">
-                                    <i class="fa-solid fa-pen"></i> Edit
+                                <button type="button" class="btn btn-outline btn-sm edit-button" data-id="{{ (int) $teacher['id'] }}" aria-label="Edit" title="Edit">
+                                    <i class="fa-solid fa-pen" aria-hidden="true"></i> <span class="btn-label">Edit</span>
                                 </button>
 
                                 <!-- Submitted via JS after the confirmation modal -->
@@ -161,17 +161,17 @@
                                     <input type="hidden" name="id" value="{{ (int) $teacher['id'] }}">
                                 </form>
 
-                                <button type="button" class="btn btn-gold btn-sm"
+                                <button type="button" class="btn btn-gold btn-sm" aria-label="Regenerate barcode" title="Regenerate barcode"
                                     onclick="openRegenerateModal({{ (int) $teacher['id'] }}, {{ Js::from($teacher['fullname']) }})">
-                                    <i class="fa-solid fa-barcode"></i> Regenerate
+                                    <i class="fa-solid fa-barcode" aria-hidden="true"></i> <span class="btn-label">Regenerate</span>
                                 </button>
 
-                                <button type="button" class="btn btn-danger btn-sm"
+                                <button type="button" class="btn btn-danger btn-sm" aria-label="Archive" title="Archive"
                                     onclick="openDeleteModal({{ (int) $teacher['id'] }}, {{ Js::from($teacher['fullname']) }})">
-                                    <i class="fa-solid fa-trash"></i> Archive
+                                    <i class="fa-solid fa-trash" aria-hidden="true"></i> <span class="btn-label">Archive</span>
                                 </button>
 
-                                <button type="button" class="btn btn-primary btn-sm"
+                                <button type="button" class="btn btn-primary btn-sm" aria-label="Print badge" title="Print badge"
                                     data-idnumber="{{ $teacher['id_number'] }}"
                                     data-name="{{ $teacher['fullname'] }}"
                                     data-department="{{ $teacher['department'] }}"
@@ -180,7 +180,7 @@
                                     data-barcode="{{ $teacher['barcode'] }}"
                                     data-photo="{{ $teacher['photo'] ?? '' }}"
                                     onclick="printTeacherBadge(this)">
-                                    <i class="fa-solid fa-print"></i> Print
+                                    <i class="fa-solid fa-print" aria-hidden="true"></i> <span class="btn-label">Print</span>
                                 </button>
 
                             </div>
@@ -379,10 +379,12 @@
                                         <td>{{ date('M d, Y', strtotime($leave->leave_until)) }}</td>
                                         <td><span class="pill pill-leave">On Leave</span></td>
                                         <td>
-                                            <button type="button" class="btn btn-danger btn-sm"
-                                                onclick="openDeleteModal({{ (int) $leave->teacher_id }}, {{ Js::from($leave->fullname) }})">
-                                                <i class="fa-solid fa-trash"></i> Archive
-                                            </button>
+                                            <div class="action-buttons">
+                                                <button type="button" class="btn btn-danger btn-sm" aria-label="Archive" title="Archive"
+                                                    onclick="openDeleteModal({{ (int) $leave->teacher_id }}, {{ Js::from($leave->fullname) }})">
+                                                    <i class="fa-solid fa-trash" aria-hidden="true"></i> <span class="btn-label">Archive</span>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach

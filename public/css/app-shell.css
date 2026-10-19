@@ -402,19 +402,19 @@ body.modal-open {
    Any two buttons sitting next to each other get a small, consistent
    gap automatically — e.g. table-row Edit/Archive pairs, which had
    no spacing at all. Excludes containers that already provide their
-   own intentional flex `gap` (tabs, scroll controls, modal actions),
-   so spacing there isn't doubled up.
+   own intentional flex `gap` (tabs, scroll controls, modal actions,
+   table action buttons), so spacing there isn't doubled up.
 ============================== */
-:not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > button + button,
-:not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > .btn + .btn,
-:not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > a.btn + a.btn {
+:not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions, .action-buttons) > button + button,
+:not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions, .action-buttons) > .btn + .btn,
+:not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions, .action-buttons) > a.btn + a.btn {
     margin-left: 8px;
 }
 
 @media (max-width: 480px) {
-    :not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > button + button,
-    :not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > .btn + .btn,
-    :not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions) > a.btn + a.btn {
+    :not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions, .action-buttons) > button + button,
+    :not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions, .action-buttons) > .btn + .btn,
+    :not(.dept-tabs, .tabs, .pending-scroll-controls, .scroll-controls, .modal-actions, .action-buttons) > a.btn + a.btn {
         margin-left: 6px;
     }
 }

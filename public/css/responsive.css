@@ -112,6 +112,48 @@
         overflow-x: auto;
     }
 
+    /* Action columns: the buttons of a row sit in .action-buttons, one
+       left-aligned row with the same height, corners and gap. The column
+       is only as wide as its buttons; on small screens the table scrolls
+       sideways instead of the buttons wrapping. A button with an icon
+       keeps its text in .btn-label (icon only below 1366px). */
+    .action-buttons {
+        --action-btn-height: 34px;
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 6px;
+    }
+
+    td:has(> .action-buttons) {
+        width: 1%;
+        white-space: nowrap;
+    }
+
+    .action-buttons > :is(button, a) {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        box-sizing: border-box;
+        height: var(--action-btn-height);
+        min-height: var(--action-btn-height);
+        min-width: var(--action-btn-height);
+        margin: 0;
+        padding: 0 12px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        line-height: 1;
+        white-space: nowrap;
+        text-decoration: none;
+    }
+
+    .action-buttons > input {
+        height: var(--action-btn-height);
+    }
+
     /* ------------------------------
        FORMS
     ------------------------------ */
@@ -352,6 +394,39 @@
     .charts-row > .card:nth-child(3):last-child {
         grid-column: 1 / -1;
     }
+
+    /* Action buttons: finger-sized; text buttons tighten, icon buttons
+       become squares with the text kept for screen readers. */
+    .action-buttons {
+        --action-btn-height: 40px;
+    }
+
+    .action-buttons > :is(button, a) {
+        padding: 0 10px;
+        font-size: 12px;
+    }
+
+    .action-buttons > :has(> .btn-label) {
+        width: var(--action-btn-height);
+        padding: 0;
+    }
+
+    .action-buttons > :has(> .btn-label) > i {
+        font-size: 15px;
+    }
+
+    .action-buttons .btn-label {
+        position: absolute !important;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+    }
 }
 
 /* ------------------------------
@@ -407,6 +482,10 @@
         width: 44px;
         height: 44px;
     }
+
+    .action-buttons {
+        --action-btn-height: 44px;
+    }
 }
 
 @media screen and (max-width: 1023.98px) {
@@ -459,6 +538,11 @@
 
     .section-header-actions {
         flex-shrink: 1;
+    }
+
+    .action-buttons > :is(button, a):not(:has(> .btn-label)) {
+        padding: 0 8px;
+        font-size: 11.5px;
     }
 
     /* DTR Date Remarks rows go to one column (the same layout dtr-view.js

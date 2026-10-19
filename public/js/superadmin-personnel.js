@@ -1218,20 +1218,22 @@ async function loadSchoolHolidays() {
                     <td>${Number(event.included_in_total_hours) === 1 ? "Yes" : "No"}</td>
                     <td><span class="pill pill-active">${escapeHolidayHTML(event.status)}</span></td>
                     <td>
-                        <button
-                            type="button"
-                            class="btn btn-outline btn-sm"
-                            onclick="openEditHolidayModal(${event.id})"
-                        >
-                            Edit
-                        </button>
-                        <button
-                            type="button"
-                            class="btn btn-danger btn-sm"
-                            onclick="openDeactivateEventModal(${event.id}, '${escapeHolidayHTML(event.event_name).replace(/'/g, "\\'")}')"
-                        >
-                            Deactivate
-                        </button>
+                        <div class="action-buttons">
+                            <button
+                                type="button"
+                                class="btn btn-outline btn-sm"
+                                onclick="openEditHolidayModal(${event.id})"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-danger btn-sm"
+                                onclick="openDeactivateEventModal(${event.id}, '${escapeHolidayHTML(event.event_name).replace(/'/g, "\\'")}')"
+                            >
+                                Deactivate
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;

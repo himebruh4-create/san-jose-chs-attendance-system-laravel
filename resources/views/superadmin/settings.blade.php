@@ -149,8 +149,10 @@
                         <td>{{ $account->created_at?->format('M j, Y') }}</td>
                         <td>{{ $account->last_login_at?->format('M j, Y g:i A') ?? '—' }}</td>
                         <td>
-                            <button type="button" class="add-option-btn" style="padding:6px 12px; font-size:12.5px;" onclick="openResetPasswordModal({{ (int) $account->id }}, {{ Js::from($account->full_name) }}, {{ Js::from($account->email) }})">Reset Password</button>
-                            <button type="button" class="deactivate-option-btn" onclick="openDeleteAccountModal({{ (int) $account->id }}, {{ Js::from($account->full_name) }})">Archive</button>
+                            <div class="action-buttons">
+                                <button type="button" class="add-option-btn" onclick="openResetPasswordModal({{ (int) $account->id }}, {{ Js::from($account->full_name) }}, {{ Js::from($account->email) }})">Reset Password</button>
+                                <button type="button" class="deactivate-option-btn" onclick="openDeleteAccountModal({{ (int) $account->id }}, {{ Js::from($account->full_name) }})">Archive</button>
+                            </div>
                         </td>
                     </tr>
                     @endforeach
@@ -604,9 +606,11 @@
                         <td>{{ $kiosk->revoked_at ? 'Revoked '.$kiosk->revoked_at->format('M j, Y') : 'Active' }}</td>
                         <td>
                             @unless ($kiosk->revoked_at)
-                                <button type="button" class="deactivate-option-btn"
-                                        data-kiosk-id="{{ $kiosk->id }}" data-kiosk-name="{{ $kiosk->name }}"
-                                        onclick="openRevokeKioskModal(this)">Revoke</button>
+                                <div class="action-buttons">
+                                    <button type="button" class="deactivate-option-btn"
+                                            data-kiosk-id="{{ $kiosk->id }}" data-kiosk-name="{{ $kiosk->name }}"
+                                            onclick="openRevokeKioskModal(this)">Revoke</button>
+                                </div>
                             @endunless
                         </td>
                     </tr>

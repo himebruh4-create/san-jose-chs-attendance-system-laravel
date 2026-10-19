@@ -203,7 +203,7 @@ body { margin: 0; background: #f5f0e1; }
 
 #databaseBackupCard .add-option-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-#databaseBackupCard a.add-option-btn { display: inline-block; text-decoration: none; }
+#databaseBackupCard a.add-option-btn { text-decoration: none; }
 
 @media (max-width: 767.98px) {
     #databaseBackupCard .table-scroll { max-height: 260px; }

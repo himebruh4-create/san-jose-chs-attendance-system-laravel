@@ -192,25 +192,29 @@
 
                                     <td>
 
-                                        <button
-                                            type="button"
-                                            class="review-btn"
-                                            onclick="openAdjustmentModal(${Number(adjustment.id)})"
-                                        >
+                                        <div class="action-buttons">
 
-                                            Review
+                                            <button
+                                                type="button"
+                                                class="review-btn"
+                                                onclick="openAdjustmentModal(${Number(adjustment.id)})"
+                                            >
 
-                                        </button>
+                                                Review
 
-                                        <button
-                                            type="button"
-                                            class="delete-adjustment-btn"
-                                            onclick="openDeleteAdjustmentModal(${Number(adjustment.id)}, ${escapeHtml(JSON.stringify(adjustment.fullname))}, ${escapeHtml(JSON.stringify(adjustment.date))})"
-                                        >
+                                            </button>
 
-                                            Archive
+                                            <button
+                                                type="button"
+                                                class="delete-adjustment-btn"
+                                                onclick="openDeleteAdjustmentModal(${Number(adjustment.id)}, ${escapeHtml(JSON.stringify(adjustment.fullname))}, ${escapeHtml(JSON.stringify(adjustment.date))})"
+                                            >
 
-                                        </button>
+                                                Archive
+
+                                            </button>
+
+                                        </div>
 
                                     </td>
 
@@ -932,8 +936,10 @@ function pendingItemRow(item) {
             <td>${new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
             <td>${pendingScheduleText(item)}${reasonTag}${scanText}</td>
             <td>
-                <button class="review-btn" onclick="openAdjustmentModalForPending(${item.teacher_id}, '${item.date}')">Add Adjustment</button>
-                ${absentBtn}
+                <div class="action-buttons">
+                    <button class="review-btn" onclick="openAdjustmentModalForPending(${item.teacher_id}, '${item.date}')">Add Adjustment</button>
+                    ${absentBtn}
+                </div>
             </td>
         </tr>
     `;
@@ -1186,8 +1192,10 @@ async function loadRejectedScans() {
 
             const review = s.reviewed_at
                 ? 'Reviewed by ' + escapeHTML(s.reviewed_by || '') + '<br><small>' + escapeHTML(s.reviewed_at) + (s.review_remarks ? ' - ' + escapeHTML(s.review_remarks) : '') + '</small>'
-                : '<input type="text" id="rejRemarks' + s.id + '" maxlength="255" placeholder="Remarks (optional)" style="padding:6px 8px; border:1px solid #e6dcc4; border-radius:8px; width:150px;"> ' +
-                  '<button class="review-btn" onclick="markRejectedReviewed(' + s.id + ')">Mark Reviewed</button>';
+                : '<div class="action-buttons">' +
+                  '<input type="text" id="rejRemarks' + s.id + '" maxlength="255" placeholder="Remarks (optional)" style="padding:6px 8px; border:1px solid #e6dcc4; border-radius:8px; width:150px;">' +
+                  '<button class="review-btn" onclick="markRejectedReviewed(' + s.id + ')">Mark Reviewed</button>' +
+                  '</div>';
 
             return '<tr>' +
                 '<td><strong>' + escapeHTML(s.fullname) + '</strong><br><small>' + escapeHTML(s.id_number || '') + '</small></td>' +

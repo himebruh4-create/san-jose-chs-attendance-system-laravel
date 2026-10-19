@@ -209,8 +209,10 @@ async function loadRecycleBin(type) {
                 <td>${escapeDeptHTML(row.deleted_at)}</td>
                 <td>${escapeDeptHTML(row.deleted_by)}</td>
                 <td>
-                    <button type="button" class="add-option-btn" style="padding:6px 12px; font-size:12.5px;" onclick="recycleBinAction('${type}', ${row.id}, 'restore')">Restore</button>
-                    <button type="button" class="deactivate-option-btn" onclick="confirmRecycleBinPermanentDelete('${type}', ${row.id})">Delete Permanently</button>
+                    <div class="action-buttons">
+                        <button type="button" class="add-option-btn" onclick="recycleBinAction('${type}', ${row.id}, 'restore')">Restore</button>
+                        <button type="button" class="deactivate-option-btn" onclick="confirmRecycleBinPermanentDelete('${type}', ${row.id})">Delete Permanently</button>
+                    </div>
                 </td>
             </tr>
         `).join('');
@@ -410,7 +412,7 @@ function addScheduleBreakRow(entry) {
     tr.innerHTML =
         cell("time_in", e.time_in) + cell("time_out", e.time_out) +
         cell("break_start", e.break_start) + cell("break_end", e.break_end) +
-        '<td><button type="button" class="deactivate-option-btn" onclick="openScheduleBreakRemoveModal(this)">Remove</button></td>';
+        '<td><div class="action-buttons"><button type="button" class="deactivate-option-btn" onclick="openScheduleBreakRemoveModal(this)">Remove</button></div></td>';
 
     document.getElementById("scheduleBreakRows").appendChild(tr);
 }
@@ -557,9 +559,11 @@ async function loadDepartmentOptions(personnelType) {
                 <td>${opt.personnel_type ? escapeDeptHTML(PERSONNEL_TYPE_LABELS[opt.personnel_type] || opt.personnel_type) : '—'}</td>
                 <td><span class="status-badge enabled" style="padding:4px 12px; font-size:12px;">${escapeDeptHTML(opt.status)}</span></td>
                 <td>
-                    <button type="button" class="deactivate-option-btn" onclick="openDeactivateOptionModal(${opt.id}, '${escapeDeptHTML(opt.option_name).replace(/'/g, "\\'")}')">
-                        Deactivate
-                    </button>
+                    <div class="action-buttons">
+                        <button type="button" class="deactivate-option-btn" onclick="openDeactivateOptionModal(${opt.id}, '${escapeDeptHTML(opt.option_name).replace(/'/g, "\\'")}')">
+                            Deactivate
+                        </button>
+                    </div>
                 </td>
             </tr>
         `).join('');
@@ -717,10 +721,12 @@ async function loadDatabaseBackups() {
                 <td>${escapeDeptHTML(b.created_at)}</td>
                 <td>${escapeDeptHTML(b.size_display)}</td>
                 <td>
-                    <a class="add-option-btn" style="padding:6px 12px; font-size:12.5px;"
-                       href="${appUrl('data/backups/download')}?file=${encodeURIComponent(b.filename)}">
-                        <i class="fa-solid fa-download"></i> Download
-                    </a>
+                    <div class="action-buttons">
+                        <a class="add-option-btn" aria-label="Download" title="Download"
+                           href="${appUrl('data/backups/download')}?file=${encodeURIComponent(b.filename)}">
+                            <i class="fa-solid fa-download" aria-hidden="true"></i> <span class="btn-label">Download</span>
+                        </a>
+                    </div>
                 </td>
             </tr>
         `).join('');
