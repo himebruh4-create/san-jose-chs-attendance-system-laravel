@@ -633,32 +633,6 @@ tbody tr:nth-child(1) td {
     .scan-card { padding: 24px; }
 }
 
-/* Part of the page header: scrolls away with the page. */
-.live-clock {
-    text-align: right;
-}
-
-.live-clock .clock-time {
-    font-size: 28px;
-    font-weight: 700;
-    color: #14390f;
-    letter-spacing: 0.5px;
-    line-height: 1.1;
-}
-
-.live-clock .clock-date {
-    font-size: 30px;
-    color: #a3720f;
-    font-weight: 600;
-    margin-top: 2px;
-}
-
-@media (max-width: 767.98px) {
-    .live-clock { text-align: left; }
-    .live-clock .clock-time { font-size: 18px; }
-    .live-clock .clock-date { font-size: 13px; }
-}
-
 body::before {
     content: "";
     position: fixed;
@@ -748,6 +722,37 @@ body::before {
         gap: 10px;
     }
 
+    /* Live clock: part of the page header (scrolls away with the page),
+       on its own line under the title and left-aligned with it. The time
+       is the largest text in the header, the date smaller beneath it;
+       both scale with the screen. Tabular digits keep the time from
+       changing width every second. */
+    .live-clock {
+        flex: 1 0 100%;
+        min-width: 0;
+        text-align: left;
+    }
+
+    .live-clock .clock-time {
+        font-size: clamp(1.75rem, 1rem + 2.2vw, 3.5rem);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #14390f;
+        letter-spacing: 0.5px;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    .live-clock .clock-date {
+        margin-top: 4px;
+        font-size: clamp(1rem, 0.75rem + 0.8vw, 1.5rem);
+        font-weight: 600;
+        color: #a3720f;
+        line-height: 1.3;
+        overflow-wrap: break-word;
+        text-wrap: balance;
+    }
+
     .eye-icon {
         display: inline-flex;
         align-items: center;
@@ -794,11 +799,10 @@ body::before {
     }
 }
 
-/* Large desktop monitors: bigger clock, title and barcode field */
+/* Large desktop monitors: bigger title and barcode field (the clock scales on its own) */
 @media screen and (min-width: 1920px) {
     .page-header h1 { font-size: 38px; }
     .page-header p { font-size: 17px; }
-    .live-clock .clock-time { font-size: 40px; }
     .barcode-section input { font-size: 26px; padding: 24px 26px; }
     .barcode-section button { font-size: 20px; padding: 24px 40px; }
     .scan-card-header h2 { font-size: 22px; }
