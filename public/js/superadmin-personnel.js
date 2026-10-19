@@ -91,11 +91,11 @@ document.querySelectorAll('.barcode-svg').forEach(svg => {
         svg,
         svg.dataset.barcode,
         {
-            format: 'CODE39',
+            format: 'CODE128',
             displayValue: true,
             fontSize: 12,
             height: 40,
-            width: 1.2
+            width: 2
         }
     );
 
@@ -611,11 +611,11 @@ JsBarcode(
     '#print-barcode',
     '${barcode}',
     {
-        format:'CODE39',
+        format:'CODE128',
         displayValue:true,
         fontSize:14,
         height:70,
-        width:1.4,
+        width:2,
         margin: 0,
         background: "transparent"
     }
@@ -926,11 +926,11 @@ teacherBarcodes.forEach((barcode, index) => {
         '#barcode-all-' + index,
         barcode,
         {
-            format: 'CODE39',
+            format: 'CODE128',
             displayValue: true,
             fontSize: 14,
             height: 70,
-            width: 1.4,
+            width: 2,
             margin: 0,
             background: "transparent"
         }

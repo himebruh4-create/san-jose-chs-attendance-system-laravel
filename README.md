@@ -47,7 +47,7 @@ Only registered browsers can record scans.
 2. **Settings → Kiosk Devices → Register this browser as a kiosk.**
 3. Log out and open `/kiosk`. Revoke a kiosk from the same card.
 
-**Barcode scanner:** a USB scanner in keyboard mode, set to read **Code 39** (the symbology printed on the ID
+**Barcode scanner:** a USB scanner in keyboard mode, set to read **Code 128** (the symbology printed on the ID
 badges) and to send **Enter** after each code. The scan box stays focused and is cleared after every scan.
 
 **Webcam:** the kiosk takes a photo with each scan (accepted or refused). Browsers only allow the camera on
@@ -108,7 +108,7 @@ Fixes
   errors are shown instead of silently ignored.
 - Attendance Report: no strict-mode GROUP BY crash; pagination keeps the month and search.
 - Inline buttons no longer break on names with apostrophes; print templates load assets locally.
-- Barcodes render as Code 39 on every page.
+- Barcodes render as Code 128 on every page (Code 39 badges could be misread as Code 32 / Italian Pharmacode).
 
 ## Deploying at the school (local network, no internet)
 

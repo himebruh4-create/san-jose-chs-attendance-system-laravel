@@ -93,12 +93,13 @@
 @push('scripts')
 <script src="{{ asset('vendor/jsbarcode/JsBarcode.all.min.js') }}"></script>
 <script>
-    // Code 39, the same symbology as the printed ID badges the kiosk scans
-    // (this page showed Code 128 in the native-PHP version).
+    // Code 128, the same symbology as the printed ID badges the kiosk scans.
+    // Not Code 39: scanners with Code 32 (Italian Pharmacode) enabled turn
+    // some 6-digit Code 39 values into a different 9-digit number.
     document.querySelectorAll('.barcode-svg').forEach(svg => {
         JsBarcode(svg, svg.dataset.barcode, {
-            format: "CODE39",
-            width: 1.2,
+            format: "CODE128",
+            width: 2,
             height: 50,
             displayValue: true
         });

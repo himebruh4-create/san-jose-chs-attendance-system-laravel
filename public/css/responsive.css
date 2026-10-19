@@ -33,6 +33,12 @@
         max-width: 100%;
     }
 
+    /* Barcodes keep their natural size: shrinking one thins its bars
+       below what a scanner can resolve. Their tables scroll instead. */
+    .barcode-svg {
+        max-width: none;
+    }
+
     /* Page titles scale between phone and monitor */
     .page-header h1,
     .main > h1,

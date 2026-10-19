@@ -125,11 +125,11 @@
 <script>
 document.querySelectorAll('.barcode-svg').forEach(svg => {
     JsBarcode(svg, svg.dataset.barcode, {
-        format: 'CODE39',
+        format: 'CODE128',
         displayValue: true,
         fontSize: 10,
         height: 30,
-        width: 1
+        width: 2
     });
 });
 
