@@ -722,15 +722,28 @@ body::before {
         gap: 10px;
     }
 
-    /* Live clock: part of the page header (scrolls away with the page),
-       on its own line under the title and left-aligned with it. The time
-       is the largest text in the header, the date smaller beneath it;
-       both scale with the screen. Tabular digits keep the time from
-       changing width every second. */
-    .live-clock {
-        flex: 1 0 100%;
+    /* Header: one row, title block on the left, live clock on the right
+       (tops aligned). The title gives way first: its subtitle wraps
+       while the clock keeps its natural width, so the two never touch.
+       The clock is part of the header and scrolls away with the page.
+       The time is the largest text in the header, the date smaller
+       beneath it; both scale with the screen. Tabular digits keep the
+       time from changing width every second. */
+    .page-header {
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px clamp(24px, 4vw, 64px);
+    }
+
+    .page-title {
+        flex: 1 1 auto;
         min-width: 0;
-        text-align: left;
+    }
+
+    .live-clock {
+        flex: 0 0 auto;
+        text-align: right;
     }
 
     .live-clock .clock-time {
@@ -809,6 +822,16 @@ body::before {
     .scan-card-header p,
     .scan-hint { font-size: 15px; }
     table { font-size: 15px; }
+}
+
+/* Below 768px the clock stacks under the title, left-aligned with it */
+@media screen and (max-width: 767.98px) {
+    .page-header { flex-wrap: wrap; }
+    .live-clock {
+        flex: 1 0 100%;
+        min-width: 0;
+        text-align: left;
+    }
 }
 
 /* Phones: the content starts under the menu button instead of beside it */
