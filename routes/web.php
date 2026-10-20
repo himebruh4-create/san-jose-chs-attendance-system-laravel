@@ -10,6 +10,7 @@ use App\Http\Controllers\Data;
 use App\Http\Controllers\KioskController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\Principal;
+use App\Http\Controllers\Reports\AbsenceReportController;
 use App\Http\Controllers\Reports\MonthlySummaryController;
 use App\Http\Controllers\SuperAdmin;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +67,10 @@ Route::middleware('auth')->group(function () {
     // Monthly Summary report (all three roles; was dtr/monthly-summary.php).
     Route::get('/reports/monthly-summary', MonthlySummaryController::class)
         ->middleware('role:superadmin,admin,principal')->name('reports.monthly-summary');
+
+    // Absence Report (all three roles; Reports -> Print Absences).
+    Route::get('/reports/absences', AbsenceReportController::class)
+        ->middleware('role:superadmin,admin,principal')->name('reports.absences');
 
     // ------------------------------------------------------------ Super Admin
     Route::prefix('superadmin')->name('superadmin.')->middleware('role:superadmin')->group(function () {

@@ -22,7 +22,7 @@ class ReportsAnalytics
     {
         $this->events = AttendanceData::activeEvents();
         $this->teachers = DB::table('teachers')
-            ->select('id', 'fullname', 'id_number', 'department', 'created_at')
+            ->select('id', 'fullname', 'id_number', 'department', 'academic_status', 'created_at')
             ->where('is_deleted', 0)
             ->orderBy('fullname')
             ->get()
@@ -191,6 +191,43 @@ class ReportsAnalytics
         }
 
         return [];
+    }
+
+    /**
+     * Confirmed absences ("Absent" days) in [$from, $to], up to today, for
+     * everyone or one person. Only working days count: Sundays and
+     * unscheduled Saturdays are skipped, and Pending Review, On Leave,
+     * school events and Not Yet Recorded are not absences.
+     *
+     * @return list<array{id: int, fullname: string, id_number: string, department: string, academic_status: string, dates: list<string>}>
+     */
+    public function absences(string $from, string $to, ?int $teacherId = null): array
+    {
+        $absences = [];
+
+        foreach ($this->teachers as $teacher) {
+            if ($teacherId !== null && (int) $teacher['id'] !== $teacherId) {
+                continue;
+            }
+
+            $dates = array_column(array_filter(
+                $this->dayRows($teacher, $from, min($to, $this->today), true),
+                fn (array $row) => $row['status'] === 'Absent'
+            ), 'date');
+
+            if ($dates) {
+                $absences[] = [
+                    'id' => (int) $teacher['id'],
+                    'fullname' => $teacher['fullname'],
+                    'id_number' => $teacher['id_number'],
+                    'department' => $teacher['department'],
+                    'academic_status' => $teacher['academic_status'],
+                    'dates' => array_values($dates),
+                ];
+            }
+        }
+
+        return $absences;
     }
 
     private function dayRows(array $teacher, string $from, string $to, bool $workingDaysOnly): array

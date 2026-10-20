@@ -59,8 +59,6 @@ document.addEventListener('DOMContentLoaded', updatePaidBreakNotes);
 // TEACHER DATA
 // =====================================================
 
-const teachersData = window.PAGE.teachers;
-
 // Full, unpaginated teacher list — used only by "Print All Teacher Badges"
 // so it isn't limited to whichever page you're currently viewing.
 const allTeachersData = window.PAGE.allTeachers;
@@ -113,14 +111,13 @@ function personnelAction(action) {
     closePersonnelDetails();
 
     if (action === 'edit') {
-        const teacher = teachersData.find(t => parseInt(t.id) === person.id);
-
-        if (!teacher) {
+        // The card carries the record the Edit form needs (partials.personnel-card).
+        if (!person.record) {
             showToast("Personnel information not found.", "error");
             return;
         }
 
-        openEditModal(teacher);
+        openEditModal(person.record);
     } else if (action === 'regenerate') {
         openRegenerateModal(person.id, person.fullname);
     } else if (action === 'archive') {
@@ -143,6 +140,26 @@ function closeAddPersonnelModal() {
     document.getElementById('addPersonnelModal').classList.remove('active');
     unlockBodyScroll();
 }
+
+// The live filter changes the URL without reloading, so a form that saves
+// (Add, Edit, Archive, Leave...) takes its "come back to" search, filters
+// and page from the URL at the moment it is sent.
+document.addEventListener('submit', function (e) {
+    const params = new URLSearchParams(window.location.search);
+    const returnFields = {
+        return_search: 'search',
+        return_academic_status: 'academic_status',
+        return_employment_type: 'employment_type',
+        return_page: 'page'
+    };
+
+    Object.entries(returnFields).forEach(([field, param]) => {
+        const input = e.target.querySelector('input[name="' + field + '"]');
+        if (input) {
+            input.value = params.get(param) || '';
+        }
+    });
+}, true);
 
 // A failed add comes back with the form reopened and its errors inside
 // (a failed edit only shows its errors above the list).

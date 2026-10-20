@@ -90,6 +90,56 @@
     }
 
     /* ------------------------------
+       LIVE FILTER SEARCH BOX
+       live-filters.js wraps a filter's text search with a × that clears it.
+    ------------------------------ */
+
+    .search-field {
+        position: relative;
+        display: block;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .search-field > input {
+        width: 100%;
+        padding-right: 38px;
+    }
+
+    .search-clear {
+        position: absolute;
+        top: 50%;
+        right: 9px;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        background: #e6dcc4;
+        color: #5c5238;
+        font-size: 17px;
+        line-height: 24px;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .search-clear:hover,
+    .search-clear:focus-visible {
+        background: #14390f;
+        color: #ffffff;
+        outline: none;
+    }
+
+    .search-clear[hidden] {
+        display: none;
+    }
+
+    form[data-live-filter][aria-busy="true"] {
+        cursor: progress;
+    }
+
+    /* ------------------------------
        STAT CARDS
        Total Personnel + two stat groups (Super Admin / Admin dashboards,
        Admin / Principal personnel lists):
@@ -586,6 +636,21 @@
 
     .report-filter :is(input, select) {
         width: 100%;
+    }
+
+    /* Weekly: the date on its own row, ‹ Previous / Next › side by side below */
+    .week-picker {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .week-picker > input {
+        grid-column: 1 / -1;
+        order: -1;
+    }
+
+    .week-picker > .week-step {
+        justify-content: center;
     }
 
     /* Settings: the section tabs stay on one row that scrolls sideways */

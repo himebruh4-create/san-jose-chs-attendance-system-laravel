@@ -1,14 +1,16 @@
-{{-- Period + personnel filter of one Reports tab ($tab). The other tabs'
-     periods travel along as hidden fields, so they are kept on Apply. --}}
+{{-- Period + personnel filter of one Reports tab ($tab). It applies itself
+     on change (live-filters.js). The other tabs' periods travel along as
+     hidden fields, so they are kept. --}}
 @php
     $periods = [
         'daily' => ['date', $date],
-        'weekly' => ['week', date('o-\WW', strtotime($weekStart))],
+        'weekly' => ['week', $weekStart],
         'monthly' => ['monthPicker', sprintf('%04d-%02d', $year, $month)],
     ];
+    $weekUrl = fn (string $day) => request()->fullUrlWithQuery(['tab' => 'weekly', 'week' => $day]);
 @endphp
 
-<form method="GET" class="report-filter">
+<form method="GET" class="report-filter" data-live-filter>
     <input type="hidden" name="tab" value="{{ $tab }}">
     @foreach ($periods as $otherTab => [$name, $value])
         @if ($otherTab !== $tab)
@@ -21,8 +23,16 @@
             <label for="dailyDate">Date</label>
             <input type="date" id="dailyDate" name="date" value="{{ $date }}" max="{{ $today }}" required>
         @elseif ($tab === 'weekly')
-            <label for="weeklyWeek">Week</label>
-            <input type="week" id="weeklyWeek" name="week" value="{{ $periods['weekly'][1] }}" max="{{ date('o-\WW', strtotime($today)) }}" required>
+            <label for="weeklyWeek">Any day in the week</label>
+            <div class="week-picker">
+                <a href="{{ $weekUrl($previousWeek) }}" class="week-step">&lsaquo; Previous week</a>
+                <input type="date" id="weeklyWeek" name="week" value="{{ $weekStart }}" max="{{ $today }}" required>
+                @if ($nextWeek)
+                    <a href="{{ $weekUrl($nextWeek) }}" class="week-step">Next week &rsaquo;</a>
+                @else
+                    <span class="week-step disabled" aria-disabled="true">Next week &rsaquo;</span>
+                @endif
+            </div>
         @else
             <label for="monthlyMonth">Month</label>
             <input type="month" id="monthlyMonth" name="monthPicker" value="{{ $periods['monthly'][1] }}" required>
@@ -39,5 +49,5 @@
         </select>
     </div>
 
-    <button type="submit" class="apply-btn"><i class="fa-solid fa-check"></i> Apply</button>
+    <noscript><button type="submit" class="apply-btn">Apply</button></noscript>
 </form>

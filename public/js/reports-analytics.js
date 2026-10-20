@@ -385,9 +385,27 @@ if (monthlyCanvas) {
     });
 }
 
+/* ================= PRINT ABSENCES =================
+   The server builds the Absence Report for the tab's range and Personnel
+   filter (the URL is on the button); this fetches and prints it. */
+async function printAbsences(button) {
+    button.disabled = true;
+    try {
+        const response = await fetch(button.dataset.url);
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+        printHTMLDocument(await response.text());
+    } catch (error) {
+        console.error('Print Absences error:', error);
+        showMessageModal('Unable to generate the absence report. Please try again.', { title: 'Something Went Wrong', type: 'error' });
+    } finally {
+        button.disabled = false;
+    }
+}
+
 /* ================= PRINT MONTHLY SUMMARY REPORT (All Personnel) =================
-   Prints the Monthly Attendance Summary Report for the month selected above —
-   the same report the Attendance Report page's "Generate Summary Report" prints. */
+   Prints the Monthly Attendance Summary Report for the month selected above. */
 async function printMonthlySummaryReport() {
     const btn = document.getElementById('printMonthlySummaryBtn');
     const errorEl = document.getElementById('monthlyPrintError');
@@ -510,6 +528,10 @@ function printReportArea(areaId, title, periodLabel) {
 
                 .th-left, .td-left { text-align: left; }
                 .report-record:nth-of-type(even) > tr:first-child { background: #f7f7f7; }
+
+                /* e.g. "2 personnel not yet recorded today." (icon font not loaded here) */
+                .help-note { margin: 0 0 8px; font-size: 11px; color: #555; }
+                .help-note i { display: none; }
                 .empty-note { color: #777; padding: 14px; }
 
                 .status-tag { font-weight: 700; }

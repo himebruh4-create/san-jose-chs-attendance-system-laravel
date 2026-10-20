@@ -28,6 +28,13 @@
         'photo_url' => \App\Domain\PersonnelDirectory::photoUrl($teacher['photo'] ?? null),
         'schedules' => $scheduleLines,
     ];
+
+    // Super Admin: the record as the Edit form needs it (raw schedule times).
+    // On the card itself, because a live search can show people who were
+    // not on the page when it loaded.
+    if ($canManage) {
+        $details['record'] = $teacher;
+    }
 @endphp
 
 <article class="personnel-card">

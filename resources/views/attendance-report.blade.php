@@ -22,7 +22,18 @@
         <p>Review this month's attendance and generate personnel DTRs.</p>
     </div>
 
-    <div class="summary-box">
+    <div class="card">
+        {{-- Applies itself (live-filters.js): the search as you type, the month on change. --}}
+        <form method="GET" action="{{ route($reportRoute) }}" class="search-bar-row month-picker-row" data-live-filter data-live-target="#reportSummary, #reportPersonnel">
+            <label for="reportSearch">Search:</label>
+            <input type="text" id="reportSearch" name="search" placeholder="Search by name or ID" value="{{ $search }}" autocomplete="off">
+            <label for="reportMonth">Month:</label>
+            <input type="month" id="reportMonth" name="monthPicker" value="{{ $monthValue }}">
+            <noscript><button type="submit" class="btn btn-primary">Apply</button></noscript>
+        </form>
+    </div>
+
+    <div class="summary-box" id="reportSummary">
         <div class="summary-icon"><i class="fa-solid fa-calendar-days"></i></div>
         <div class="summary-stats">
             <div>
@@ -36,19 +47,6 @@
         </div>
     </div>
 
-    <div class="card">
-        <div class="search-bar-row">
-            <form method="GET" action="{{ route($reportRoute) }}" style="display: flex; gap: 10px; align-items: center; flex: 1; flex-wrap: wrap;">
-                <input type="hidden" name="monthPicker" value="{{ $monthValue }}">
-                <input type="text" name="search" placeholder="Search by name or ID" value="{{ $search }}">
-                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
-                @if ($search !== '')
-                    <a href="{{ route($reportRoute, ['monthPicker' => $monthValue]) }}" class="btn btn-outline">Clear</a>
-                @endif
-            </form>
-        </div>
-    </div>
-
     <div class="modal-backdrop" id="chartModal">
         <div class="modal">
             <button class="modal-close" onclick="closeChartModal()">&times;</button>
@@ -57,32 +55,19 @@
         </div>
     </div>
 
-    <!-- APPLICATION ERROR MODAL -->
-    <div class="modal-backdrop" id="appErrorModal">
-        <div class="modal">
-            <button class="modal-close" onclick="closeErrorModal()">&times;</button>
-            <h3>Something Went Wrong</h3>
-            <p id="appErrorModalMessage" style="color:#8a7d5c; font-size:14px; margin:0;"></p>
-        </div>
-    </div>
-
-    <div class="card">
-        <form method="GET" action="{{ route($reportRoute) }}" class="month-picker-row">
-            <label>Select Month:</label>
-            <input type="month" name="monthPicker" value="{{ $monthValue }}" onchange="this.form.submit()">
-            <input type="hidden" name="search" value="{{ $search }}">
-            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Apply</button>
-        </form>
-    </div>
-
-    <div class="card">
+    <div class="card" id="reportPersonnel">
 
         <div class="report-header-row">
             <h3><i class="fa-solid fa-list-check"></i> Personnel</h3>
             <span class="page-tag">Page {{ $page }} of {{ $totalPages }}</span>
         </div>
 
-        <button class="generate-report-btn" onclick="printAllDTR(allTeachersForDTR, {{ Js::from($monthStart) }}, {{ Js::from($monthEnd) }})" style="margin-top: 10px;">
+        {{-- Every person matching the current search, for Generate All DTR (the
+             same per-person DTR as Generate DTR). Kept inside this card so a
+             live search replaces it together with the list. --}}
+        <script type="application/json" id="allTeachersForDTR">@json($allTeachersForDTR)</script>
+
+        <button class="generate-report-btn" onclick="printAllDTR(JSON.parse(document.getElementById('allTeachersForDTR').textContent), {{ Js::from($monthStart) }}, {{ Js::from($monthEnd) }})" style="margin-top: 10px;">
             <i class="fa-solid fa-file-export"></i> Generate All DTR
         </button>
 
@@ -140,42 +125,12 @@
                 <a href="{{ $pageUrl($totalPages) }}">Last &raquo;</a>
             @endif
         </div>
-
-        <button class="generate-report-btn" onclick="printSummaryReport({{ (int) $month }}, {{ (int) $year }})" style="margin-top:14px;">
-            <i class="fa-solid fa-file-export"></i> Generate Summary Report
-        </button>
     </div>
 </div>
 @endsection
 
 @push('scripts')
 <script>
-    // Every matching person with their records, for Generate All DTR —
-    // the same per-person DTR template as an individual Generate DTR.
-    const allTeachersForDTR = @json($allTeachersForDTR);
-
-    async function printSummaryReport(month, year) {
-        try {
-            const response = await fetch(appUrl('reports/monthly-summary') + `?month=${month}&year=${year}`);
-            if (!response.ok) throw new Error('HTTP ' + response.status);
-            printHTMLDocument(await response.text());
-        } catch (error) {
-            console.error("Generate Summary Report error:", error);
-            showErrorModal("Unable to generate the summary report.");
-        }
-    }
-
-    function showErrorModal(message) {
-        document.getElementById('appErrorModalMessage').textContent = message || 'An error occurred.';
-        document.getElementById('appErrorModal').classList.add('active');
-        lockBodyScroll();
-    }
-
-    function closeErrorModal() {
-        document.getElementById('appErrorModal').classList.remove('active');
-        unlockBodyScroll();
-    }
-
     function changeTeacherMonth(monthValue) {
         const url = new URL(window.location.href);
         url.searchParams.set('monthPicker', monthValue);
@@ -184,4 +139,5 @@
     }
 </script>
 <script src="{{ asset_v('js/dtr-view.js') }}"></script>
+<script src="{{ asset_v('js/live-filters.js') }}"></script>
 @endpush

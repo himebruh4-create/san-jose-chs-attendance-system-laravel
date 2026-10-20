@@ -9,9 +9,9 @@
 
 @php
     $statusBoxes = ['Present' => 'present', 'Late' => 'late', 'Pending Review' => 'pending', 'Absent' => 'absent', 'On Leave' => 'leave'];
-    $filterData = compact('date', 'today', 'weekStart', 'month', 'year', 'person', 'personnelOptions');
+    $filterData = compact('date', 'today', 'weekStart', 'previousWeek', 'nextWeek', 'month', 'year', 'person', 'personnelOptions');
     $dailyLabel = date('l, F j, Y', strtotime($date));
-    $weekLabel = date('M j', strtotime($weekStart)).' - '.date('M j, Y', strtotime($weekEnd));
+    $weekLabel = date('M j', strtotime($weekStart)).' – '.date('M j, Y', strtotime($weekEnd));
     $monthLabel = date('F Y', strtotime($monthStart));
 @endphp
 
@@ -37,19 +37,29 @@
         <div class="card">
             <div class="card-header-row">
                 <h2>{{ $dailyLabel }}</h2>
-                <button class="print-roster-btn" onclick="printReportArea('dailyPrintArea', 'Daily Attendance Report', {{ Js::from($dailyLabel) }})">
-                    <i class="fa-solid fa-print"></i> Print Daily Attendance
-                </button>
+                <div class="print-actions">
+                    <button class="print-roster-btn" onclick="printReportArea('dailyPrintArea', 'Daily Attendance Report', {{ Js::from($dailyLabel) }})">
+                        <i class="fa-solid fa-print"></i> Print Daily Attendance
+                    </button>
+                    @include('reports.partials.print-absences-button', ['url' => $absenceUrls['daily']])
+                </div>
             </div>
 
             <div id="dailyPrintArea" class="report-print-area">
                 @if ($person)
                     @include('reports.partials.personnel-header')
                 @endif
+                @if ($dailyNotYetRecorded > 0)
+                    <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>{{ $dailyNotYetRecorded }} personnel not yet recorded today.</span></p>
+                @endif
                 @include('reports.partials.attendance-table', [
                     'rows' => $daily,
                     'byPerson' => ! $person,
-                    'emptyText' => $person ? 'No record for this date (the person was not yet registered).' : 'No personnel were registered on this date.',
+                    'emptyText' => match (true) {
+                        $dailyNotYetRecorded > 0 => 'No attendance recorded yet today.',
+                        (bool) $person => 'No record for this date (the person was not yet registered).',
+                        default => 'No personnel were registered on this date.',
+                    },
                 ])
             </div>
         </div>
@@ -67,10 +77,13 @@
         @if ($person)
             <div class="card">
                 <div class="card-header-row">
-                    <h2>Week of {{ $weekLabel }}</h2>
-                    <button class="print-roster-btn" onclick="printReportArea('weeklyPrintArea', 'Weekly Attendance Roster', {{ Js::from($weekLabel) }})">
-                        <i class="fa-solid fa-print"></i> Print Weekly Roster
-                    </button>
+                    <h2>{{ $weekLabel }}</h2>
+                    <div class="print-actions">
+                        <button class="print-roster-btn" onclick="printReportArea('weeklyPrintArea', 'Weekly Attendance Roster', {{ Js::from($weekLabel) }})">
+                            <i class="fa-solid fa-print"></i> Print Weekly Roster
+                        </button>
+                        @include('reports.partials.print-absences-button', ['url' => $absenceUrls['weekly']])
+                    </div>
                 </div>
 
                 <div id="weeklyPrintArea" class="report-print-area">
@@ -85,10 +98,13 @@
         @else
             <div class="card">
                 <div class="card-header-row">
-                    <h2>Week of {{ $weekLabel }}</h2>
-                    <button class="print-roster-btn" onclick="printWeeklyRoster()">
-                        <i class="fa-solid fa-print"></i> Print Weekly Roster
-                    </button>
+                    <h2>{{ $weekLabel }}</h2>
+                    <div class="print-actions">
+                        <button class="print-roster-btn" onclick="printWeeklyRoster()">
+                            <i class="fa-solid fa-print"></i> Print Weekly Roster
+                        </button>
+                        @include('reports.partials.print-absences-button', ['url' => $absenceUrls['weekly']])
+                    </div>
                 </div>
                 <div class="chart-container">
                     <canvas id="weeklyAnalyticsChart"></canvas>
@@ -130,9 +146,12 @@
             <div class="card">
                 <div class="card-header-row">
                     <h2>{{ $monthLabel }}</h2>
-                    <button class="print-roster-btn" onclick="printReportArea('monthlyPrintArea', 'Monthly Attendance Summary Report', {{ Js::from($monthLabel) }})">
-                        <i class="fa-solid fa-print"></i> Print Monthly Summary Report
-                    </button>
+                    <div class="print-actions">
+                        <button class="print-roster-btn" onclick="printReportArea('monthlyPrintArea', 'Monthly Attendance Summary Report', {{ Js::from($monthLabel) }})">
+                            <i class="fa-solid fa-print"></i> Print Monthly Summary Report
+                        </button>
+                        @include('reports.partials.print-absences-button', ['url' => $absenceUrls['monthly']])
+                    </div>
                 </div>
 
                 <div id="monthlyPrintArea" class="report-print-area">
@@ -160,9 +179,12 @@
             <div class="card">
                 <div class="card-header-row">
                     <h2>{{ $monthLabel }}</h2>
-                    <button class="print-roster-btn" id="printMonthlySummaryBtn" onclick="printMonthlySummaryReport()">
-                        <i class="fa-solid fa-print"></i> Print Monthly Summary Report
-                    </button>
+                    <div class="print-actions">
+                        <button class="print-roster-btn" id="printMonthlySummaryBtn" onclick="printMonthlySummaryReport()">
+                            <i class="fa-solid fa-print"></i> Print Monthly Summary Report
+                        </button>
+                        @include('reports.partials.print-absences-button', ['url' => $absenceUrls['monthly']])
+                    </div>
                 </div>
                 <p class="empty-note" id="monthlyPrintError" style="display:none;"></p>
                 <div class="chart-container">
@@ -232,5 +254,6 @@
 <script>
 window.REPORT = @json($reportData);
 </script>
+<script src="{{ asset_v('js/live-filters.js') }}"></script>
 <script src="{{ asset_v('js/reports-analytics.js') }}"></script>
 @endpush

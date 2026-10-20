@@ -627,7 +627,6 @@
 
     $pageData = [
         'paidBreakConfig' => $breakConfig,
-        'teachers' => $teachers,
         'allTeachers' => $allTeachers,
         'schedulePicker' => $schedulePicker,
     ];
@@ -636,6 +635,7 @@
 window.PAGE = @json($pageData);
 </script>
 <script src="{{ asset_v('js/personnel-cards.js') }}"></script>
+<script src="{{ asset_v('js/live-filters.js') }}"></script>
 <script src="{{ asset_v('js/superadmin-personnel.js') }}"></script>
 @if (session('message'))
 @php $flash = ['message' => session('message'), 'type' => session('message_type', 'success')]; @endphp

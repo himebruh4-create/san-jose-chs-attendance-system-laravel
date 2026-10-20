@@ -53,7 +53,30 @@ abstract class ReportsController extends Controller
             $monthly = $reports->monthly($monthStart, $monthEnd);
         }
 
+        // Daily lists only people with a status to report: "Not Yet Recorded"
+        // (no scan yet today) is shown as a count instead. Past days never
+        // have it; those people are Absent or Pending Review as usual.
+        $dailyNotYetRecorded = count(array_filter($daily, fn (array $row) => $row['status'] === 'Not Yet Recorded'));
+        $daily = array_values(array_filter($daily, fn (array $row) => $row['status'] !== 'Not Yet Recorded'));
+
+        // Previous / next school week; never a week that has not started.
+        $previousWeek = date('Y-m-d', strtotime($weekStart.' -7 days'));
+        $nextWeek = date('Y-m-d', strtotime($weekStart.' +7 days'));
+
+        // Print Absences: each tab's own range, with the Personnel filter.
+        $absenceUrl = fn (string $period, string $from, string $to) => route('reports.absences', array_filter([
+            'period' => $period, 'from' => $from, 'to' => $to, 'teacher_id' => $person?->id,
+        ]));
+
         return view('reports', [
+            'dailyNotYetRecorded' => $dailyNotYetRecorded,
+            'previousWeek' => $previousWeek,
+            'nextWeek' => $nextWeek <= $today ? $nextWeek : null,
+            'absenceUrls' => [
+                'daily' => $absenceUrl('daily', $date, $date),
+                'weekly' => $absenceUrl('weekly', $weekStart, $weekEnd),
+                'monthly' => $absenceUrl('monthly', $monthStart, $monthEnd),
+            ],
             'role' => $this->role(),
             'activeTab' => $tab,
             'showPhotos' => $showPhotos,

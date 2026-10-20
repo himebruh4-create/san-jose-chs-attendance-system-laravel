@@ -25,7 +25,8 @@
     <h1>Attendance Report</h1>
 
     <div class="card">
-        <form method="GET" action="{{ route('principal.monitoring') }}" class="filter-row">
+        {{-- Applies itself on change (live-filters.js). --}}
+        <form method="GET" action="{{ route('principal.monitoring') }}" class="filter-row" data-live-filter>
 
             <div class="filter-group">
                 <label>Personnel</label>
@@ -47,7 +48,7 @@
                 <input type="date" name="date_to" value="{{ $dateTo }}">
             </div>
 
-            <button type="submit" class="apply-btn">Apply Filters</button>
+            <noscript><button type="submit" class="apply-btn">Apply Filters</button></noscript>
             <button type="button" class="print-btn" onclick="printAttendanceMonitoring()">Print</button>
 
         </form>
@@ -155,4 +156,5 @@
 window.MONITORING = @json($monitoringData);
 </script>
 <script src="{{ asset_v('js/principal-monitoring.js') }}"></script>
+<script src="{{ asset_v('js/live-filters.js') }}"></script>
 @endpush

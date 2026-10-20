@@ -36,4 +36,5 @@
 @push('scripts')
 <script src="{{ asset('vendor/jsbarcode/JsBarcode.all.min.js') }}"></script>
 <script src="{{ asset_v('js/personnel-cards.js') }}"></script>
+<script src="{{ asset_v('js/live-filters.js') }}"></script>
 @endpush

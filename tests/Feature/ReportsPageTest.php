@@ -90,7 +90,7 @@ class ReportsPageTest extends TestCase
             ->get(route('superadmin.reports', ['tab' => 'weekly', 'week' => '2026-W41', 'teacher_id' => $ana->id]));
 
         $response->assertSeeInOrder(['2026-0042', 'Teacher III', 'Teaching Staff'])
-            ->assertSee('Week of Oct 5 - Oct 10, 2026')
+            ->assertSee('Oct 5 – Oct 10, 2026')
             ->assertSee(route('photos.scan', $photoId))
             ->assertDontSee('6:58 AM')
             ->assertViewHas('personWeek', fn (array $days) => array_column($days, 'date') === [
@@ -109,6 +109,23 @@ class ReportsPageTest extends TestCase
         $response->assertSee('Tuesday, October 6, 2026')
             ->assertSee('6:41 AM')
             ->assertDontSee('7:28 AM');
+    }
+
+    public function test_today_lists_not_yet_recorded_personnel_as_a_count_but_past_days_still_list_them(): void
+    {
+        $everyDay = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        $scanned = $this->teacher(['fullname' => 'Ana Scanned', 'created_at' => '2026-01-01 00:00:00'], days: $everyDay);
+        $this->teacher(['fullname' => 'Ben Waiting', 'created_at' => '2026-01-01 00:00:00'], days: $everyDay);
+        DB::table('attendance')->insert(['teacher_id' => $scanned->id, 'date' => date('Y-m-d'), 'am_arrival' => '06:50:00']);
+        $this->actingAs($this->account('admin'));
+
+        $today = $this->get(route('admin.reports'));
+        $yesterday = $this->get(route('admin.reports', ['date' => date('Y-m-d', strtotime('-1 day'))]));
+
+        $today->assertViewHas('daily', fn (array $rows) => array_column($rows, 'fullname') === ['Ana Scanned'])
+            ->assertSee('1 personnel not yet recorded today.');
+        $yesterday->assertViewHas('daily', fn (array $rows) => array_column($rows, 'status', 'fullname') === ['Ana Scanned' => 'Pending Review', 'Ben Waiting' => 'Pending Review'])
+            ->assertDontSee('not yet recorded today');
     }
 
     public function test_a_future_or_malformed_date_and_an_archived_person_fall_back_to_today_and_all_personnel(): void
