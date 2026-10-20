@@ -203,17 +203,4 @@ class DashboardStats
 
         return null;
     }
-
-    /** Today's scans, one row per person (the "Live Personnel Logs" card). */
-    public static function liveLogs(string $today): array
-    {
-        return DB::table('attendance as a')
-            ->join('teachers as t', 't.id', '=', 'a.teacher_id')
-            ->where('a.date', $today)
-            ->orderByRaw("GREATEST(COALESCE(a.am_arrival, '00:00:00'), COALESCE(a.am_departure, '00:00:00'),
-                COALESCE(a.pm_arrival, '00:00:00'), COALESCE(a.pm_departure, '00:00:00')) DESC")
-            ->get(['t.fullname', 't.id_number', 'a.am_arrival', 'a.am_departure', 'a.pm_arrival', 'a.pm_departure'])
-            ->map(fn ($row) => (array) $row)
-            ->all();
-    }
 }

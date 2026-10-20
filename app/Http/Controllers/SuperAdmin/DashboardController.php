@@ -30,7 +30,6 @@ class DashboardController extends Controller
             'teachersOnLeaveToday' => $todayStats['on_leave'],
             'week' => $stats->week($today),
             'resetRequests' => $resetRequests,
-            'liveLogs' => DashboardStats::liveLogs($today),
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 }

@@ -8,8 +8,8 @@ function scrollAttendanceTable(direction) {
 }
 
 /* =========================================================
-   PRINT — clean standalone popup, same pattern as Admin's
-   "Print Daily Attendance", no sidebar/filters included.
+   PRINT — clean standalone popup, same pattern as the
+   Reports page prints, no sidebar/filters included.
    ========================================================= */
 
 function printAttendanceMonitoring() {

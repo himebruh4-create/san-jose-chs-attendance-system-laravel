@@ -120,52 +120,5 @@ body { margin: 0; background: #f5f0e1; color: #3a3527; }
 
 .empty-note { color: #a89a6e; font-size: 13px; }
 
-/* LIVE ATTENDANCE (reuses admin/live-daily-logs.php markup) */
-
-.live-logs-card table { width: 100%; border-collapse: collapse; font-size: 13.5px; table-layout: fixed; margin-top: 14px; }
-
-.live-logs-card th {
-    background: #14390f;
-    color: white;
-    padding: 11px 10px;
-    font-size: 11.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-}
-
-.live-logs-card th:first-child { border-top-left-radius: 8px; }
-.live-logs-card th:last-child { border-top-right-radius: 8px; }
-
-.live-logs-card td { border-bottom: 1px solid #efe8d6; padding: 10px; text-align: center; word-wrap: break-word; }
-
-.live-logs-card tr:hover td { background: #fbf8f0; }
-
-.live-logs-wrapper { overflow-x: auto; }
-
-/* Print Daily Attendance (same button as the Admin dashboard), under the logs */
-.print-btn-container { margin-top: 16px; text-align: right; }
-
-.print-btn {
-    padding: 11px 20px;
-    font-size: 13.5px;
-    font-weight: 700;
-    background: #e8a317;
-    color: #3a2600;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: 0.15s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-}
-
-.print-btn:hover { background: #f2c94c; transform: translateY(-1px); }
-
-.print-btn:active { transform: scale(0.97); }
-
-.log-empty-state { text-align: center; padding: 30px 10px; color: #a89a6e; font-size: 13.5px; }
-
 /* RESPONSIVE: page layout and the stat/chart grids live in app-shell.css and responsive.css. */
-
 

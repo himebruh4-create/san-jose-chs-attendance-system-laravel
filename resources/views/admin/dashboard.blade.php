@@ -14,7 +14,7 @@
     <div class="page-header">
         <div class="eyebrow">Admin Officer</div>
         <h1>Administrative Officer IV Dashboard</h1>
-        <p>Attendance overview and live monitoring for {{ date('l, F j, Y', strtotime($today)) }}.</p>
+        <p>Attendance overview for {{ date('l, F j, Y', strtotime($today)) }}.</p>
     </div>
 
     <div class="stats-wrapper">
@@ -107,27 +107,9 @@
 
     </div>
 
-    <div class="live-logs-card live-logs-wrapper">
-
-        <div id="printArea" class="logs-content">
-            @include('partials.live-logs')
-        </div>
-
-        <div class="print-btn-container">
-            <button onclick="printAttendance()" class="print-btn">
-                <i class="fa-solid fa-print"></i> Print Daily Attendance
-            </button>
-        </div>
-
-    </div>
-
 </div>
 @endsection
 
 @push('scripts')
 @include('partials.dashboard-charts-script')
-<script>
-const printedBy = @json(auth()->user()->email);
-</script>
-<script src="{{ asset_v('js/print-daily-attendance.js') }}"></script>
 @endpush

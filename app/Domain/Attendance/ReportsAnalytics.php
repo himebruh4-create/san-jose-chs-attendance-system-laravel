@@ -30,11 +30,23 @@ class ReportsAnalytics
             ->all();
     }
 
-    /** Mon–Sat of the current week: chart data, name lists and the roster grid. */
-    public function weekly(): array
+    /**
+     * Monday and Saturday of the week that contains $anyDay.
+     *
+     * @return array{0: string, 1: string}
+     */
+    public static function weekRange(string $anyDay): array
     {
-        $weekStart = date('Y-m-d', strtotime('monday this week', strtotime($this->today)));
-        $weekEnd = date('Y-m-d', strtotime('saturday this week', strtotime($this->today)));
+        return [
+            date('Y-m-d', strtotime('monday this week', strtotime($anyDay))),
+            date('Y-m-d', strtotime('saturday this week', strtotime($anyDay))),
+        ];
+    }
+
+    /** Mon–Sat of the week containing $anyDay (default: this week): chart data, name lists and the roster grid. */
+    public function weekly(?string $anyDay = null): array
+    {
+        [$weekStart, $weekEnd] = self::weekRange($anyDay ?? $this->today);
 
         $dates = [];
         $labels = [];
@@ -61,6 +73,7 @@ class ReportsAnalytics
                 // Future days are not evaluated.
                 if ($date > $this->today) {
                     $roster[$teacher['id']]['days'][$date] = '';
+
                     continue;
                 }
 
@@ -68,6 +81,7 @@ class ReportsAnalytics
 
                 if ($result === null) {
                     $roster[$teacher['id']]['days'][$date] = '';
+
                     continue;
                 }
 
@@ -143,5 +157,87 @@ class ReportsAnalytics
         }
 
         return ['totals' => $totals, 'lists' => $lists];
+    }
+
+    /**
+     * One date's scans and status for every person whose record existed then.
+     *
+     * @return list<array{teacher_id: int, fullname: string, id_number: string, department: string, date: string, am_arrival: ?string, am_departure: ?string, pm_arrival: ?string, pm_departure: ?string, status: string, detail: string}>
+     */
+    public function daily(string $date): array
+    {
+        $rows = [];
+
+        foreach ($this->teachers as $teacher) {
+            array_push($rows, ...$this->dayRows($teacher, $date, $date, false));
+        }
+
+        return $rows;
+    }
+
+    /**
+     * One person's scans and status for each day of [$from, $to]. With
+     * $workingDaysOnly, Sundays and unscheduled Saturdays are left out
+     * unless the person scanned that day (the monthly counts skip them too).
+     *
+     * @return list<array{teacher_id: int, fullname: string, id_number: string, department: string, date: string, am_arrival: ?string, am_departure: ?string, pm_arrival: ?string, pm_departure: ?string, status: string, detail: string}>
+     */
+    public function personDays(int $teacherId, string $from, string $to, bool $workingDaysOnly): array
+    {
+        foreach ($this->teachers as $teacher) {
+            if ((int) $teacher['id'] === $teacherId) {
+                return $this->dayRows($teacher, $from, $to, $workingDaysOnly);
+            }
+        }
+
+        return [];
+    }
+
+    private function dayRows(array $teacher, string $from, string $to, bool $workingDaysOnly): array
+    {
+        if ($from > $to) {
+            return [];
+        }
+
+        [$leaves, $adjustments, $attendance, $absences, $schedules] = AttendanceData::preload((int) $teacher['id'], $from, $to);
+
+        $rows = [];
+
+        for ($c = strtotime($from); $c <= strtotime($to); $c = strtotime('+1 day', $c)) {
+            $date = date('Y-m-d', $c);
+            $scans = $attendance[$date] ?? null;
+            $dayOfWeek = date('N', $c);
+
+            if ($workingDaysOnly && $scans === null
+                && ($dayOfWeek == 7 || ($dayOfWeek == 6 && ! isset($schedules[strtolower(date('l', $c))])))) {
+                continue;
+            }
+
+            // Future days are not evaluated.
+            $result = $date > $this->today
+                ? ['status' => '', 'detail' => '']
+                : MonthlySummary::dayStatus($teacher, $date, $leaves, $adjustments, $this->events, $scans, $absences, $schedules);
+
+            // Before the person's record existed.
+            if ($result === null) {
+                continue;
+            }
+
+            $rows[] = [
+                'teacher_id' => (int) $teacher['id'],
+                'fullname' => $teacher['fullname'],
+                'id_number' => $teacher['id_number'],
+                'department' => $teacher['department'],
+                'date' => $date,
+                'am_arrival' => $scans['am_arrival'] ?? null,
+                'am_departure' => $scans['am_departure'] ?? null,
+                'pm_arrival' => $scans['pm_arrival'] ?? null,
+                'pm_departure' => $scans['pm_departure'] ?? null,
+                'status' => (string) $result['status'],
+                'detail' => (string) ($result['detail'] ?? ''),
+            ];
+        }
+
+        return $rows;
     }
 }

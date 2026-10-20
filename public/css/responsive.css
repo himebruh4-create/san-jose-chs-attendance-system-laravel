@@ -107,11 +107,6 @@
        TABLES
     ------------------------------ */
 
-    /* Daily logs: the list scrolls sideways inside its card */
-    .live-logs-card #printArea {
-        overflow-x: auto;
-    }
-
     /* Action columns: the buttons of a row sit in .action-buttons, one
        left-aligned row with the same height, corners and gap. The column
        is only as wide as its buttons; on small screens the table scrolls
@@ -492,7 +487,7 @@
     /* Headers stay on one line, so a wide table scrolls sideways in its
        wrapper instead of squashing its columns. */
     :is(.table-scroll, .table-scroll-wrapper, .adjustments-table-wrapper,
-        .pending-scroll-wrapper, .mini-table-wrapper, .live-logs-card) th {
+        .pending-scroll-wrapper, .mini-table-wrapper) th {
         white-space: nowrap;
     }
 }
@@ -512,11 +507,6 @@
         font-size: 16px;
     }
 
-    .live-logs-card table {
-        table-layout: auto;
-        min-width: 600px;
-    }
-
     .search-form input[type="text"] {
         max-width: none;
         flex-basis: 100%;
@@ -534,6 +524,27 @@
     .filter-row .apply-btn,
     .filter-row .print-btn {
         flex: 1 1 auto;
+    }
+
+    /* Reports: the period, personnel and Apply stack; the table (and its
+       photo strip, which stays under its columns) scrolls sideways */
+    .report-filter > .filter-field,
+    .report-filter > .apply-btn {
+        flex: 1 1 100%;
+        max-width: none;
+    }
+
+    .report-filter :is(input, select) {
+        width: 100%;
+    }
+
+    .personnel-header {
+        align-items: flex-start;
+    }
+
+    .personnel-photo {
+        width: 64px;
+        height: 64px;
     }
 
     .section-header-actions {
@@ -580,5 +591,10 @@
     .adjustment-modal-footer > button,
     #dtrRemarkModal .dtr-remark-actions > button {
         flex: 1 1 auto;
+    }
+
+    /* Reports: the one-person profile stacks */
+    .personnel-header {
+        flex-direction: column;
     }
 }
