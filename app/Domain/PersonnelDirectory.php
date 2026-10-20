@@ -16,22 +16,23 @@ class PersonnelDirectory
         'Non-Academic' => 'Non-Teaching Staff / School Administrator',
     ];
 
+    /** Personnel per page of the card grids (fills 4, 3, 2 or 1 columns evenly). */
+    public const PER_PAGE = 12;
+
     /**
-     * One page of active personnel (with schedules), alphabetical.
+     * One page of active personnel (with schedules), alphabetical, matching
+     * a name / ID number search and the Personnel Type and Employment filters.
      *
      * @return array{rows: array, page: int, totalPages: int}
      */
-    public static function page(string $search, int $page, int $perPage, bool $searchIdNumber): array
+    public static function page(string $search, int $page, string $academicStatus = '', string $employmentType = ''): array
     {
+        $perPage = self::PER_PAGE;
+
         $query = Teacher::query()->active()
-            ->when($search !== '', function ($q) use ($search, $searchIdNumber) {
-                $q->where(function ($q2) use ($search, $searchIdNumber) {
-                    $q2->where('fullname', 'like', "%{$search}%");
-                    if ($searchIdNumber) {
-                        $q2->orWhere('id_number', 'like', "%{$search}%");
-                    }
-                });
-            });
+            ->when($search !== '', fn ($q) => $q->where(fn ($q2) => $q2->where('fullname', 'like', "%{$search}%")->orWhere('id_number', 'like', "%{$search}%")))
+            ->when($academicStatus !== '', fn ($q) => $q->where('academic_status', $academicStatus))
+            ->when($employmentType !== '', fn ($q) => $q->where('employment_type', $employmentType));
 
         $totalPages = max(1, (int) ceil((clone $query)->count() / $perPage));
         $page = min(max(1, $page), $totalPages);

@@ -11,94 +11,6 @@ body { margin: 0; background: #f5f0e1; }
     box-shadow: 0 4px 10px rgba(20, 57, 15, 0.1);
 }
 
-.search-form { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-
-.search-form input[type="text"] {
-    flex: 1;
-    max-width: 320px;
-    padding: 10px 14px;
-    border: 1px solid #e6dcc4;
-    border-radius: 8px;
-    font-size: 14px;
-    outline: none;
-}
-
-.search-form input[type="text"]:focus { border-color: #e8a317; box-shadow: 0 0 0 3px rgba(232, 163, 23, 0.2); }
-
-.search-form button {
-    padding: 10px 18px;
-    background: #14390f;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-}
-
-.clear-link {
-    padding: 10px 18px;
-    background: #f1ede0;
-    color: #5c5238;
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: 600;
-}
-
-/* ================= SCROLLABLE TABLE ================= */
-
-.table-scroll-wrapper {
-    max-height: 520px;
-    overflow-y: auto;
-    overflow-x: auto;
-    border: 1px solid #efe8d6;
-    border-radius: 10px;
-}
-
-table { width: 100%; border-collapse: collapse; font-size: 16px; }
-
-thead { background: #14390f; color: white; }
-
-thead th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: #14390f;
-}
-
-th, td { padding: 10px; text-align: left; border-bottom: 1px solid #f1ede0; vertical-align: top; }
-
-tbody tr:hover { background: #fbf8f0; }
-
-.scroll-controls {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.scroll-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    border: none;
-    background: #14390f;
-    color: white;
-    cursor: pointer;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: 0.15s ease;
-}
-
-.scroll-btn:hover { background: #2d5a27; }
-
-.teacher-photo { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid #e6dcc4; }
-
-.schedule-line { font-size: 12px; color: #5c5238; margin-bottom: 2px; }
-
-.no-schedule { color: #a89a6e; font-size: 12px; }
-
 .stats-wrapper { display: flex; flex-wrap: wrap; align-items: stretch; gap: 20px; margin-bottom: 20px; }
 
 .stat-headline {
@@ -136,14 +48,6 @@ tbody tr:hover { background: #fbf8f0; }
 
 .stat-mini-label { display: block; font-size: 11.5px; color: #5c5238; margin-top: 4px; font-weight: 600; }
 
-.pill { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-
-.pill.academic { background: #e8f5e9; color: #1b5e20; }
-.pill.non-academic { background: #e3f2fd; color: #1565c0; }
-.pill.full-time { background: #fff3e0; color: #e65100; }
-.pill.part-time { background: #f3e5f5; color: #6a1b9a; }
-.pill.contractual { background: #e0f2f1; color: #00695c; }
-
 .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
 
 .pagination a,
@@ -154,7 +58,5 @@ tbody tr:hover { background: #fbf8f0; }
 .pagination a:hover { background: #e8a317; color: #14390f; }
 
 .pagination .active { background: #e8a317; color: #14390f; }
-
-.empty-state { text-align: center; padding: 40px 20px; color: #8a7d5c; }
 
 /* RESPONSIVE: page layout is in app-shell.css, shared screen-size rules in responsive.css. */

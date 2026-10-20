@@ -4,6 +4,7 @@
 
 @push('head')
 <link rel="stylesheet" href="{{ asset_v('css/admin-personnel.css') }}">
+<link rel="stylesheet" href="{{ asset_v('css/personnel-cards.css') }}">
 @endpush
 
 @section('content')
@@ -21,88 +22,18 @@
 
         <h3><i class="fa-solid fa-users"></i> Personnel List</h3>
 
-        <!-- SEARCH BAR -->
-        <form method="GET" action="{{ route('admin.personnel') }}" class="search-form" style="margin-top: 14px;">
-            <input type="text" name="search" placeholder="Search teacher..." value="{{ $search }}">
-            <button type="submit"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
-        </form>
+        @include('partials.personnel-filter', ['route' => 'admin.personnel', 'canManage' => false])
 
-        <!-- TEACHER TABLE -->
-        <div class="table-scroll sticky-table-wrapper">
-        <table class="teacher-table">
-        <thead>
-        <tr>
-            <th style="text-align:center;">No.</th>
-            <th style="text-align:left;">ID Number</th>
-            <th style="text-align:left;">Name</th>
-            <th style="text-align:left;">Department</th>
-            <th style="text-align:center;">Personnel Type</th>
-            <th style="text-align:center;">Employment</th>
-            <th style="text-align:left;">Schedule</th>
-            <th style="text-align:center;">Barcode</th>
-            <th style="text-align:center;">Photo</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach ($teacherList as $t)
-        <tr>
-            <td style="text-align:center;">{{ ($page - 1) * $limit + $loop->iteration }}</td>
-            <td>{{ $t['id_number'] }}</td>
-            <td><strong>{{ $t['fullname'] }}</strong></td>
-            <td>{{ $t['department'] }}</td>
-            <td style="text-align:center;">{{ \App\Domain\PersonnelDirectory::TYPE_LABELS[$t['academic_status']] ?? $t['academic_status'] }}</td>
-            <td style="text-align:center;">{{ $t['employment_type'] }}</td>
-            <td>
-                @forelse ($t['schedules'] as $s)
-                    <div class="schedule-line">
-                        <strong>{{ $s['day'] }}:</strong>
-                        {{ date('g:i A', strtotime($s['time_in'])) }} - {{ date('g:i A', strtotime($s['time_out'])) }}
-                    </div>
-                @empty
-                    <span class="no-schedule">No schedule assigned</span>
-                @endforelse
-            </td>
-            <td style="text-align:center;">
-                <svg id="barcode-{{ (int) $t['id'] }}" class="barcode-svg" data-barcode="{{ $t['barcode'] }}"></svg>
-            </td>
-            <td style="text-align:center;" class="teacher-photo-cell">
-                <img src="{{ \App\Domain\PersonnelDirectory::photoUrl($t['photo']) }}" alt="Personnel Photo">
-            </td>
-        </tr>
-        @endforeach
-        </tbody>
-        </table>
-        </div>
-
-        <!-- PAGINATION -->
-        <div class="pagination">
-            @for ($i = 1; $i <= $totalPages; $i++)
-                @if ($i == $page)
-                    <span class="active">{{ $i }}</span>
-                @else
-                    <a href="{{ route('admin.personnel', ['page' => $i, 'search' => $search]) }}">{{ $i }}</a>
-                @endif
-            @endfor
-        </div>
+        @include('partials.personnel-list', ['route' => 'admin.personnel', 'canManage' => false, 'breakConfig' => null])
 
     </div>
+
+    @include('partials.personnel-details-modal', ['canManage' => false])
 
 </div>
 @endsection
 
 @push('scripts')
 <script src="{{ asset('vendor/jsbarcode/JsBarcode.all.min.js') }}"></script>
-<script>
-    // Code 128, the same symbology as the printed ID badges the kiosk scans.
-    // Not Code 39: scanners with Code 32 (Italian Pharmacode) enabled turn
-    // some 6-digit Code 39 values into a different 9-digit number.
-    document.querySelectorAll('.barcode-svg').forEach(svg => {
-        JsBarcode(svg, svg.dataset.barcode, {
-            format: "CODE128",
-            width: 2,
-            height: 50,
-            displayValue: true
-        });
-    });
-</script>
+<script src="{{ asset_v('js/personnel-cards.js') }}"></script>
 @endpush

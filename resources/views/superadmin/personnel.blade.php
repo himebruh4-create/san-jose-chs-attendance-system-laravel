@@ -4,19 +4,10 @@
 
 @push('head')
 <link rel="stylesheet" href="{{ asset_v('css/superadmin-personnel.css') }}">
+<link rel="stylesheet" href="{{ asset_v('css/personnel-cards.css') }}">
 <link rel="stylesheet" href="{{ asset_v('css/schedule-changes.css') }}">
 <script src="{{ asset('vendor/jsbarcode/JsBarcode.all.min.js') }}"></script>
 @endpush
-
-@php
-    $pageQuery = array_filter([
-        'search' => $search,
-        'academic_status' => $filterAcademic,
-        'employment_type' => $filterEmployment,
-    ], fn ($v) => $v !== '');
-
-    $photoUrl = fn ($photo) => $photo ? route('photos.personnel', basename($photo)) : asset('img/logo.png');
-@endphp
 
 @section('content')
 <div class="main">
@@ -33,204 +24,152 @@
         <h2><i class="fa-solid fa-magnifying-glass"></i> Search &amp; Filter Personnel</h2>
         <p class="card-subtitle">Find a personnel by name/ID, or narrow the list by status.</p>
 
-        <form method="GET" action="{{ route('superadmin.personnel') }}" class="filter-row">
-
-            <div class="field-group" style="flex:2 1 260px;">
-                <input type="text" name="search" placeholder="Search by Name or ID No." value="{{ $search }}">
-            </div>
-
-            <div class="field-group">
-                <select name="academic_status">
-                    <option value="">All Personnel Types</option>
-                    <option value="Academic" @selected($filterAcademic === 'Academic')>Teaching Staff</option>
-                    <option value="Non-Academic" @selected($filterAcademic === 'Non-Academic')>Non-Teaching Staff / School Administrator</option>
-                </select>
-            </div>
-
-            <div class="field-group">
-                <select name="employment_type">
-                    <option value="">All Employment Type</option>
-                    <option value="Regular" @selected($filterEmployment === 'Regular')>Regular</option>
-                    <option value="Part-Time" @selected($filterEmployment === 'Part-Time')>Part-Time</option>
-                    <option value="Contractual" @selected($filterEmployment === 'Contractual')>Contractual</option>
-                </select>
-            </div>
-
-            <div class="filter-actions">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fa-solid fa-check"></i> Apply
-                </button>
-                <button type="button" class="btn btn-outline" onclick="window.location={{ Js::from(route('superadmin.personnel')) }}">
-                    <i class="fa-solid fa-rotate-left"></i> Reset
-                </button>
-                <button type="button" class="btn btn-gold" onclick="printAllTeacherBadges()">
-                    <i class="fa-solid fa-id-card"></i> Print All ID Badges
-                </button>
-            </div>
-
-        </form>
+        @include('partials.personnel-filter', ['route' => 'superadmin.personnel', 'canManage' => true])
 
     </div>
 
-    <!-- TEACHER LIST -->
+    <!-- PERSONNEL LIST -->
     <div class="card">
 
-        <h2><i class="fa-solid fa-users"></i> Personnel List</h2>
-        <p class="card-subtitle">All registered Personnel, schedules, and badge information.</p>
-
-        <div class="table-scroll sticky-table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>No.</th>
-                        <th>ID Number</th>
-                        <th>Name</th>
-                        <th>Position</th>
-                        <th>Personnel Type</th>
-                        <th>Employment</th>
-                        <th>Schedule</th>
-                        <th>Barcode</th>
-                        <th>Photo</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                @forelse ($teachers as $teacher)
-                    @php
-                        $employmentPillClass = match (strtolower((string) $teacher['employment_type'])) {
-                            'regular' => 'pill-fulltime',
-                            'contractual' => 'pill-contractual',
-                            default => 'pill-parttime',
-                        };
-                    @endphp
-                    <tr>
-                        <td>{{ ($page - 1) * $limit + $loop->iteration }}</td>
-                        <td>{{ $teacher['id_number'] }}</td>
-                        <td><strong>{{ $teacher['fullname'] }}</strong></td>
-                        <td>{{ $teacher['department'] }}</td>
-
-                        <td>
-                            <span class="pill {{ strtolower((string) $teacher['academic_status']) === 'academic' ? 'pill-academic' : 'pill-non-academic' }}">
-                                {{ $teacher['academic_status'] === 'Academic' ? 'Teaching Staff' : 'Non-Teaching Staff / School Administrator' }}
-                            </span>
-                        </td>
-
-                        <td>
-                            <span class="pill {{ $employmentPillClass }}">{{ $teacher['employment_type'] }}</span>
-                        </td>
-
-                        <td>
-                            @forelse ($teacher['schedules'] as $schedule)
-                                @php $paidBreak = \App\Domain\Attendance\dtrBreakForSchedule($breakConfig, $schedule); @endphp
-                                <div style="margin-bottom:5px; font-size:12.5px;">
-                                    <strong>{{ $schedule['day'] }}:</strong>
-                                    {{ date('g:i A', strtotime($schedule['time_in'])) }} -
-                                    {{ date('g:i A', strtotime($schedule['time_out'])) }}
-                                    @if ($paidBreak)
-                                        <span style="color:#7a6a3a; font-size:11.5px;">(paid break {{ date('g:i A', strtotime($paidBreak['start'])) }} - {{ date('g:i A', strtotime($paidBreak['end'])) }})</span>
-                                    @endif
-                                </div>
-                            @empty
-                                <span style="color:#a89a6e; font-size:12.5px;">No schedule assigned</span>
-                            @endforelse
-                        </td>
-
-                        <td>
-                            {{ $teacher['barcode'] }}
-                            <br>
-                            <svg id="barcode-{{ (int) $teacher['id'] }}" class="barcode-svg" data-barcode="{{ $teacher['barcode'] }}"></svg>
-                        </td>
-
-                        <td>
-                            <img src="{{ $photoUrl($teacher['photo']) }}" alt="Personnel Photo"
-                                 style="width:56px; height:56px; object-fit:cover; border-radius:9px; border:1px solid #e6dcc4;">
-                        </td>
-
-                        <td>
-                            <div class="action-group action-buttons">
-
-                                <button type="button" class="btn btn-outline btn-sm edit-button" data-id="{{ (int) $teacher['id'] }}" aria-label="Edit" title="Edit">
-                                    <i class="fa-solid fa-pen" aria-hidden="true"></i> <span class="btn-label">Edit</span>
-                                </button>
-
-                                <!-- Submitted via JS after the confirmation modal -->
-                                <form method="POST" action="{{ route('superadmin.personnel.regenerate-barcode') }}" style="display:none;" id="regenerateForm-{{ (int) $teacher['id'] }}">
-                                    @csrf
-                                    @include('superadmin.partials.return-fields')
-                                    <input type="hidden" name="id" value="{{ (int) $teacher['id'] }}">
-                                </form>
-
-                                <button type="button" class="btn btn-gold btn-sm" aria-label="Regenerate barcode" title="Regenerate barcode"
-                                    onclick="openRegenerateModal({{ (int) $teacher['id'] }}, {{ Js::from($teacher['fullname']) }})">
-                                    <i class="fa-solid fa-barcode" aria-hidden="true"></i> <span class="btn-label">Regenerate</span>
-                                </button>
-
-                                <button type="button" class="btn btn-danger btn-sm" aria-label="Archive" title="Archive"
-                                    onclick="openDeleteModal({{ (int) $teacher['id'] }}, {{ Js::from($teacher['fullname']) }})">
-                                    <i class="fa-solid fa-trash" aria-hidden="true"></i> <span class="btn-label">Archive</span>
-                                </button>
-
-                                <button type="button" class="btn btn-primary btn-sm" aria-label="Print badge" title="Print badge"
-                                    data-idnumber="{{ $teacher['id_number'] }}"
-                                    data-name="{{ $teacher['fullname'] }}"
-                                    data-department="{{ $teacher['department'] }}"
-                                    data-academic="{{ $teacher['academic_status'] }}"
-                                    data-employment="{{ $teacher['employment_type'] }}"
-                                    data-barcode="{{ $teacher['barcode'] }}"
-                                    data-photo="{{ $teacher['photo'] ?? '' }}"
-                                    onclick="printTeacherBadge(this)">
-                                    <i class="fa-solid fa-print" aria-hidden="true"></i> <span class="btn-label">Print</span>
-                                </button>
-
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="10" style="text-align:center; padding:30px;">No teachers found yet.</td>
-                    </tr>
-                @endforelse
-
-                </tbody>
-            </table>
+        <div class="list-header">
+            <div>
+                <h2><i class="fa-solid fa-users"></i> Personnel List</h2>
+                <p class="card-subtitle">All registered Personnel. Select View More for schedules, badge and actions.</p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="openAddPersonnelModal()">
+                <i class="fa-solid fa-user-plus"></i> Add Personnel
+            </button>
         </div>
 
-        <!-- PAGINATION -->
-        @if ($totalPages > 1)
-            @php $pageUrl = fn ($p) => route('superadmin.personnel', $pageQuery + ['page' => $p]); @endphp
-            <div class="pagination">
-                @if ($page > 1)
-                    <a href="{{ $pageUrl(1) }}">&laquo; First</a>
-                    <a href="{{ $pageUrl($page - 1) }}">&lsaquo; Previous</a>
-                @endif
-
-                @for ($i = 1; $i <= $totalPages; $i++)
-                    @if ($i == $page)
-                        <span class="active">{{ $i }}</span>
-                    @else
-                        <a href="{{ $pageUrl($i) }}">{{ $i }}</a>
-                    @endif
-                @endfor
-
-                @if ($page < $totalPages)
-                    <a href="{{ $pageUrl($page + 1) }}">Next &rsaquo;</a>
-                    <a href="{{ $pageUrl($totalPages) }}">Last &raquo;</a>
-                @endif
+        @if ($errors->any())
+            <div class="error-box">
+                @foreach ($errors->all() as $error)
+                    <div>{{ $error }}</div>
+                @endforeach
             </div>
         @endif
 
+        @include('partials.personnel-list', ['route' => 'superadmin.personnel', 'canManage' => true])
+
     </div>
 
-
-    <!-- ADD TEACHER + TEACHERS ON LEAVE / SCHOOL EVENTS -->
+    <!-- PERSONNEL ON LEAVE + SCHOOL SCHEDULE CHANGES -->
     <div class="dashboard-two-column">
 
-        <!-- ADD TEACHER -->
+        <!-- TEACHERS ON LEAVE -->
         <div class="card">
 
-            <h2><i class="fa-solid fa-user-plus"></i> Add Personnel</h2>
-            <p class="card-subtitle">Fill in the teacher's details, schedule, and photo.</p>
+            <div class="section-header">
+                <div>
+                    <h2><i class="fa-solid fa-person-walking-arrow-right"></i> Personnel on Leave</h2>
+                    <p>Personnel who are currently on leave.</p>
+                </div>
+                <div class="section-header-actions">
+                    <button type="button" class="btn btn-gold btn-sm" onclick="openLeaveModal()">
+                        <i class="fa-solid fa-plus"></i> Add Leave
+                    </button>
+                    <div class="count-badge">{{ count($teachersOnLeave) }}</div>
+                </div>
+            </div>
+
+            @if (count($teachersOnLeave) > 0)
+                <div class="mini-table-wrapper sticky-table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Personnel</th>
+                                <th>Position</th>
+                                <th>From</th>
+                                <th>Until</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($teachersOnLeave as $leave)
+                                <tr>
+                                    <td>
+                                        <strong>{{ $leave->fullname }}</strong><br>
+                                        <small style="color:#8a7d5c;">{{ $leave->id_number }}</small>
+                                    </td>
+                                    <td>{{ $leave->department }}</td>
+                                    <td>{{ date('M d, Y', strtotime($leave->leave_from)) }}</td>
+                                    <td>{{ date('M d, Y', strtotime($leave->leave_until)) }}</td>
+                                    <td><span class="pill pill-leave">On Leave</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button type="button" class="btn btn-danger btn-sm" aria-label="Archive" title="Archive"
+                                                onclick="openDeleteModal({{ (int) $leave->teacher_id }}, {{ Js::from($leave->fullname) }})">
+                                                <i class="fa-solid fa-trash" aria-hidden="true"></i> <span class="btn-label">Archive</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fa-solid fa-check"></i></div>
+                    <strong>No Personnel Currently on Leave</strong>
+                    <p>All personnel are currently available.</p>
+                </div>
+            @endif
+
+        </div>
+
+        <!-- SCHOOL SCHEDULE CHANGES (holidays, asynchronous classes, other changes) -->
+        <div class="card">
+
+            <div class="section-header">
+                <div>
+                    <h2><i class="fa-solid fa-flag"></i> School Schedule Changes</h2>
+                    <p>Holidays, asynchronous classes, and other schedule changes that apply to all teachers.</p>
+                </div>
+                <div class="section-header-actions">
+                    <button type="button" class="btn btn-gold btn-sm" onclick="openHolidayModal()">
+                        <i class="fa-solid fa-plus"></i> Add Schedule Change
+                    </button>
+                    <div class="count-badge" id="holidayCount">0</div>
+                </div>
+            </div>
+
+            <div class="mini-table-wrapper sticky-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Duration</th>
+                            <th>Included in Total Hours</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schoolHolidayTableBody">
+                        <tr>
+                            <td colspan="7" style="text-align:center;">Loading schedule changes...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+    </div>
+
+    @include('partials.personnel-details-modal', ['canManage' => true])
+
+    <!-- ADD PERSONNEL MODAL -->
+    <div class="modal-backdrop" id="addPersonnelModal" @if (session('failed_form') === 'add') data-reopen="1" @endif>
+        <div class="modal add-personnel-modal">
+
+            <button class="modal-close" type="button" onclick="closeAddPersonnelModal()"><i class="fa-solid fa-xmark"></i></button>
+
+            <h3>Add Personnel</h3>
+            <p>Fill in the personnel's details, schedule, and photo.</p>
 
             @if ($errors->any())
                 <div class="error-box">
@@ -334,114 +273,6 @@
             </form>
 
         </div>
-
-        <!-- RIGHT COLUMN: TEACHERS ON LEAVE + SCHOOL EVENTS -->
-        <div class="right-column">
-
-            <!-- TEACHERS ON LEAVE -->
-            <div class="card">
-
-                <div class="section-header">
-                    <div>
-                        <h2><i class="fa-solid fa-person-walking-arrow-right"></i> Personnel on Leave</h2>
-                        <p>Personnel who are currently on leave.</p>
-                    </div>
-                    <div class="section-header-actions">
-                        <button type="button" class="btn btn-gold btn-sm" onclick="openLeaveModal()">
-                            <i class="fa-solid fa-plus"></i> Add Leave
-                        </button>
-                        <div class="count-badge">{{ count($teachersOnLeave) }}</div>
-                    </div>
-                </div>
-
-                @if (count($teachersOnLeave) > 0)
-                    <div class="mini-table-wrapper sticky-table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Personnel</th>
-                                    <th>Position</th>
-                                    <th>From</th>
-                                    <th>Until</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($teachersOnLeave as $leave)
-                                    <tr>
-                                        <td>
-                                            <strong>{{ $leave->fullname }}</strong><br>
-                                            <small style="color:#8a7d5c;">{{ $leave->id_number }}</small>
-                                        </td>
-                                        <td>{{ $leave->department }}</td>
-                                        <td>{{ date('M d, Y', strtotime($leave->leave_from)) }}</td>
-                                        <td>{{ date('M d, Y', strtotime($leave->leave_until)) }}</td>
-                                        <td><span class="pill pill-leave">On Leave</span></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button type="button" class="btn btn-danger btn-sm" aria-label="Archive" title="Archive"
-                                                    onclick="openDeleteModal({{ (int) $leave->teacher_id }}, {{ Js::from($leave->fullname) }})">
-                                                    <i class="fa-solid fa-trash" aria-hidden="true"></i> <span class="btn-label">Archive</span>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="empty-state">
-                        <div class="empty-state-icon"><i class="fa-solid fa-check"></i></div>
-                        <strong>No Personnel Currently on Leave</strong>
-                        <p>All personnel are currently available.</p>
-                    </div>
-                @endif
-
-            </div>
-
-            <!-- SCHOOL SCHEDULE CHANGES (holidays, asynchronous classes, other changes) -->
-            <div class="card">
-
-                <div class="section-header">
-                    <div>
-                        <h2><i class="fa-solid fa-flag"></i> School Schedule Changes</h2>
-                        <p>Holidays, asynchronous classes, and other schedule changes that apply to all teachers.</p>
-                    </div>
-                    <div class="section-header-actions">
-                        <button type="button" class="btn btn-gold btn-sm" onclick="openHolidayModal()">
-                            <i class="fa-solid fa-plus"></i> Add Schedule Change
-                        </button>
-                        <div class="count-badge" id="holidayCount">0</div>
-                    </div>
-                </div>
-
-                <div class="mini-table-wrapper sticky-table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>Date</th>
-                                <th>Duration</th>
-                                <th>Included in Total Hours</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="schoolHolidayTableBody">
-                            <tr>
-                                <td colspan="7" style="text-align:center;">Loading schedule changes...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-            </div>
-
-        </div>
-
     </div>
 
     <!-- EDIT MODAL -->
@@ -809,6 +640,7 @@
 <script>
 window.PAGE = @json($pageData);
 </script>
+<script src="{{ asset_v('js/personnel-cards.js') }}"></script>
 <script src="{{ asset_v('js/superadmin-personnel.js') }}"></script>
 @if (session('message'))
 @php $flash = ['message' => session('message'), 'type' => session('message_type', 'success')]; @endphp

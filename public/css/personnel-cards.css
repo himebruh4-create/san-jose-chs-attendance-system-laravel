@@ -1,0 +1,388 @@
+/* ==============================================================
+   PERSONNEL CARDS — the card grid, filter and View More modal of the
+   Super Admin, Admin and Principal personnel lists. Self-contained:
+   the three pages' own stylesheets differ. Grid columns per screen
+   size are in responsive.css.
+   ============================================================== */
+
+/* ==========================
+   FILTER
+========================== */
+
+.personnel-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.pf-field {
+    flex: 1 1 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.pf-search { flex: 2 1 260px; }
+
+.pf-field label {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #5c5238;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.pf-field input,
+.pf-field select {
+    width: 100%;
+    height: 42px;
+    padding: 0 13px;
+    border: 1.5px solid #e6dcc4;
+    border-radius: 9px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: #fbf8f0;
+    color: #3a3527;
+    outline: none;
+    transition: 0.15s ease;
+}
+
+.pf-field select { cursor: pointer; }
+
+.pf-field input:focus,
+.pf-field select:focus {
+    border-color: #e8a317;
+    box-shadow: 0 0 0 4px rgba(232, 163, 23, 0.14);
+    background: #ffffff;
+}
+
+.pf-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.pf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    height: 42px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 9px;
+    font-size: 13.5px;
+    font-weight: 700;
+    font-family: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: 0.15s ease;
+}
+
+.pf-apply { background: #14390f; color: #ffffff; }
+.pf-apply:hover { background: #2d5a27; }
+
+.pf-reset { background: #f1ede0; color: #5c5238; }
+.pf-reset:hover { background: #e6dcc4; }
+
+.pf-badges { background: #e8a317; color: #3a2600; }
+.pf-badges:hover { background: #f2c94c; }
+
+/* ==========================
+   CARD GRID
+========================== */
+
+.personnel-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 18px;
+}
+
+.personnel-card {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid #efe8d6;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(20, 57, 15, 0.06);
+    transition: 0.15s ease;
+}
+
+.personnel-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(20, 57, 15, 0.12);
+}
+
+.pc-photo {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 280px;
+    object-fit: cover;
+    object-position: center top;
+    background: #f6f2e6;
+    border-bottom: 3px solid #e8a317;
+}
+
+.pc-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 14px 16px 4px;
+    min-width: 0;
+}
+
+.pc-id {
+    font-size: 12px;
+    font-weight: 700;
+    color: #a3720f;
+    letter-spacing: 0.4px;
+}
+
+.pc-name {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.3;
+    color: #14390f;
+    overflow-wrap: anywhere;
+}
+
+.pc-position {
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #5c5238;
+    overflow-wrap: anywhere;
+}
+
+.pc-view-more {
+    margin: 12px 16px 16px;
+    height: 40px;
+    border: 1.5px solid #14390f;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #14390f;
+    font-size: 13.5px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: 0.15s ease;
+}
+
+.pc-view-more:hover,
+.pc-view-more:focus-visible {
+    background: #14390f;
+    color: #ffffff;
+    outline: none;
+}
+
+.pc-empty {
+    margin-top: 18px;
+    padding: 40px 20px;
+    text-align: center;
+    color: #8a7d5c;
+}
+
+.pc-empty i { display: block; margin-bottom: 10px; font-size: 30px; color: #e6dcc4; }
+
+.pc-empty strong { display: block; color: #5c5238; }
+
+.pc-empty p { margin: 4px 0 0; font-size: 13px; }
+
+/* Personnel Type / Employment badges (same colors as the old table pills) */
+.type-badge,
+.employment-badge {
+    display: inline-block;
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.type-academic { background: #e8f5e9; color: #1b5e20; }
+.type-non-academic { background: #e3f2fd; color: #1565c0; }
+
+.employment-regular { background: #fff3e0; color: #e65100; }
+.employment-part-time { background: #f3e5f5; color: #6a1b9a; }
+.employment-contractual { background: #e0f2f1; color: #00695c; }
+
+/* ==========================
+   VIEW MORE MODAL
+========================== */
+
+.pd-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: rgba(20, 57, 15, 0.45);
+}
+
+.pd-backdrop.active { display: flex; }
+
+.pd-dialog {
+    position: relative;
+    width: min(94vw, 660px);
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
+    padding: 14px 24px 24px;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(20, 57, 15, 0.22);
+}
+
+/* ⋮ and X at the top right. Sticky (and zero height, so it takes no room
+   from the centered header): when the details scroll inside the modal on a
+   phone, the X stays in view. */
+.pd-toolbar {
+    position: sticky;
+    top: 10px;
+    z-index: 2;
+    height: 0;
+    margin-right: -10px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.pd-icon-btn {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: #f1ede0;
+    color: #14390f;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.pd-icon-btn:hover,
+.pd-icon-btn:focus-visible { background: #e6dcc4; outline: none; }
+
+/* ⋮ menu: text-only items, a different color each, no button backgrounds */
+.pd-menu { position: relative; }
+
+.pd-menu-list {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 170px;
+    display: flex;
+    flex-direction: column;
+    padding: 6px 0;
+    border: 1px solid #efe8d6;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 12px 30px rgba(20, 57, 15, 0.18);
+}
+
+.pd-menu-list[hidden] { display: none; }
+
+.pd-action {
+    padding: 10px 18px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.pd-action:hover,
+.pd-action:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    outline: none;
+}
+
+.pd-action-edit { color: #14390f; }
+.pd-action-regenerate { color: #b07d0c; }
+.pd-action-print { color: #3a3527; }
+.pd-action-archive { color: #c62828; }
+
+/* Header: photo, then name, then the two badges, all centered */
+.pd-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 0 20px;
+    text-align: center;
+}
+
+.pd-photo {
+    width: 130px;
+    height: 130px;
+    flex-shrink: 0;
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 12px;
+    border: 2px solid #e8a317;
+    background: #f6f2e6;
+}
+
+.pd-head-text { min-width: 0; max-width: 100%; }
+
+.pd-name {
+    margin: 0 0 10px;
+    font-size: 23px;
+    line-height: 1.3;
+    color: #14390f;
+    overflow-wrap: anywhere;
+}
+
+.pd-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+
+.pd-badges .type-badge,
+.pd-badges .employment-badge { padding: 5px 13px; font-size: 13px; }
+
+.pd-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 22px;
+    margin: 0;
+    padding-top: 16px;
+    border-top: 1px solid #f1ede0;
+}
+
+.pd-fields dt {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #8a7d5c;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.pd-fields dd {
+    margin: 4px 0 0;
+    font-size: 15.5px;
+    font-weight: 600;
+    color: #2b2b1f;
+    overflow-wrap: anywhere;
+}
+
+.pd-fields ul { margin: 0; padding-left: 18px; font-weight: 500; line-height: 1.7; }
+
+.pd-wide { grid-column: 1 / -1; }
+
+/* Barcode centered at its natural size (shrinking it would stop it
+   scanning); its number is drawn centered under the bars. Wider than the
+   modal, it scrolls instead ("safe" keeps its start reachable). */
+.pd-barcode {
+    display: flex;
+    justify-content: center;
+    justify-content: safe center;
+    overflow-x: auto;
+}
+
+.pd-barcode svg { max-width: none; }

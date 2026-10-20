@@ -82,37 +82,38 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 // =====================================================
-// GENERATE BARCODE DISPLAY
+// ⋮ ACTIONS (View More modal, personnel-cards.js)
+// Each item does what the old table row button did.
 // =====================================================
 
-document.querySelectorAll('.barcode-svg').forEach(svg => {
+function personnelAction(action) {
 
-    JsBarcode(
-        svg,
-        svg.dataset.barcode,
-        {
-            format: 'CODE128',
-            displayValue: true,
-            fontSize: 12,
-            height: 40,
-            width: 2
-        }
-    );
+    const person = currentPersonnel;
 
-});
+    closePersonnelMenu();
 
+    if (!person) { return; }
 
-// =====================================================
-// EDIT BUTTON
-// =====================================================
+    // Print keeps the details open; the others hand over to their own modal.
+    if (action === 'print') {
+        printTeacherBadge({
+            dataset: {
+                idnumber: person.id_number,
+                name: person.fullname,
+                department: person.department,
+                academic: person.academic_status,
+                employment: person.employment_type,
+                barcode: person.barcode,
+                photo: person.photo
+            }
+        });
+        return;
+    }
 
-document.querySelectorAll('.edit-button').forEach(button => {
+    closePersonnelDetails();
 
-    button.addEventListener('click', function () {
-
-        const teacherId = parseInt(this.dataset.id);
-
-        const teacher = teachersData.find(t => parseInt(t.id) === teacherId);
+    if (action === 'edit') {
+        const teacher = teachersData.find(t => parseInt(t.id) === person.id);
 
         if (!teacher) {
             showToast("Personnel information not found.", "error");
@@ -120,9 +121,35 @@ document.querySelectorAll('.edit-button').forEach(button => {
         }
 
         openEditModal(teacher);
+    } else if (action === 'regenerate') {
+        openRegenerateModal(person.id, person.fullname);
+    } else if (action === 'archive') {
+        openDeleteModal(person.id, person.fullname);
+    }
 
-    });
+}
 
+
+// =====================================================
+// ADD PERSONNEL MODAL
+// =====================================================
+
+function openAddPersonnelModal() {
+    document.getElementById('addPersonnelModal').classList.add('active');
+    lockBodyScroll();
+}
+
+function closeAddPersonnelModal() {
+    document.getElementById('addPersonnelModal').classList.remove('active');
+    unlockBodyScroll();
+}
+
+// A failed add comes back with the form reopened and its errors inside
+// (a failed edit only shows its errors above the list).
+document.addEventListener("DOMContentLoaded", function () {
+    if (document.getElementById('addPersonnelModal').dataset.reopen === '1') {
+        openAddPersonnelModal();
+    }
 });
 
 

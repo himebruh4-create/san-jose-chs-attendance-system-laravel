@@ -5,20 +5,25 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\PersonnelDirectory;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 /** Read-only personnel list (was admin/admin-personnel-management.php). */
 class PersonnelController extends Controller
 {
-    public function show(Request $request)
+    public function show(Request $request): View
     {
         $search = trim((string) $request->query('search'));
-        $list = PersonnelDirectory::page($search, (int) $request->query('page', 1), 5, false);
+        $filterAcademic = trim((string) $request->query('academic_status'));
+        $filterEmployment = trim((string) $request->query('employment_type'));
+        $list = PersonnelDirectory::page($search, (int) $request->query('page', 1), $filterAcademic, $filterEmployment);
 
         return view('admin.personnel', [
             'search' => $search,
-            'teacherList' => $list['rows'],
+            'filterAcademic' => $filterAcademic,
+            'filterEmployment' => $filterEmployment,
+            'teachers' => $list['rows'],
             'page' => $list['page'],
-            'limit' => 5,
+            'limit' => PersonnelDirectory::PER_PAGE,
             'totalPages' => $list['totalPages'],
             'stats' => PersonnelDirectory::stats(),
         ]);

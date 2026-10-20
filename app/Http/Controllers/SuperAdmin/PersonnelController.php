@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Domain\Attendance\BreakConfig;
+use App\Domain\PersonnelDirectory;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Data\SchoolEventController;
 use App\Models\Teacher;
@@ -23,7 +24,7 @@ class PersonnelController extends Controller
 {
     public const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-    private const PER_PAGE = 5;
+    private const PER_PAGE = PersonnelDirectory::PER_PAGE;
 
     public function index(Request $request)
     {
@@ -168,7 +169,9 @@ class PersonnelController extends Controller
         }
 
         if ($errors) {
-            return redirect()->to($this->returnUrl($request))->withErrors($errors);
+            // Which form failed: the page reopens Add Personnel only for an add.
+            return redirect()->to($this->returnUrl($request))->withErrors($errors)
+                ->with('failed_form', $existing ? 'edit' : 'add');
         }
 
         $values = [

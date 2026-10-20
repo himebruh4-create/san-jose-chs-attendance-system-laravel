@@ -382,6 +382,11 @@
         grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
     }
 
+    /* Personnel cards: 4 columns from 1366px, 3 below */
+    .personnel-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .stats-wrapper:has(> .stat-headline) > :last-child {
         grid-column: 1 / -1;
     }
@@ -490,6 +495,12 @@
         .pending-scroll-wrapper, .mini-table-wrapper) th {
         white-space: nowrap;
     }
+
+    /* Personnel cards: 2 columns below 1024px */
+    .personnel-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
 }
 
 /* ------------------------------
@@ -538,6 +549,15 @@
         width: 100%;
     }
 
+    /* Personnel lists: search and filters stack; the buttons share a row */
+    .personnel-filter > .pf-field {
+        flex: 1 1 100%;
+    }
+
+    .pf-actions > .pf-btn {
+        flex: 1 1 auto;
+    }
+
     .personnel-header {
         align-items: flex-start;
     }
@@ -584,6 +604,24 @@
     .dashboard-card {
         padding-left: 16px;
         padding-right: 16px;
+    }
+
+    /* Personnel cards: one column; View More details in one column */
+    .personnel-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pd-dialog {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .pd-toolbar {
+        margin-right: -6px;
+    }
+
+    .pd-fields {
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .modal-actions > button,
