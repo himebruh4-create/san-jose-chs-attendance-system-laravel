@@ -29,6 +29,11 @@
         box-sizing: border-box;
     }
 
+    /* Date / time fields open their picker from anywhere in the box (app-shell.js) */
+    input:is([type="date"], [type="month"], [type="time"], [type="week"], [type="datetime-local"]):not(:disabled):not([readonly]) {
+        cursor: pointer;
+    }
+
     :where(body[data-role]) :is(img, svg, video, canvas) {
         max-width: 100%;
     }

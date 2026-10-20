@@ -258,6 +258,33 @@ document.addEventListener('input', function (e) {
 });
 
 /* =========================================================
+   SHARED: OPEN DATE / TIME PICKERS FROM ANYWHERE IN THE FIELD
+   Browsers only open the picker from the small calendar/clock
+   icon; a click or tap anywhere in the box now opens it too.
+   Delegated on document, so fields in modals and fields added
+   later (live search results, new schedule rows) work as well.
+   Only the picker is opened: values, change events and typing
+   (Tab into the field, then type) are untouched. Browsers
+   without showPicker() keep their default behaviour.
+   ========================================================= */
+var PICKER_INPUTS = 'input[type="date"], input[type="month"], input[type="time"], input[type="week"], input[type="datetime-local"]';
+
+document.addEventListener('click', function (e) {
+    var input = e.target;
+    if (!input || !input.matches || !input.matches(PICKER_INPUTS)) {
+        return;
+    }
+    if (input.disabled || input.readOnly || typeof input.showPicker !== 'function') {
+        return;
+    }
+    try {
+        input.showPicker();
+    } catch (err) {
+        // Not allowed here (e.g. already open, or no user gesture): keep the default.
+    }
+});
+
+/* =========================================================
    SUPER ADMIN: PERSISTENT PENDING REVIEW BADGE
    Shows the number of unresolved Pending Review items (all review
    periods) for as long as any exist. The dashboard reminder can be
