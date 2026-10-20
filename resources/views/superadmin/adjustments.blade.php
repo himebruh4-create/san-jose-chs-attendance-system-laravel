@@ -148,10 +148,7 @@
 
             <div class="adjustments-table-wrapper">
 
-                <p style="margin:1 1 10px; color:#5c5238; font-size:13.5px;">
-                    Scans the kiosk refused (duplicate scans, or extra scans after attendance was already complete).
-                    These are audit records: they are kept permanently and are never deleted here.
-                </p>
+                <p class="help-note" style="margin: 12px 0 10px;"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Scans the kiosk refused (duplicates, or extra scans after a complete day). Kept permanently as audit records.</span></p>
 
                 <div style="margin-bottom:10px;">
                     <label style="font-weight:600; color:#5c5238; margin-right:6px;">Show</label>
@@ -206,9 +203,7 @@
                     Add Attendance Adjustment
                 </h2>
 
-                <p>
-                    Manually record a teacher's attendance when a scan is missing or needs correction.
-                </p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Record attendance by hand when a scan is missing or wrong.</span></p>
             </div>
 
             <button
@@ -442,9 +437,7 @@
                     Review Attendance Adjustment
                 </h2>
 
-                <p>
-                    View the details of this attendance adjustment.
-                </p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>View the details of this attendance adjustment.</span></p>
 
             </div>
 
@@ -676,9 +669,7 @@
                 as <strong>Absent</strong> on <strong id="confirmAbsentDate" style="color: #14390f;"></strong>?
             </p>
 
-            <p style="margin: 0; font-size: 12.5px; color: #a89a6e;">
-                This action cannot be undone from this screen.
-            </p>
+            <p class="help-note" style="margin: 0;"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>This cannot be undone from this screen.</span></p>
 
         </div>
 
@@ -720,10 +711,7 @@
                 on <strong id="deleteAdjustmentDate" style="color:#14390f;"></strong>?
             </p>
 
-            <p style="margin: 0; font-size: 12.5px; color: #a89a6e;">
-                This record will be moved to the Recycle Bin and will not be permanently deleted. You can restore it later.
-                If the day still needs an adjustment in the meantime, you'll need to add a new one.
-            </p>
+            <p class="help-note" style="margin: 0;"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>It moves to the Recycle Bin and can be restored. If the day still needs one, add a new adjustment.</span></p>
 
         </div>
 

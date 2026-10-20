@@ -22,7 +22,7 @@
     <div class="card">
 
         <h2><i class="fa-solid fa-magnifying-glass"></i> Search &amp; Filter Personnel</h2>
-        <p class="card-subtitle">Find a personnel by name/ID, or narrow the list by status.</p>
+        <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Search by name or ID, or filter by personnel type and employment.</span></p>
 
         @include('partials.personnel-filter', ['route' => 'superadmin.personnel', 'canManage' => true])
 
@@ -34,7 +34,7 @@
         <div class="list-header">
             <div>
                 <h2><i class="fa-solid fa-users"></i> Personnel List</h2>
-                <p class="card-subtitle">All registered Personnel. Select View More for schedules, badge and actions.</p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Select View More for a person's schedule, barcode and actions.</span></p>
             </div>
             <button type="button" class="btn btn-primary" onclick="openAddPersonnelModal()">
                 <i class="fa-solid fa-user-plus"></i> Add Personnel
@@ -62,7 +62,7 @@
             <div class="section-header">
                 <div>
                     <h2><i class="fa-solid fa-person-walking-arrow-right"></i> Personnel on Leave</h2>
-                    <p>Personnel who are currently on leave.</p>
+                    <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Personnel who are currently on leave.</span></p>
                 </div>
                 <div class="section-header-actions">
                     <button type="button" class="btn btn-gold btn-sm" onclick="openLeaveModal()">
@@ -125,7 +125,7 @@
             <div class="section-header">
                 <div>
                     <h2><i class="fa-solid fa-flag"></i> School Schedule Changes</h2>
-                    <p>Holidays, asynchronous classes, and other schedule changes that apply to all teachers.</p>
+                    <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Holidays, asynchronous classes and other changes that apply to all personnel.</span></p>
                 </div>
                 <div class="section-header-actions">
                     <button type="button" class="btn btn-gold btn-sm" onclick="openHolidayModal()">
@@ -169,7 +169,7 @@
             <button class="modal-close" type="button" onclick="closeAddPersonnelModal()"><i class="fa-solid fa-xmark"></i></button>
 
             <h3>Add Personnel</h3>
-            <p>Fill in the personnel's details, schedule, and photo.</p>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Fill in the personnel's details, schedule and photo.</span></p>
 
             @if ($errors->any())
                 <div class="error-box">
@@ -222,7 +222,7 @@
                 </div>
 
                 <h2 style="margin-top:22px; font-size:15px;"><i class="fa-solid fa-calendar-days"></i> Personnel Schedule</h2>
-                <p class="card-subtitle" style="margin-bottom:10px;">Select working days and assign time-in / time-out.</p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Tick the working days and set each day's Time In and Time Out.</span></p>
 
                 <div class="schedule-grid">
                     @foreach ($scheduleDays as $day)
@@ -282,7 +282,7 @@
             <button class="modal-close" type="button" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
 
             <h3>Edit Personnel</h3>
-            <p>Update this personnel's information, schedule, or photo.</p>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Update this personnel's details, schedule or photo.</span></p>
 
             <form method="POST" action="{{ route('superadmin.personnel.save') }}" enctype="multipart/form-data">
                 @csrf
@@ -388,9 +388,7 @@
 
             <h3>Archive Personnel</h3>
             <p>Are you sure you want to archive <strong id="deleteTeacherName" style="color:#14390f;"></strong>?</p>
-            <p style="color: #8a7d5c; font-size: 13px;">
-                This record will be moved to the Recycle Bin and will not be permanently deleted. You can restore it later.
-            </p>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>It moves to the Recycle Bin. You can restore it later.</span></p>
 
             <form method="POST" action="{{ route('superadmin.personnel.archive') }}">
                 @csrf
@@ -436,7 +434,7 @@
             <button class="modal-close" type="button" onclick="closeLeaveModal()"><i class="fa-solid fa-xmark"></i></button>
 
             <h3>Add Personnel Leave</h3>
-            <p>Record an approved leave period for a personnel.</p>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Record an approved leave period for a personnel.</span></p>
 
             <form method="POST" action="{{ route('superadmin.personnel.leave') }}" onsubmit="disableLeaveSubmit(this)">
                 @csrf
@@ -491,7 +489,7 @@
             <button type="button" class="modal-close" onclick="closeHolidayModal()"><i class="fa-solid fa-xmark"></i></button>
 
             <h2 id="holidayModalTitle">Add School Schedule Change</h2>
-            <p>Add a holiday, asynchronous class, or other schedule change that will automatically apply to all teachers' DTR.</p>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Applies automatically to every personnel's DTR.</span></p>
 
             <input type="hidden" id="holidayEditId" value="">
 
@@ -548,7 +546,7 @@
 
             <div class="field-group">
                 <label>Personnel Scheduled to Work</label>
-                <p class="picker-help">Optional. Personnel selected here still work on this schedule change, following their own individual schedule (it does not apply to them as a no-work day).</p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Optional. Selected personnel still work that day, on their own schedule.</span></p>
 
                 <div class="personnel-picker">
                     <input type="text" id="holidayPersonnelSearch" placeholder="Search personnel by name, ID or position" oninput="renderHolidayPersonnelList()" autocomplete="off">
@@ -587,10 +585,7 @@
 
             <h3>Deactivate School Schedule Change</h3>
             <p>Are you sure you want to deactivate <strong id="deactivateEventName" style="color:#14390f;"></strong>?</p>
-            <p style="font-size:12px;">It will no longer apply to any DTR, but the record is kept for history.</p>
-            <p style="color: #8a7d5c; font-size: 12px;">
-                This will move it to the Recycle Bin and will not be permanently deleted. You can restore it later.
-            </p>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>It stops applying to DTRs and moves to the Recycle Bin. You can restore it later.</span></p>
 
             <div class="modal-actions">
                 <button type="button" class="btn btn-outline" onclick="closeDeactivateEventModal()">Cancel</button>

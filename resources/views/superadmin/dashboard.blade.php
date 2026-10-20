@@ -27,7 +27,7 @@
                 </div>
             @endforeach
 
-            <p class="reset-request-hint">Go to Settings &rarr; Account Management to reset a password.</p>
+            <p class="help-note reset-request-hint"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Go to Settings &rarr; Account Management to reset a password.</span></p>
         </div>
     @endif
 

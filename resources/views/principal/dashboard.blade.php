@@ -16,10 +16,7 @@
         <span class="today-date-tag">{{ date('l, F j, Y', strtotime($today)) }}</span>
     </div>
 
-    <p class="stats-note">
-        Present, Late, Absent, and Not Yet Recorded reflect today only and reset daily.
-        Total Teachers stays fixed, and On Leave only changes once a teacher's leave period ends.
-    </p>
+    <p class="help-note stats-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Present, Late, Absent and Not Yet Recorded are today's counts and reset daily. On Leave changes when a leave ends.</span></p>
 
     <!-- ================= TODAY'S EVENT BANNER ================= -->
 
@@ -121,7 +118,7 @@
                         <div><strong data-sv="nophoto_week">{{ $scanVerification['nophoto_week'] }}</strong><span>No photo</span></div>
                         <div><strong data-sv="manual_week">{{ $scanVerification['manual_week'] }}</strong><span>Manual entry</span></div>
                     </div>
-                    <p class="sv-note">A scan can have more than one flag.</p>
+                    <p class="help-note sv-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>A scan can have more than one flag.</span></p>
                 </div>
 
                 <p class="empty-note" data-sv-empty @if ($scanVerification['flagged_week'] !== 0) hidden @endif>No flagged scans this week</p>

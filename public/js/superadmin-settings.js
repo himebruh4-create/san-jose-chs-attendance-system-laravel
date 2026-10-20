@@ -1,6 +1,94 @@
 /* SETTINGS (Super Admin) — moved from the inline script of superadmin/settings.php.
    Kiosk Devices and Audit Log are new (bottom of this file). */
 
+/* =========================
+   SETTINGS TABS
+   One section at a time. The open tab is kept in the URL hash
+   (#accounts), so a reload returns to it. A form that posts (Add Account,
+   Reset Password, Register Kiosk...) carries the hash in its action; the
+   browser keeps it through the server's redirect back to this page, so
+   saving lands on the same tab. Every section's data still loads on page
+   load, so switching tabs never waits.
+========================= */
+
+const SETTINGS_TABS = Array.from(document.querySelectorAll('[data-settings-panel]'), panel => panel.dataset.settingsPanel);
+let currentSettingsTab = null;
+
+function switchSettingsTab(tab, rememberInUrl = true) {
+    if (!SETTINGS_TABS.includes(tab)) {
+        return;
+    }
+
+    currentSettingsTab = tab;
+
+    document.querySelectorAll('[data-settings-panel]').forEach(panel => {
+        panel.hidden = panel.dataset.settingsPanel !== tab;
+    });
+
+    document.querySelectorAll('.settings-tabs [role="tab"]').forEach(button => {
+        const selected = button.dataset.tab === tab;
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-selected', String(selected));
+        button.tabIndex = selected ? 0 : -1;
+
+        // Phones: the tab row scrolls sideways; keep the open tab in view.
+        if (selected) {
+            button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    });
+
+    if (rememberInUrl) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('tab');
+        url.hash = tab;
+        window.history.replaceState(null, '', url);
+    }
+}
+
+// The hash wins over ?tab= (the server already showed that one).
+(function openInitialSettingsTab() {
+    const fromHash = window.location.hash.slice(1);
+    const shown = document.querySelector('.settings-tabs [role="tab"].active');
+
+    switchSettingsTab(SETTINGS_TABS.includes(fromHash) ? fromHash : shown.dataset.tab, false);
+})();
+
+window.addEventListener('hashchange', function () {
+    switchSettingsTab(window.location.hash.slice(1), false);
+});
+
+// Left / Right / Home / End move between tabs.
+document.querySelector('.settings-tabs').addEventListener('keydown', function (e) {
+    const moves = { ArrowLeft: -1, ArrowRight: 1 };
+    let index = SETTINGS_TABS.indexOf(currentSettingsTab);
+
+    if (e.key in moves) {
+        index = (index + moves[e.key] + SETTINGS_TABS.length) % SETTINGS_TABS.length;
+    } else if (e.key === 'Home') {
+        index = 0;
+    } else if (e.key === 'End') {
+        index = SETTINGS_TABS.length - 1;
+    } else {
+        return;
+    }
+
+    e.preventDefault();
+    switchSettingsTab(SETTINGS_TABS[index]);
+    document.getElementById('settingsTab-' + SETTINGS_TABS[index]).focus();
+});
+
+document.addEventListener('submit', function (e) {
+    const form = e.target;
+
+    if (form.method.toLowerCase() !== 'post' || !currentSettingsTab) {
+        return;
+    }
+
+    const action = new URL(form.action, window.location.href);
+    action.hash = currentSettingsTab;
+    form.action = action.toString();
+});
+
 let recordingEnabled = true;
 
 async function loadAttendanceRecordingStatus() {

@@ -12,7 +12,7 @@
     <div class="scan-photos-header">
         <div>
             <h1>Scan Photos</h1>
-            <p>Webcam pictures the kiosk takes at every scan, next to each person's registered photo. Kept for {{ $retentionDays }} days.</p>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>The kiosk's photo of each scan, beside the registered photo. Kept for {{ $retentionDays }} days.</span></p>
         </div>
     </div>
 

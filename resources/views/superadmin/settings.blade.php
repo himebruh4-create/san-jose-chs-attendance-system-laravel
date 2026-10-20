@@ -6,17 +6,41 @@
 <link rel="stylesheet" href="{{ asset_v('css/superadmin-settings.css') }}">
 @endpush
 
+@php
+    // One tab per section. The open tab is kept in the URL hash
+    // (superadmin-settings.js); ?tab= (e.g. after a kiosk action) picks the
+    // one shown before the script runs.
+    $settingsTabs = [
+        'recording' => 'Attendance Recording',
+        'breaks' => 'Lunch & Paid Breaks',
+        'kiosk' => 'Kiosk Devices',
+        'accounts' => 'Account Management',
+        'positions' => 'Positions',
+        'recycle-bin' => 'Recycle Bin',
+        'backup' => 'Database Backup',
+        'audit-log' => 'Audit Log',
+    ];
+    $activeTab = array_key_exists((string) request('tab'), $settingsTabs) ? (string) request('tab') : 'recording';
+@endphp
+
 @section('content')
 <div class="main">
 
     <h1>Settings</h1>
 
-    <div class="card" id="attendanceToggleCard">
+    <div class="dept-tabs settings-tabs" role="tablist" aria-label="Settings sections">
+        @foreach ($settingsTabs as $key => $label)
+            <button type="button" role="tab" class="dept-tab-btn {{ $activeTab === $key ? 'active' : '' }}"
+                    id="settingsTab-{{ $key }}" data-tab="{{ $key }}"
+                    aria-selected="{{ $activeTab === $key ? 'true' : 'false' }}" tabindex="{{ $activeTab === $key ? 0 : -1 }}"
+                    onclick="switchSettingsTab('{{ $key }}')">{{ $label }}</button>
+        @endforeach
+    </div>
+
+    <div class="card" id="attendanceToggleCard" role="tabpanel" aria-labelledby="settingsTab-recording" data-settings-panel="recording" @if ($activeTab !== 'recording') hidden @endif>
 
         <h2>Attendance Recording</h2>
-        <p class="subtitle">
-            Turn this off during Summer Break or extended closures to stop the system from recording scans.
-        </p>
+        <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Turn off during Summer Break or long closures. While it is off, no scans are recorded.</span></p>
 
         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
 
@@ -35,16 +59,10 @@
 
     </div>
 
-    <div class="card" id="lunchBreakCard">
+    <div class="card" id="lunchBreakCard" role="tabpanel" aria-labelledby="settingsTab-breaks" data-settings-panel="breaks" @if ($activeTab !== 'breaks') hidden @endif>
 
     <h2>School Lunch Break</h2>
-    <p class="subtitle">
-        Breaks are paid: they are part of the shift and are never deducted from hours.
-        The lunch window below is the default for ordinary day schedules (for example 7:00 AM - 3:00 PM) and is shown
-        on the DTR as an automatic (Auto) AM Departure / PM Arrival. Personnel are not asked to scan breaks.
-        Set a different paid break for other schedules/shifts in the table below - it is applied automatically to
-        anyone assigned that schedule.
-    </p>
+    <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Paid break, not deducted from hours. Shown on the DTR as an automatic AM Departure and PM Arrival, so personnel don't scan breaks.</span></p>
 
     <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end;">
 
@@ -63,16 +81,10 @@
         </button>
 
     </div>
-    <p class="subtitle" style="margin-top:4px;">
-        Saving here also saves any Paid Break by Schedule changes below — both settings are stored together.
-    </p>
+    <p class="help-note" style="margin-top:10px;"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Also saves the Paid Break by Schedule changes below.</span></p>
 
     <h3 style="margin:22px 0 4px; font-size:15px; color:#5c5238;">Paid Break by Schedule</h3>
-    <p class="subtitle" style="margin-bottom:10px;">
-        Matches the personnel's assigned Time In / Time Out exactly — used for shift schedules (guards) whose paid break differs
-        from the shared School Lunch Break above. Shift personnel do not scan breaks: only their actual IN and OUT are recorded
-        and shown, and the configured break is handled internally for hours.
-    </p>
+    <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>For shifts with a different break (e.g. guards). Applies automatically to personnel with the matching Time In and Time Out.</span></p>
 
     <div class="table-scroll sticky-table-wrapper">
         <table class="dept-table" id="scheduleBreakTable">
@@ -97,23 +109,18 @@
             <i class="fa-solid fa-floppy-disk"></i> Save Changes
         </button>
     </div>
-    <p class="subtitle" style="margin-top:6px;">
-        Added and removed rows above only take effect after Save Changes is clicked.
-        This also saves the School Lunch Break settings above at the same time — both settings are stored together.
-    </p>
+    <p class="help-note" style="margin-top:10px;"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Added or removed rows apply only after Save Changes, which also saves the School Lunch Break above.</span></p>
 
 </div>
 
     <!-- ===== ACCOUNT MANAGEMENT ===== -->
 
-    <div class="card" id="accountManagementCard">
+    <div class="card" id="accountManagementCard" role="tabpanel" aria-labelledby="settingsTab-accounts" data-settings-panel="accounts" @if ($activeTab !== 'accounts') hidden @endif>
 
         <div class="dept-card-header">
             <div>
                 <h2>Account Management</h2>
-                <p class="subtitle">
-                    Create and view Admin and Principal logins. Passwords are never shown here.
-                </p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Admin and Principal logins. Passwords are never shown.</span></p>
             </div>
             <button type="button" class="add-option-btn" onclick="openAddAccountModal()">
                 <i class="fa-solid fa-user-plus"></i> Add Account
@@ -166,15 +173,12 @@
 
     <!-- ===== MANAGE SUBJECTS & POSITIONS ===== -->
 
-    <div class="card" id="departmentOptionsCard">
+    <div class="card" id="departmentOptionsCard" role="tabpanel" aria-labelledby="settingsTab-positions" data-settings-panel="positions" @if ($activeTab !== 'positions') hidden @endif>
 
         <div class="dept-card-header">
             <div>
                 <h2>Manage Positions</h2>
-                <p class="subtitle">
-                    Positions appear in the Add/Edit Personnel form's Position dropdown, grouped by
-                    Personnel Type. 
-                </p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Choices in the personnel form's Position list, grouped by Personnel Type.</span></p>
             </div>
             <button type="button" class="add-option-btn" onclick="openAddOptionModal()">
                 <i class="fa-solid fa-plus"></i> Add
@@ -210,14 +214,12 @@
 
     <!-- ===== RECYCLE BIN ===== -->
 
-    <div class="card" id="recycleBinCard">
+    <div class="card" id="recycleBinCard" role="tabpanel" aria-labelledby="settingsTab-recycle-bin" data-settings-panel="recycle-bin" @if ($activeTab !== 'recycle-bin') hidden @endif>
 
         <div class="dept-card-header">
             <div>
                 <h2>Recycle Bin</h2>
-                <p class="subtitle">
-                    Deleted records are kept here until restored or permanently removed. Deleting a record elsewhere in the system moves it here — it is never removed immediately.
-                </p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Deleted records wait here until you restore them or delete them permanently.</span></p>
             </div>
         </div>
 
@@ -258,14 +260,12 @@
     <!-- ===== DATABASE BACKUP (Super Admin only — this page is Super Admin only,
          and every backup endpoint enforces it again server-side) ===== -->
 
-    <div class="card" id="databaseBackupCard">
+    <div class="card" id="databaseBackupCard" role="tabpanel" aria-labelledby="settingsTab-backup" data-settings-panel="backup" @if ($activeTab !== 'backup') hidden @endif>
 
         <div class="dept-card-header">
             <div>
                 <h2>Database Backup</h2>
-                <p class="subtitle">
-                    Create a complete backup of the system database for safekeeping.
-                </p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Saves a full copy of the system database.</span></p>
             </div>
             <button type="button" class="add-option-btn" id="createBackupBtn" onclick="createDatabaseBackup()">
                 <i class="fa-solid fa-database"></i> Create Database Backup
@@ -295,9 +295,7 @@
     <div class="modal">
         <button class="modal-close" type="button" onclick="closeDisableReasonModal()">×</button>
         <h3>Disable Attendance Recording</h3>
-        <p style="color: #8a7d5c; font-size: 14px; margin-bottom: 15px;">
-            Enter a reason teachers will see when they try to scan while recording is disabled.
-        </p>
+        <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Personnel see this reason if they scan while recording is off.</span></p>
         <input
             type="text"
             id="modalReasonInput"
@@ -352,9 +350,7 @@
                 Are you sure you want to deactivate <strong id="deactivateOptionName" style="color:#14390f;"></strong>?
                 It will no longer appear in the Add/Edit Personnel form, but existing personnel records that reference it are kept as-is.
             </p>
-            <p style="color: #8a7d5c; font-size: 13px;">
-                This will move it to the Recycle Bin and will not be permanently deleted. You can restore it later.
-            </p>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>It moves to the Recycle Bin. You can restore it later.</span></p>
             <div class="modal-actions" style="margin-top: 15px;">
                 <button type="button" onclick="closeDeactivateOptionModal()">Cancel</button>
                 <button type="button" style="background: #c62828; color: white;" onclick="confirmDeactivateOption()">
@@ -390,9 +386,7 @@
                 Are you sure you want to archive <strong id="deleteAccountName" style="color:#14390f;"></strong>?
                 They will no longer be able to log in until restored.
             </p>
-            <p style="color: #8a7d5c; font-size: 13px;">
-                This record will be moved to the Recycle Bin and will not be permanently deleted. You can restore it later.
-            </p>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>It moves to the Recycle Bin. You can restore it later.</span></p>
 
             <form method="POST" action="{{ route('superadmin.settings.accounts.archive') }}">
                 @csrf
@@ -414,9 +408,7 @@
                 Are you sure you want to revoke <strong id="revokeKioskName" style="color:#14390f;"></strong>?
                 It will stop recording attendance immediately.
             </p>
-            <p style="color: #8a7d5c; font-size: 13px;">
-                To use this computer as a kiosk again, register it again from this page.
-            </p>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>To use this computer as a kiosk again, register it again here.</span></p>
 
             <form method="POST" action="{{ route('superadmin.settings.kiosk.revoke') }}">
                 @csrf
@@ -470,9 +462,7 @@
         <div class="modal">
             <button class="modal-close" type="button" onclick="closeAddAccountModal()">×</button>
             <h3>Add Account</h3>
-            <p style="color: #8a7d5c; font-size: 14px; margin-bottom: 15px;">
-                Create a new Admin or Principal login.
-            </p>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Create a new Admin or Principal login.</span></p>
 
             <form method="POST" action="{{ route('superadmin.settings.accounts.create') }}">
                 @csrf
@@ -554,17 +544,13 @@
 
     <!-- ===== KIOSK DEVICES (new) ===== -->
 
-    <div class="card" id="kioskDevicesCard">
+    <div class="card" id="kioskDevicesCard" role="tabpanel" aria-labelledby="settingsTab-kiosk" data-settings-panel="kiosk" @if ($activeTab !== 'kiosk') hidden @endif>
 
         <div class="dept-card-header">
             <div>
                 <h2>Kiosk Devices</h2>
-                <p class="subtitle">
-                    Only computers registered here can record attendance scans. To set up a kiosk, log in as Super Admin
-                    on that computer, register it here, then log out and open the kiosk page.
-                    A kiosk other than the server needs the HTTPS address for its webcam: install the
-                    <a href="{{ route('certificate') }}" target="_blank">kiosk certificate</a> on it first.
-                </p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Only registered computers can record scans. To add one, sign in as Super Admin on it, register it here, then log out and open the kiosk page.</span></p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>A kiosk other than the server needs the <a href="{{ route('certificate') }}" target="_blank">kiosk certificate</a> installed first, for its webcam.</span></p>
             </div>
         </div>
 
@@ -625,12 +611,12 @@
 
     <!-- ===== AUDIT LOG (new) ===== -->
 
-    <div class="card" id="auditLogCard">
+    <div class="card" id="auditLogCard" role="tabpanel" aria-labelledby="settingsTab-audit-log" data-settings-panel="audit-log" @if ($activeTab !== 'audit-log') hidden @endif>
 
         <div class="dept-card-header">
             <div>
                 <h2>Audit Log</h2>
-                <p class="subtitle">The latest 200 changes: logins, attendance corrections, personnel, accounts and settings.</p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>The latest 200 changes: logins, attendance corrections, personnel, accounts and settings.</span></p>
             </div>
             <button type="button" class="add-option-btn" onclick="loadAuditLog()">
                 <i class="fa-solid fa-rotate"></i> Refresh

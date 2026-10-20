@@ -12,7 +12,6 @@ body { margin: 0; background: #f5f0e1; }
 
 .card h2 { margin-top: 0; color: #14390f; }
 
-.card p.subtitle { color: #8a7d5c; margin-top: -8px; margin-bottom: 15px; }
 
 .status-badge {
     padding: 8px 16px;
@@ -154,6 +153,18 @@ body { margin: 0; background: #f5f0e1; }
 }
 
 .dept-tab-btn.active { background: #14390f; color: white; }
+
+/* Settings sections as tabs (same pill style as the tabs inside the cards) */
+.settings-tabs { margin: 4px 0 20px; }
+
+.settings-tabs .dept-tab-btn { padding: 10px 18px; font-size: 14px; white-space: nowrap; }
+
+.settings-tabs .dept-tab-btn:not(.active):hover { background: #e6dcc4; }
+
+.settings-tabs .dept-tab-btn:focus-visible { outline: 3px solid rgba(232, 163, 23, 0.6); outline-offset: 2px; }
+
+/* Only the open tab's section shows */
+[data-settings-panel][hidden] { display: none !important; }
 
 .add-option-btn {
     background: #e8a317;

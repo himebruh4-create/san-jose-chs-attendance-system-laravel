@@ -51,6 +51,45 @@
     }
 
     /* ------------------------------
+       HELP NOTES
+       One-line helper notes under headings, buttons and tables, each with
+       an info icon (the same look as the kiosk's "Lost your ID?" hint):
+       <p class="help-note"><i class="fa-solid fa-circle-info"></i><span>…</span></p>
+       The icon sits on the first line when a note wraps. p.help-note
+       outranks the pages' own ".modal p" / ".card p" note styles.
+    ------------------------------ */
+
+    p.help-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+        margin: 4px 0 14px;
+        padding: 0;
+        font-size: 13px;
+        line-height: 1.5;
+        font-weight: 400;
+        color: #8a7d5c;
+        text-align: left;
+    }
+
+    p.help-note > i {
+        flex-shrink: 0;
+        margin-top: 0.25em;
+        font-size: 1em;
+        color: #a89a6e;
+    }
+
+    p.help-note > span {
+        min-width: 0;
+        overflow-wrap: break-word;
+    }
+
+    p.help-note a {
+        color: #14390f;
+        font-weight: 600;
+    }
+
+    /* ------------------------------
        STAT CARDS
        Total Personnel + two stat groups (Super Admin / Admin dashboards,
        Admin / Principal personnel lists):
@@ -547,6 +586,18 @@
 
     .report-filter :is(input, select) {
         width: 100%;
+    }
+
+    /* Settings: the section tabs stay on one row that scrolls sideways */
+    .settings-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scrollbar-width: thin;
+    }
+
+    .settings-tabs .dept-tab-btn {
+        flex-shrink: 0;
     }
 
     /* Personnel lists: search and filters stack; the buttons share a row */
