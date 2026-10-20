@@ -54,18 +54,10 @@
 
     <div class="scan-card" id="scanSection">
 
-        <div class="scan-card-header">
-            <div class="scan-icon-badge">
-                <i class="fa-solid fa-id-card-clip"></i>
-            </div>
-            <div>
-                <h2>Record Attendance</h2>
-                <p>Scan your ID badge or type your barcode number below</p>
-            </div>
-        </div>
-
         <div class="camera-box">
-            <video id="cameraPreview" autoplay muted playsinline></video>
+            <div class="camera-frame">
+                <video id="cameraPreview" autoplay muted playsinline></video>
+            </div>
             <div id="cameraStatus" class="camera-status camera-off">Starting camera…</div>
         </div>
 
@@ -79,52 +71,6 @@
         <div class="scan-hint">
             <i class="fa-solid fa-circle-info"></i>
             Lost your ID? You can type your barcode number manually.
-        </div>
-
-    </div>
-
-    <div class="table-card">
-
-        <div class="table-card-header">
-            <h3><i class="fa-solid fa-list-check"></i> Today's Attendance Log</h3>
-            <span class="date-tag">{{ date('l, F j, Y') }}</span>
-        </div>
-
-        <div class="table-scroll">
-            <table id="attendanceTable">
-                <tr>
-                    <th>Name</th>
-                    <th>Date</th>
-                    <th>AM Arrival</th>
-                    <th>AM Departure</th>
-                    <th>AM Status</th>
-                    <th>PM Arrival</th>
-                    <th>PM Departure</th>
-                    <th>PM Status</th>
-                    <th>DTR</th>
-                </tr>
-
-                @forelse ($rows as $row)
-                    <tr data-teacher="{{ $row['teacher_id'] }}">
-                        <td>{{ $row['fullname'] }}</td>
-                        <td>{{ $row['date'] }}</td>
-                        <td>{{ $row['am_arrival'] }}</td>
-                        <td>{{ $row['am_departure'] }}</td>
-                        <td>@include('kiosk.status-pill', ['status' => $row['am_status']])</td>
-                        <td>{{ $row['pm_arrival'] }}</td>
-                        <td>{{ $row['pm_departure'] }}</td>
-                        <td>@include('kiosk.status-pill', ['status' => $row['pm_status']])</td>
-                        <td>
-                            <i class="fa-solid fa-eye-slash eye-icon locked"
-                               data-teacher="{{ $row['teacher_id'] }}"
-                               data-name="{{ $row['fullname'] }}"
-                               onclick="viewDTR(this)"></i>
-                        </td>
-                    </tr>
-                @empty
-                    <tr><td colspan="9" class="empty-row"><i class="fa-regular fa-clock"></i>No attendance recorded yet today.</td></tr>
-                @endforelse
-            </table>
         </div>
 
     </div>

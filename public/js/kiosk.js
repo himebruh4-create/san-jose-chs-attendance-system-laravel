@@ -9,12 +9,10 @@
    - Late / On-Time comes from the response's `status` field
    - names and messages are escaped before being shown
    - a webcam photo is taken with each scan (when a camera is available)
-     and shown in the result next to the person's ID photo
+     and shown in the result
+   - no attendance records are shown: the day's attendance log and the
+     weekly DTR viewer are gone (DTRs are on the staff pages)
    ========================================================= */
-
-let activeTeacherId = localStorage.getItem("activeTeacherId")
-    ? Number(localStorage.getItem("activeTeacherId"))
-    : null;
 
 const modal = document.getElementById("modal");
 const modalCountdownBar = document.getElementById("modalCountdown");
@@ -24,18 +22,13 @@ let modalCountdown = null;
 
 /* =========================
    MODAL
-   Scan results close on their own: an accepted scan after 5 s; a rejected
-   scan or a typed (flagged) entry after 7 s, so there is time to read why.
-   Other messages keep 3 s; the weekly DTR stays until closed. A bar at the
-   bottom shrinks over the countdown. A click/tap outside closes it at once,
-   and so does the next barcode (see the input listener at the bottom).
+   Every scan result closes on its own after 7 s and the kiosk is back to
+   the camera and the barcode box. A bar at the bottom shrinks over the
+   countdown. A click/tap outside closes it at once, and so does the next
+   barcode (see the input listener at the bottom).
 ========================= */
 
-const MODAL_CLOSE_MS = {
-    message: 3000,
-    accepted: 5000,
-    needsAttention: 7000
-};
+const SCAN_RESULT_CLOSE_MS = 7000;
 
 function isModalOpen() {
     return modal.style.display === "flex";
@@ -64,8 +57,7 @@ modal.addEventListener("click", function(e){
     }
 });
 
-/** closeAfterMs: milliseconds before it closes by itself, or false to stay open. */
-function showModal(title, message, closeAfterMs = MODAL_CLOSE_MS.message){
+function showModal(title, message){
     stopModalCountdown();
 
     document.getElementById("title").innerText = title;
@@ -73,17 +65,14 @@ function showModal(title, message, closeAfterMs = MODAL_CLOSE_MS.message){
     modal.style.display = "flex";
     document.body.classList.add('modal-open');
 
-    modalCountdownBar.hidden = !closeAfterMs;
+    modalCountdownBar.hidden = false;
+    modalTimer = setTimeout(hideModal, SCAN_RESULT_CLOSE_MS);
 
-    if (closeAfterMs) {
-        modalTimer = setTimeout(hideModal, closeAfterMs);
-
-        if (modalCountdownBar.animate) {
-            modalCountdown = modalCountdownBar.animate(
-                [{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }],
-                { duration: closeAfterMs, easing: "linear", fill: "forwards" }
-            );
-        }
+    if (modalCountdownBar.animate) {
+        modalCountdown = modalCountdownBar.animate(
+            [{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }],
+            { duration: SCAN_RESULT_CLOSE_MS, easing: "linear", fill: "forwards" }
+        );
     }
 
     // The barcode box keeps focus behind the modal, so the next scan is captured.
@@ -106,7 +95,7 @@ barcodeInput.addEventListener("blur", function () {
 });
 
 document.addEventListener("click", function (e) {
-    if (!e.target.closest("a, button, .eye-icon")) focusBarcode();
+    if (!e.target.closest("a, button")) focusBarcode();
 });
 
 /* =========================
@@ -184,24 +173,17 @@ function wasTypedManually(barcode) {
 }
 
 /* =========================
-   SCAN RESULT PHOTOS
-   Left: the ID photo on record (school logo when there is none).
-   Right: the webcam snapshot sent with this scan.
+   SCAN RESULT PHOTO
+   Only the webcam snapshot sent with this scan ("Just now").
 ========================= */
 
-function photoPairHTML(recordPhoto, snapshot) {
-    const logo = appUrl("img/logo.png");
-    const recordSrc = recordPhoto ? appUrl("photos/" + encodeURIComponent(recordPhoto)) : logo;
+function scanPhotoHTML(snapshot) {
     const snapshotHTML = snapshot
         ? `<img src="${snapshot}" alt="Photo taken at this scan">`
         : `<div class="photo-missing">No photo captured</div>`;
 
     return `
-        <div class="photo-pair">
-            <figure>
-                <img src="${recordSrc}" alt="ID photo on record" onerror="this.onerror=null; this.src='${logo}';">
-                <figcaption>On record</figcaption>
-            </figure>
+        <div class="scan-photo">
             <figure>
                 ${snapshotHTML}
                 <figcaption>Just now</figcaption>
@@ -219,7 +201,7 @@ function rejectionHTML(data, snapshot, reason) {
         ? `<b>Name:</b> ${escapeHtml(data.fullname)}<br>`
         : "";
 
-    return photoPairHTML(data && data.photo, snapshot) + `
+    return scanPhotoHTML(snapshot) + `
         ${name}
         <b>Reason:</b> ${reason}
     `;
@@ -263,90 +245,11 @@ function processBarcode() {
     .then(data => {
 
         if (!data.success) {
-            showModal(data.title || "Not Recorded", rejectionHTML(data, snapshot, escapeHtml(data.message || "Your scan was not recorded. Please try again.")), MODAL_CLOSE_MS.needsAttention);
+            showModal(data.title || "Not Recorded", rejectionHTML(data, snapshot, escapeHtml(data.message || "Your scan was not recorded. Please try again.")));
             return;
         }
 
-        const teacherId = Number(data.teacher_id);
         const now = data.time;
-
-        /* -----------------------------
-           TABLE UPDATE FIRST
-           (row must exist before we touch its eye icon)
-        ----------------------------- */
-
-        const table = document.getElementById("attendanceTable");
-
-        const emptyRow = table.querySelector(".empty-row");
-        if (emptyRow) {
-            emptyRow.closest("tr").remove();
-        }
-
-        let row = document.querySelector(`tr[data-teacher="${teacherId}"]`);
-
-        if (!row) {
-
-            row = document.createElement("tr");
-            row.setAttribute("data-teacher", teacherId);
-
-            row.innerHTML = `
-                <td>${escapeHtml(data.fullname)}</td>
-                <td>${escapeHtml(data.date)}</td>
-                <td>-</td>
-                <td>-</td>
-                <td><span class="status-none">-</span></td>
-                <td>-</td>
-                <td>-</td>
-                <td><span class="status-none">-</span></td>
-                <td>
-                    <i class="fa-solid fa-eye-slash eye-icon locked"
-                    data-teacher="${teacherId}"
-                    onclick="viewDTR(this)"></i>
-                </td>
-            `;
-
-            table.insertBefore(row, table.children[1]);
-        }
-
-        if (data.title === "AM Arrival") {
-            row.children[2].innerText = now;
-            row.children[4].innerHTML = pillHTML(data.status);
-        }
-
-        if (data.title === "AM Departure") {
-            row.children[3].innerText = now;
-        }
-
-        if (data.title === "PM Arrival") {
-            row.children[5].innerText = now;
-            row.children[7].innerHTML = pillHTML(data.status);
-        }
-
-        if (data.title === "PM Departure") {
-            row.children[6].innerText = now;
-        }
-
-        // always move row to top
-        table.insertBefore(row, table.children[1]);
-
-        /* -----------------------------
-           EYE ICON LOGIC
-        ----------------------------- */
-
-        const previousTeacher = activeTeacherId;
-
-        activeTeacherId = teacherId;
-        localStorage.setItem("activeTeacherId", activeTeacherId);
-
-        if (previousTeacher && previousTeacher !== activeTeacherId) {
-            updateEyeIcon(previousTeacher, false);
-        }
-
-        updateEyeIcon(activeTeacherId, true);
-
-        /* -----------------------------
-           MODAL
-        ----------------------------- */
 
         const messageHTML = `
             <b>Name:</b> ${escapeHtml(data.fullname)}<br>
@@ -357,12 +260,11 @@ function processBarcode() {
             ${typedManually ? `<div class="scan-flag"><i class="fa-solid fa-keyboard"></i> Entered manually — flagged for verification.</div>` : ""}
         `;
 
-        showModal(data.title, photoPairHTML(data.photo, snapshot) + messageHTML,
-            typedManually ? MODAL_CLOSE_MS.needsAttention : MODAL_CLOSE_MS.accepted);
+        showModal(data.title, scanPhotoHTML(snapshot) + messageHTML);
     })
     .catch(err => {
         console.error("Scan request failed:", err);
-        showModal("Not Recorded", rejectionHTML(null, snapshot, "The attendance server could not be reached, so this scan was <b>not saved</b>. Please scan again. If this keeps happening, tell the Super Admin."), MODAL_CLOSE_MS.needsAttention);
+        showModal("Not Recorded", rejectionHTML(null, snapshot, "The attendance server could not be reached, so this scan was <b>not saved</b>. Please scan again. If this keeps happening, tell the Super Admin."));
     })
     .finally(() => {
         scanInProgress = false;
@@ -370,90 +272,7 @@ function processBarcode() {
     });
 }
 
-/* =========================
-   VIEW DTR — only the person who just scanned (checked by the server)
-========================= */
-
-function viewDTR(el){
-
-    const id = parseInt(el.getAttribute("data-teacher"));
-
-    if (id !== activeTeacherId) {
-        showModal("Access Denied", "You can only view your own DTR after scanning.");
-        return;
-    }
-
-    fetch(appUrl("kiosk/dtr") + "?teacher_id=" + encodeURIComponent(id))
-    .then(res => {
-        if (!res.ok) {
-            throw new Error(`Server responded with status ${res.status}`);
-        }
-        return res.json();
-    })
-    .then(data => {
-
-        if (data.error) {
-            showModal("Error", escapeHtml(data.error));
-            return;
-        }
-
-        let html = `
-        <h2 style="margin-bottom:5px;">WEEKLY TIME RECORD</h2>
-        <h3 style="margin-top:0; color:#8a7d5c;">${escapeHtml(data.fullname)}</h3>
-
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
-        <tr style="background:#14390f;color:white;">
-            <th>Date</th>
-            <th>AM In</th>
-            <th>AM Out</th>
-            <th>PM In</th>
-            <th>PM Out</th>
-        </tr>`;
-
-        data.records.forEach(r => {
-            html += `
-            <tr>
-                <td>${escapeHtml(r.date)}</td>
-                <td>${escapeHtml(r.am_arrival || '-')}</td>
-                <td>${escapeHtml(r.am_departure || '-')}</td>
-                <td>${escapeHtml(r.pm_arrival || '-')}</td>
-                <td>${escapeHtml(r.pm_departure || '-')}</td>
-            </tr>`;
-        });
-
-        html += `</table>`;
-        html += `<p style="margin-top:15px;font-weight:bold;color:#14390f;">
-        Week Covered: ${escapeHtml(data.week_start)} - ${escapeHtml(data.week_end)}</p>`;
-
-        showModal("Weekly DTR", html, false);
-    })
-    .catch(error => {
-        console.error("View DTR Error:", error);
-        showModal("Error", "Unable to load the weekly DTR right now. Please try again.");
-    });
-}
-
-function updateEyeIcon(teacherId, unlocked) {
-
-    const icon = document.querySelector(`.eye-icon[data-teacher="${teacherId}"]`);
-
-    if (!icon) {
-        return;
-    }
-
-    if (unlocked) {
-        icon.classList.remove("fa-eye-slash", "locked");
-        icon.classList.add("fa-eye");
-    } else {
-        icon.classList.remove("fa-eye");
-        icon.classList.add("fa-eye-slash", "locked");
-    }
-}
-
 window.addEventListener("load", function () {
-    if (activeTeacherId) {
-        updateEyeIcon(activeTeacherId, true);
-    }
     startCamera();
     focusBarcode();
 });

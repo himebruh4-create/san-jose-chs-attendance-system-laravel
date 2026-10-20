@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\KioskDevice;
+use App\Support\PersonnelPhotos;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 /**
@@ -163,20 +166,18 @@ class SecurityTest extends TestCase
             ->assertSessionHas('message_type', 'error');
     }
 
-    public function test_the_kiosk_dtr_only_shows_the_person_who_just_scanned(): void
+    public function test_the_kiosk_shows_no_ones_attendance_and_has_no_dtr_endpoint(): void
     {
-        $a = $this->teacher();
-        $b = $this->teacher();
+        $teacher = $this->teacher();
         $token = $this->kioskToken();
+        $this->withCredentials()->withCookie(KioskDevice::COOKIE, $token)->postJson('/kiosk/scan', ['barcode' => $teacher->barcode])->assertJson(['success' => true]);
 
-        $this->withCredentials()->withCookie(KioskDevice::COOKIE, $token)->postJson('/kiosk/scan', ['barcode' => $a->barcode])->assertJson(['success' => true]);
+        $page = $this->withCredentials()->withCookie(KioskDevice::COOKIE, $token)->get('/kiosk');
+        $dtr = $this->withCredentials()->withCookie(KioskDevice::COOKIE, $token)->getJson('/kiosk/dtr?teacher_id='.$teacher->id);
 
-        $this->withCredentials()->withCookie(KioskDevice::COOKIE, $token)->getJson('/kiosk/dtr?teacher_id='.$a->id)
-            ->assertJsonPath('fullname', $a->fullname);
-
-        $this->withCredentials()->withCookie(KioskDevice::COOKIE, $token)->getJson('/kiosk/dtr?teacher_id='.$b->id)
-            ->assertJsonMissingPath('fullname')
-            ->assertJsonPath('error', 'Scan your ID first to view your own DTR.');
+        // Anyone walking past the kiosk could read the old attendance log.
+        $page->assertOk()->assertDontSee($teacher->fullname);
+        $dtr->assertNotFound();
     }
 
     public function test_responses_carry_security_headers(): void
@@ -193,5 +194,30 @@ class SecurityTest extends TestCase
     {
         $this->get('/photos/teacher_x.jpg')->assertForbidden();
         $this->get('/uploads/teachers/teacher_x.jpg')->assertNotFound();
+    }
+
+    public function test_a_kiosk_device_cannot_load_a_personnel_photo(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put(PersonnelPhotos::DIR.'/teacher_x.jpg', 'jpeg-bytes');
+        $token = $this->kioskToken();
+
+        $response = $this->withCredentials()->withCookie(KioskDevice::COOKIE, $token)->get(route('photos.personnel', 'teacher_x.jpg'));
+
+        $response->assertForbidden();
+    }
+
+    #[TestWith(['superadmin'])]
+    #[TestWith(['admin'])]
+    #[TestWith(['principal'])]
+    public function test_signed_in_staff_can_load_a_personnel_photo(string $role): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put(PersonnelPhotos::DIR.'/teacher_x.jpg', 'jpeg-bytes');
+
+        $response = $this->actingAs($this->account($role))->get(route('photos.personnel', 'teacher_x.jpg'));
+
+        $response->assertOk();
+        $this->assertSame('jpeg-bytes', $response->streamedContent());
     }
 }

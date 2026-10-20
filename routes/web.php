@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 | Legacy file -> route, for reference:
 |   index.php, login.php             -> /, /login
 |   teacher-dashboard.php            -> /kiosk
-|   save-attendance.php, get-dtr.php -> /kiosk/scan, /kiosk/dtr
+|   save-attendance.php              -> /kiosk/scan (get-dtr.php was removed)
 |   superadmin/*.php                 -> /superadmin/...
 |   admin/*.php, principal/*.php     -> /admin/..., /principal/...
 |   dtr/*.php (JSON endpoints)       -> /data/...
@@ -45,14 +45,13 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware('kiosk')->group(function () {
     Route::get('/kiosk', [KioskController::class, 'index'])->name('kiosk');
     Route::post('/kiosk/scan', [KioskController::class, 'scan'])->middleware('throttle:120,1')->name('kiosk.scan');
-    Route::get('/kiosk/dtr', [KioskController::class, 'weeklyDtr'])->name('kiosk.dtr');
 });
 
 // Local CA certificate for kiosk devices (public: needed before anyone signs in).
 Route::get('/certificate', [CertificateController::class, 'show'])->name('certificate');
 Route::get('/certificate/download', [CertificateController::class, 'download'])->name('certificate.download');
 
-// Personnel photos: shown on the kiosk after a scan and on the admin pages.
+// Personnel photos: shown on the signed-in staff pages only.
 Route::get('/photos/{filename}', [PhotoController::class, 'personnel'])
     ->where('filename', '[A-Za-z0-9._-]+')->name('photos.personnel');
 

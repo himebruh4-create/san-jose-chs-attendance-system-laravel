@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\KioskDevice;
 use App\Support\PersonnelPhotos;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,10 +15,9 @@ class PhotoController extends Controller
 {
     public function personnel(Request $request, string $filename)
     {
-        // Signed-in staff, or an authorized kiosk (it shows the photo after a scan).
-        $allowed = $request->user() || KioskDevice::findByToken($request->cookie(KioskDevice::COOKIE));
-
-        abort_unless($allowed, 403);
+        // Signed-in staff only. Kiosk devices used to be allowed too, for the
+        // ID photo in the scan result; the kiosk no longer shows it.
+        abort_unless($request->user(), 403);
 
         $path = PersonnelPhotos::DIR.'/'.basename($filename);
 
