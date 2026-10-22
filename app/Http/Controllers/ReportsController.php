@@ -53,6 +53,8 @@ abstract class ReportsController extends Controller
             $monthly = $reports->monthly($monthStart, $monthEnd);
         }
 
+        $calendar = $reports->monthCalendar($monthStart, $monthEnd, $person?->id);
+
         // Daily lists only people with a status to report: "Not Yet Recorded"
         // (no scan yet today) is shown as a count instead. Past days never
         // have it; those people are Absent or Pending Review as usual.
@@ -92,6 +94,7 @@ abstract class ReportsController extends Controller
             'daily' => $withPhotos($daily),
             'weekly' => $weekly ?? null,
             'monthly' => $monthly ?? null,
+            'calendar' => $calendar,
             'personWeek' => $withPhotos($personWeek ?? []),
             'personMonth' => $withPhotos($personMonth ?? []),
             'personMonthSummary' => $personMonthSummary ?? null,

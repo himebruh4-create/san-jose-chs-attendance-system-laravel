@@ -202,8 +202,10 @@ function rejectionHTML(data, snapshot, reason) {
         : "";
 
     return scanPhotoHTML(snapshot) + `
-        ${name}
-        <b>Reason:</b> ${reason}
+        <div class="scan-details">
+            ${name}
+            <b>Reason:</b> ${reason}
+        </div>
     `;
 }
 
@@ -252,12 +254,14 @@ function processBarcode() {
         const now = data.time;
 
         const messageHTML = `
-            <b>Name:</b> ${escapeHtml(data.fullname)}<br>
-            ${data.position ? `<b>Position:</b> ${escapeHtml(data.position)}<br>` : ""}
-            <b>Scan:</b> ${escapeHtml(data.title)} &middot; ${escapeHtml(shortTime(now))}<br>
-            ${data.status ? `<b>Status:</b> ${pillHTML(data.status)}<br>` : ""}
-            <b>Message:</b> ${escapeHtml(data.message)}
-            ${typedManually ? `<div class="scan-flag"><i class="fa-solid fa-keyboard"></i> Entered manually — flagged for verification.</div>` : ""}
+            <div class="scan-details">
+                <b>Name:</b> ${escapeHtml(data.fullname)}<br>
+                ${data.position ? `<b>Position:</b> ${escapeHtml(data.position)}<br>` : ""}
+                <b>Scan:</b> ${escapeHtml(data.title)} &middot; ${escapeHtml(shortTime(now))}<br>
+                ${data.status ? `<b>Status:</b> ${pillHTML(data.status)}<br>` : ""}
+                <b>Message:</b> ${escapeHtml(data.message)}
+                ${typedManually ? `<div class="scan-flag"><i class="fa-solid fa-keyboard"></i> Entered manually — flagged for verification.</div>` : ""}
+            </div>
         `;
 
         showModal(data.title, scanPhotoHTML(snapshot) + messageHTML);

@@ -63,6 +63,22 @@ body { margin: 0; background: #f5f0e1; }
 
 .status-box.leave { background: #fdf3d9; color: #a3720f; }
 
+/* "This Month's Status": more than 5 names collapse to the first 5 */
+.status-box ul.is-collapsed li:nth-child(n+6) { display: none; }
+
+.list-toggle {
+    margin-top: 8px;
+    padding: 4px 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 .empty-note { color: #a89a6e; font-size: 13px; }
 
 input[type="month"],
@@ -381,6 +397,208 @@ button.strip-thumb:focus-visible { border-color: #e8a317; box-shadow: 0 0 0 3px 
     object-fit: contain;
     border-radius: 10px;
     background: #14390f;
+}
+
+/* ================= MONTHLY CALENDAR ================= */
+
+.month-calendar { margin-top: 16px; }
+
+.cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin: 0 0 12px;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: #5c5238;
+}
+
+.cal-legend li { display: inline-flex; align-items: center; gap: 6px; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+
+.cal-weekday {
+    padding: 4px 0;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #8a7d5c;
+}
+
+.cal-cell {
+    min-width: 0;
+    min-height: clamp(84px, 5vw + 30px, 120px);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    border: 1px solid #ecdfc0;
+    border-radius: 10px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+}
+
+button.cal-cell { cursor: pointer; transition: 0.15s ease; }
+
+button.cal-cell:hover,
+button.cal-cell:focus-visible { border-color: #e8a317; box-shadow: 0 0 0 3px rgba(232, 163, 23, 0.25); outline: none; }
+
+.cal-cell.is-outside { border-color: transparent; background: transparent; }
+
+.cal-cell.is-future { background: #fbf8f0; }
+
+.cal-cell.is-future .cal-date { color: #c9bd9c; }
+
+.cal-date {
+    min-width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 700;
+    color: #14390f;
+}
+
+.cal-cell.is-today { border: 2px solid #e8a317; }
+
+.cal-cell.is-today .cal-date { background: #14390f; color: #fff; }
+
+.cal-counts { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.cal-count,
+.cal-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.cal-status .cal-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cal-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; display: inline-block; }
+
+.dot-present { background: #4caf50; }
+.dot-late { background: #ff9800; }
+.dot-absent { background: #f44336; }
+.dot-leave { background: #ffc107; }
+.dot-pending { background: #9e9e9e; }
+
+/* Holiday / no-work day / event: gray */
+.cal-label {
+    max-width: 100%;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: #efede6;
+    color: #77736a;
+    font-size: 11.5px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Phones only: there the gray labels become hollow rings */
+.cal-legend .cal-legend-off { display: none; }
+
+.dot-off { border: 2px solid #a8a395; background: transparent; }
+
+/* Day modal */
+.calendar-day-modal { width: min(92vw, 680px); }
+
+/* The title keeps clear of the close button */
+.calendar-day-modal h3 { min-height: 32px; display: flex; align-items: center; margin: 0 44px 10px 0; }
+
+.cal-day-label {
+    display: inline-block;
+    margin: 0 0 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: #efede6;
+    color: #77736a;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.cal-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 10px;
+}
+
+.cal-group { padding: 12px 14px; }
+
+.cal-group h4 { margin: 0 0 8px; font-size: 15px; }
+
+.status-box.cal-group ul { max-height: none; padding: 0; list-style: none; font-size: 14px; line-height: 1.45; }
+
+.cal-group li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+
+.cal-group li:last-child { border-bottom: none; }
+
+.cal-group li span:first-child { min-width: 0; overflow-wrap: anywhere; }
+
+.cal-time { flex-shrink: 0; font-weight: 600; white-space: nowrap; opacity: 0.85; }
+
+.cal-person-status { margin: 0 0 14px; }
+
+.cal-scans {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin: 0;
+}
+
+.cal-scans div { padding: 10px 12px; border-radius: 10px; background: #fbf8f0; }
+
+.cal-scans dt { font-size: 11px; font-weight: 700; color: #8a7d5c; text-transform: uppercase; letter-spacing: 0.4px; }
+
+.cal-scans dd { margin: 4px 0 0; font-size: 17px; font-weight: 700; color: #14390f; }
+
+.calendar-daily-link { margin-bottom: 14px; padding: 8px 14px; text-decoration: none; }
+
+/* Phones: a compact grid of colored dots (the modal still lists the names) */
+@media screen and (max-width: 767.98px) {
+    .cal-grid { gap: 4px; }
+
+    .cal-weekday { font-size: 11px; letter-spacing: 0; }
+
+    .cal-cell { min-height: 54px; padding: 4px; align-items: center; gap: 3px; border-radius: 8px; }
+
+    .cal-date { min-width: 22px; height: 22px; font-size: 12.5px; }
+
+    .cal-counts { justify-content: center; gap: 3px; }
+
+    .cal-count,
+    .cal-status { padding: 0; background: none; }
+
+    .cal-count .cal-text,
+    .cal-status .cal-text { display: none; }
+
+    .cal-label {
+        width: 8px;
+        height: 8px;
+        padding: 0;
+        border: 2px solid #a8a395;
+        border-radius: 50%;
+        background: transparent;
+        font-size: 0;
+    }
+
+    .cal-legend .cal-legend-off { display: inline-flex; }
 }
 
 /* RESPONSIVE: page layout is in app-shell.css, shared screen-size rules in responsive.css. */

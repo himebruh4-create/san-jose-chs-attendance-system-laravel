@@ -154,6 +154,8 @@
                     </div>
                 </div>
 
+                @include('reports.partials.month-calendar')
+
                 <div id="monthlyPrintArea" class="report-print-area">
                     @include('reports.partials.personnel-header')
 
@@ -187,25 +189,29 @@
                     </div>
                 </div>
                 <p class="empty-note" id="monthlyPrintError" style="display:none;"></p>
-                <div class="chart-container">
-                    <canvas id="monthlyAnalyticsChart"></canvas>
-                </div>
+                @include('reports.partials.month-calendar')
             </div>
 
             <div class="card">
                 <h2>This Month's Status</h2>
                 <div class="status-lists">
                     @foreach ($statusBoxes as $status => $class)
+                        @php $names = $monthly['lists'][$status]; @endphp
                         <div class="status-box {{ $class }}">
                             <h3>{{ $status }}</h3>
-                            @if (empty($monthly['lists'][$status]))
+                            @if (empty($names))
                                 <p class="empty-note">No records.</p>
                             @else
-                                <ul>
-                                    @foreach ($monthly['lists'][$status] as $item)
+                                {{-- More than 5 names: the first 5, and a toggle for the rest --}}
+                                <ul id="monthList-{{ $class }}" @class(['is-collapsed' => count($names) > 5])>
+                                    @foreach ($names as $item)
                                         <li>{{ $item }}</li>
                                     @endforeach
                                 </ul>
+                                @if (count($names) > 5)
+                                    <button type="button" class="list-toggle" aria-expanded="false" aria-controls="monthList-{{ $class }}"
+                                        data-more="Show all {{ count($names) }}" onclick="toggleStatusList(this)">Show all {{ count($names) }}</button>
+                                @endif
                             @endif
                         </div>
                     @endforeach
@@ -247,9 +253,10 @@
         ];
     }
 
-    if ($monthly) {
-        $reportData['monthlyTotals'] = $monthly['totals'];
-    }
+    $reportData['calendar'] = [
+        'person' => (bool) $person,
+        'days' => $calendar['days'],
+    ];
 @endphp
 <script>
 window.REPORT = @json($reportData);

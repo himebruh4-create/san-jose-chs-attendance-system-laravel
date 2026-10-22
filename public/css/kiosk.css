@@ -696,6 +696,70 @@ body::before {
     .scan-hint {
         margin-top: clamp(8px, 1.4vh, 14px);
     }
+
+    /* Scan result: the whole result is on screen at once, never scrolled.
+       Spacing follows the screen height, and only the photo gives way:
+       it takes the height the title and text leave (down to 96px), so
+       the text keeps its size and stays readable from a distance. */
+    .modal-content {
+        --photo-size: clamp(170px, 19vw, 400px);
+        --caption-size: calc(6px + 1.25 * clamp(12px, 0.45rem + 0.4vw, 17px));
+        display: flex;
+        flex-direction: column;
+        max-height: 94vh;
+        max-height: 94dvh;
+        padding-top: clamp(14px, 3vh, 46px);
+        padding-bottom: clamp(14px, 3vh, 46px);
+    }
+
+    .modal-content > * {
+        flex-shrink: 0;
+    }
+
+    .modal-content h2 {
+        margin-bottom: clamp(8px, 2vh, 20px);
+        line-height: 1.2;
+    }
+
+    .modal-content #message {
+        flex: 0 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        padding-top: clamp(10px, 2vh, 18px);
+        padding-bottom: clamp(10px, 2vh, 18px);
+    }
+
+    .scan-details {
+        flex: 0 0 auto;
+    }
+
+    .scan-photo {
+        flex: 0 1 calc(var(--photo-size) + var(--caption-size));
+        min-height: calc(96px + var(--caption-size));
+        margin-bottom: clamp(8px, 1.8vh, 16px);
+    }
+
+    /* Fallback: about a third of the screen height at most */
+    .scan-photo figure {
+        flex: 0 0 auto;
+        width: min(var(--photo-size), 30vh);
+    }
+
+    .scan-photo figcaption {
+        line-height: 1.25;
+    }
+
+    /* The largest square that fits the height left for the photo */
+    @supports (width: 1cqh) {
+        .scan-photo {
+            container-type: size;
+        }
+
+        .scan-photo figure {
+            width: min(var(--photo-size), 100cqh - var(--caption-size));
+        }
+    }
 }
 
 /* Large desktop monitors: bigger title and barcode field (the clock scales on its own) */

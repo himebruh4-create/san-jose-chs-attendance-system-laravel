@@ -356,33 +356,95 @@ if (weeklyCanvas) {
     });
 }
 
-/* ================= MONTHLY CHART ================= */
+/* ================= MONTHLY CALENDAR =================
+   A day's names grouped by status with their time in (All Personnel), or
+   one person's status and scan times. The data is window.REPORT.calendar,
+   built with the monthly lists; it never contains scan photos. */
 
-const monthlyTotals = window.REPORT.monthlyTotals;
+const CALENDAR_STATUSES = { 'Present': 'present', 'Late': 'late', 'Absent': 'absent', 'On Leave': 'leave', 'Pending Review': 'pending' };
 
-const monthlyCanvas = document.getElementById('monthlyAnalyticsChart');
+function calendarGroupsHTML(day) {
+    const sections = Object.entries(CALENDAR_STATUSES)
+        .filter(([status]) => (day.groups[status] || []).length > 0)
+        .map(([status, cls]) => `
+            <section class="status-box ${cls} cal-group">
+                <h4>${escapeHtml(status)} (${day.groups[status].length})</h4>
+                <ul>
+                    ${day.groups[status].map(item => `
+                        <li>
+                            <span>${escapeHtml(item.name)}</span>
+                            <span class="cal-time">${escapeHtml(item.time || item.detail)}</span>
+                        </li>`).join('')}
+                </ul>
+            </section>`);
 
-if (monthlyCanvas) {
-    new Chart(monthlyCanvas, {
-        type: 'pie',
-        data: {
-            labels: ['Present', 'Late', 'Pending Review', 'Absent', 'On Leave'],
-            datasets: [{
-                data: [
-                    monthlyTotals['Present'],
-                    monthlyTotals['Late'],
-                    monthlyTotals['Pending Review'],
-                    monthlyTotals['Absent'],
-                    monthlyTotals['On Leave']
-                ],
-                backgroundColor: ['#4caf50', '#ff9800', '#9e9e9e', '#f44336', '#ffc107']
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
+    return sections.length
+        ? `<div class="cal-groups">${sections.join('')}</div>`
+        : '<p class="empty-note">No attendance to report for this day.</p>';
+}
+
+function calendarPersonHTML(day) {
+    if (!day.status) {
+        return '<p class="empty-note">No attendance to report for this day.</p>';
+    }
+
+    const cls = CALENDAR_STATUSES[day.status] || 'none';
+    const detail = day.detail && day.detail !== day.status ? `<small class="status-detail">${escapeHtml(day.detail)}</small>` : '';
+    const scan = (label, column) => `<div><dt>${label}</dt><dd>${escapeHtml(day.scans[column] || '—')}</dd></div>`;
+
+    return `
+        <p class="cal-person-status"><span class="status-tag status-${cls}">${escapeHtml(day.status)}</span>${detail}</p>
+        <dl class="cal-scans">
+            ${scan('AM Arrival', 'am_arrival')}
+            ${scan('AM Departure', 'am_departure')}
+            ${scan('PM Arrival', 'pm_arrival')}
+            ${scan('PM Departure', 'pm_departure')}
+        </dl>`;
+}
+
+function openCalendarDay(date) {
+    const day = window.REPORT.calendar.days[date];
+
+    if (!day) {
+        return;
+    }
+
+    const title = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const label = day.label ? `<p class="cal-day-label">${escapeHtml(day.labelTitle || day.label)}</p>` : '';
+
+    document.getElementById('calendarDayTitle').textContent = title;
+    document.getElementById('calendarDayBody').innerHTML = label +
+        (window.REPORT.calendar.person ? calendarPersonHTML(day) : calendarGroupsHTML(day));
+
+    // The Daily tab for this date, keeping the Personnel filter and the other tabs' periods.
+    const dailyUrl = new URL(window.location.href);
+    dailyUrl.searchParams.set('tab', 'daily');
+    dailyUrl.searchParams.set('date', date);
+    document.getElementById('calendarDayDailyLink').href = dailyUrl.toString();
+
+    document.getElementById('calendarDayModal').classList.add('active');
+    lockBodyScroll();
+    document.querySelector('#calendarDayModal .modal-close').focus();
+}
+
+function closeCalendarDay() {
+    const modal = document.getElementById('calendarDayModal');
+
+    if (!modal || !modal.classList.contains('active')) {
+        return;
+    }
+
+    modal.classList.remove('active');
+    unlockBodyScroll();
+}
+
+/* "This Month's Status": a list of more than 5 names shows the first 5. */
+function toggleStatusList(button) {
+    const list = document.getElementById(button.getAttribute('aria-controls'));
+    const expanded = list.classList.toggle('is-collapsed') === false;
+
+    button.setAttribute('aria-expanded', String(expanded));
+    button.textContent = expanded ? 'Show fewer' : button.dataset.more;
 }
 
 /* ================= PRINT ABSENCES =================
@@ -642,5 +704,6 @@ function closeScanPhoto() {
 document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         closeScanPhoto();
+        closeCalendarDay();
     }
 });

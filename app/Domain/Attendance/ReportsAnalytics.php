@@ -14,9 +14,14 @@ class ReportsAnalytics
 {
     public const STATUSES = ['Present', 'Late', 'Pending Review', 'Absent', 'On Leave'];
 
+    private const SCAN_COLUMNS = ['am_arrival', 'am_departure', 'pm_arrival', 'pm_departure'];
+
     private array $events;
 
     private array $teachers;
+
+    /** @var array<string, list<array{date: string, status: string, detail: string, scans: ?array}>> */
+    private array $monthDaysCache = [];
 
     public function __construct(private string $today)
     {
@@ -116,35 +121,15 @@ class ReportsAnalytics
     /** Status totals and per-person counts for one month (up to today). */
     public function monthly(string $monthStart, string $monthEnd): array
     {
-        $end = $monthEnd > $this->today ? $this->today : $monthEnd;
-
         $totals = array_fill_keys(self::STATUSES, 0);
         $lists = array_fill_keys(self::STATUSES, []);
 
         foreach ($this->teachers as $teacher) {
-            [$leaves, $adjustments, $attendance, $absences, $schedules] = AttendanceData::preload((int) $teacher['id'], $monthStart, $end);
-
             $counts = array_fill_keys(self::STATUSES, 0);
 
-            for ($c = strtotime($monthStart); $c <= strtotime($end); $c = strtotime('+1 day', $c)) {
-                $date = date('Y-m-d', $c);
-                $dayOfWeek = date('N', $c);
-
-                // Sunday is always off; Saturday only for people scheduled on it.
-                if ($dayOfWeek == 7 || ($dayOfWeek == 6 && ! isset($schedules[strtolower(date('l', $c))]))) {
-                    continue;
-                }
-
-                $result = MonthlySummary::dayStatus($teacher, $date, $leaves, $adjustments, $this->events, $attendance[$date] ?? null, $absences, $schedules);
-
-                if ($result === null) {
-                    continue;
-                }
-
-                $status = $result['status'];
-
-                if ($status !== 'School Event' && $status !== 'Adjusted' && isset($counts[$status])) {
-                    $counts[$status]++;
+            foreach ($this->monthDays($teacher, $monthStart, $monthEnd) as $day) {
+                if (isset($counts[$day['status']])) {
+                    $counts[$day['status']]++;
                 }
             }
 
@@ -157,6 +142,173 @@ class ReportsAnalytics
         }
 
         return ['totals' => $totals, 'lists' => $lists];
+    }
+
+    /**
+     * The Monthly tab's calendar: Mon–Sat weeks, and for each day up to
+     * today either the status counts and names (All Personnel) or one
+     * person's status and scans. The days and statuses are exactly the
+     * ones monthly() counts, so the calendar adds up to its lists. No
+     * scan photos, for any role.
+     *
+     * @return array{weeks: list<list<?string>>, days: array<string, array{future: bool, label: ?string, labelTitle: ?string, counts?: array<string, int>, groups?: array<string, list<array{name: string, time: string, detail: string}>>, status?: ?string, detail?: string, scans?: array<string, string>}>}
+     */
+    public function monthCalendar(string $monthStart, string $monthEnd, ?int $teacherId = null): array
+    {
+        $days = [];
+
+        for ($c = strtotime($monthStart); $c <= strtotime($monthEnd); $c = strtotime('+1 day', $c)) {
+            $date = date('Y-m-d', $c);
+
+            if (date('N', $c) == 7) {
+                continue;
+            }
+
+            $event = $this->wholeDayEvent($date);
+
+            $days[$date] = [
+                'future' => $date > $this->today,
+                'label' => $event ? ($event['event_type'] === 'Other' ? $event['event_name'] : $event['event_type']) : null,
+                'labelTitle' => $event['event_name'] ?? null,
+            ] + ($teacherId === null
+                ? ['counts' => [], 'groups' => []]
+                : ['status' => null, 'detail' => '', 'scans' => []]);
+        }
+
+        foreach ($this->teachers as $teacher) {
+            if ($teacherId !== null && (int) $teacher['id'] !== $teacherId) {
+                continue;
+            }
+
+            foreach ($this->monthDays($teacher, $monthStart, $monthEnd) as $day) {
+                $date = $day['date'];
+                $scans = $day['scans'] ?? [];
+
+                if ($teacherId !== null) {
+                    $days[$date]['status'] = $day['status'];
+                    $days[$date]['detail'] = $day['detail'];
+                    $days[$date]['scans'] = array_map(
+                        fn (string $column) => self::clockTime($scans[$column] ?? null),
+                        array_combine(self::SCAN_COLUMNS, self::SCAN_COLUMNS)
+                    );
+
+                    continue;
+                }
+
+                if (! in_array($day['status'], self::STATUSES, true)) {
+                    continue;
+                }
+
+                $days[$date]['counts'][$day['status']] = ($days[$date]['counts'][$day['status']] ?? 0) + 1;
+                $days[$date]['groups'][$day['status']][] = [
+                    'name' => $teacher['fullname'],
+                    'time' => self::clockTime($scans['am_arrival'] ?? $scans['pm_arrival'] ?? null),
+                    'detail' => $day['status'] === 'On Leave' ? $day['detail'] : '',
+                ];
+            }
+        }
+
+        // A past Saturday nobody works on (or this person does not).
+        foreach ($days as $date => $day) {
+            $nobodyWorked = $teacherId === null ? $day['counts'] === [] : $day['status'] === null;
+
+            if (! $day['future'] && $day['label'] === null && $nobodyWorked && date('N', strtotime($date)) == 6) {
+                $days[$date]['label'] = 'No work';
+            }
+        }
+
+        return ['weeks' => self::calendarWeeks($monthStart, $monthEnd), 'days' => $days];
+    }
+
+    /**
+     * One person's days of [$monthStart, $monthEnd] up to today, as the
+     * monthly report sees them: Sundays and unscheduled Saturdays are
+     * skipped, so are days before the person's record existed. Every
+     * status is returned; callers count only self::STATUSES. Remembered,
+     * so the lists and the calendar of one page read the data once.
+     *
+     * @return list<array{date: string, status: string, detail: string, scans: ?array}>
+     */
+    private function monthDays(array $teacher, string $monthStart, string $monthEnd): array
+    {
+        $end = $monthEnd > $this->today ? $this->today : $monthEnd;
+        $key = $teacher['id'].'|'.$monthStart.'|'.$end;
+
+        if (isset($this->monthDaysCache[$key])) {
+            return $this->monthDaysCache[$key];
+        }
+
+        [$leaves, $adjustments, $attendance, $absences, $schedules] = AttendanceData::preload((int) $teacher['id'], $monthStart, $end);
+
+        $days = [];
+
+        for ($c = strtotime($monthStart); $c <= strtotime($end); $c = strtotime('+1 day', $c)) {
+            $date = date('Y-m-d', $c);
+            $dayOfWeek = date('N', $c);
+
+            // Sunday is always off; Saturday only for people scheduled on it.
+            if ($dayOfWeek == 7 || ($dayOfWeek == 6 && ! isset($schedules[strtolower(date('l', $c))]))) {
+                continue;
+            }
+
+            $result = MonthlySummary::dayStatus($teacher, $date, $leaves, $adjustments, $this->events, $attendance[$date] ?? null, $absences, $schedules);
+
+            if ($result === null) {
+                continue;
+            }
+
+            $days[] = [
+                'date' => $date,
+                'status' => (string) $result['status'],
+                'detail' => (string) ($result['detail'] ?? ''),
+                'scans' => $attendance[$date] ?? null,
+            ];
+        }
+
+        return $this->monthDaysCache[$key] = $days;
+    }
+
+    /** The active whole-day school event on $date, if any (Half Day events never blank a day). */
+    private function wholeDayEvent(string $date): ?array
+    {
+        foreach ($this->events as $event) {
+            if (($event['duration'] ?? '') !== 'Half Day' && $date >= $event['date_from'] && $date <= $event['date_to']) {
+                return $event;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Mon–Sat rows covering the month; days of other months are null.
+     *
+     * @return list<list<?string>>
+     */
+    private static function calendarWeeks(string $monthStart, string $monthEnd): array
+    {
+        $weeks = [];
+
+        for ($monday = strtotime('monday this week', strtotime($monthStart)); $monday <= strtotime($monthEnd); $monday = strtotime('+7 days', $monday)) {
+            $week = [];
+
+            for ($i = 0; $i < 6; $i++) {
+                $date = date('Y-m-d', strtotime("+{$i} days", $monday));
+                $week[] = $date >= $monthStart && $date <= $monthEnd ? $date : null;
+            }
+
+            if (array_filter($week)) {
+                $weeks[] = $week;
+            }
+        }
+
+        return $weeks;
+    }
+
+    /** "07:28:00" -> "7:28 AM"; no time -> "". */
+    private static function clockTime(?string $time): string
+    {
+        return $time ? date('g:i A', strtotime($time)) : '';
     }
 
     /**
