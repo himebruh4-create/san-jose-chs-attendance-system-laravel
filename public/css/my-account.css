@@ -27,7 +27,8 @@ body { margin: 0; background: #f5f0e1; color: #3a3527; }
 
 .form-group label { display: block; font-weight: 600; margin-bottom: 6px; color: #5c5238; font-size: 13px; }
 
-.form-group input {
+.form-group input,
+.form-group select {
     width: 100%;
     box-sizing: border-box;
     padding: 10px 12px;
@@ -36,7 +37,8 @@ body { margin: 0; background: #f5f0e1; color: #3a3527; }
     font-size: 14px;
 }
 
-.form-group input:focus { outline: none; border-color: #e8a317; box-shadow: 0 0 0 3px rgba(232,163,23,0.2); }
+.form-group input:focus,
+.form-group select:focus { outline: none; border-color: #e8a317; box-shadow: 0 0 0 3px rgba(232,163,23,0.2); }
 
 .save-btn {
     background: #14390f;
@@ -57,7 +59,23 @@ body { margin: 0; background: #f5f0e1; color: #3a3527; }
 
 .alert.error { background: #fdecea; color: #c62828; border: 1px solid #f0b5b0; }
 
-.current-question-note { font-size: 12.5px; color: #8a7d5c; margin-bottom: 12px; }
+/* Shown until the Super Admin has set 3 security questions (EnsureSecurityQuestionsSet) */
+.setup-required {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin: 4px 0 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #f0c36d;
+    background: #fff6e0;
+    color: #7a4b00;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.setup-required i { margin-top: 0.15em; color: #c77700; }
 
 .forgot-password-link { margin: 14px 0 0; font-size: 12.5px; }
 

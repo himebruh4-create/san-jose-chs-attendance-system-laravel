@@ -41,18 +41,42 @@
             <button type="submit" class="login-btn">Continue</button>
         </form>
 
-    @elseif ($step === 'question')
+        <a href="{{ route('password.forgot', ['use' => 'code']) }}" class="alt-link"><i class="fa-solid fa-key"></i> Super Admin: use a recovery code</a>
 
-        <div class="security-question-box">{{ $securityQuestion }}</div>
+    @elseif ($step === 'questions')
+
+        <p class="step-note">Answer all {{ count($questions) }} security questions.</p>
 
         <form method="POST" action="{{ route('password.forgot') }}">
             @csrf
-            <input type="hidden" name="step" value="question">
+            <input type="hidden" name="step" value="questions">
+            @foreach ($questions as $i => $question)
+                <div class="input-group">
+                    <label for="answer{{ $i }}" class="question-label">{{ $question }}</label>
+                    <input type="text" id="answer{{ $i }}" name="answers[]" required autocomplete="off" @if ($loop->first) autofocus @endif>
+                </div>
+            @endforeach
+            <button type="submit" class="login-btn">Verify Answers</button>
+        </form>
+
+        <a href="{{ route('password.forgot', ['use' => 'code']) }}" class="alt-link"><i class="fa-solid fa-key"></i> Use a recovery code instead</a>
+
+    @elseif ($step === 'code')
+
+        <p class="step-note">Enter your email and one of the recovery codes you printed. Each code works once.</p>
+
+        <form method="POST" action="{{ route('password.forgot') }}">
+            @csrf
+            <input type="hidden" name="step" value="code">
             <div class="input-group">
-                <label>Your Answer</label>
-                <input type="text" name="security_answer" required autofocus autocomplete="off">
+                <label for="codeEmail">Registered Email</label>
+                <input type="email" id="codeEmail" name="email" value="{{ $email }}" placeholder="you@example.com" required @if ($email === '') autofocus @endif>
             </div>
-            <button type="submit" class="login-btn">Verify Answer</button>
+            <div class="input-group">
+                <label for="recoveryCode">Recovery Code</label>
+                <input type="text" id="recoveryCode" name="recovery_code" placeholder="XXXXX-XXXXX" required autocomplete="off" spellcheck="false" @if ($email !== '') autofocus @endif>
+            </div>
+            <button type="submit" class="login-btn">Verify Code</button>
         </form>
 
     @elseif ($step === 'reset')

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\AccountRecovery;
 use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -56,8 +57,19 @@ class LoginController extends Controller
         $request->session()->regenerate();
 
         $account = $request->user();
+        $previousLogin = $account->last_login_at;
         $account->forceFill(['last_login_at' => now()])->save();
         Audit::log('login', 'account', $account->id);
+
+        // Super Admin: warn about failed Forgot Password tries since the
+        // last login (shown once by partials.recovery-warning).
+        if ($account->role === 'superadmin') {
+            $failures = AccountRecovery::failuresSince($account->id, $previousLogin);
+
+            if ($failures['count'] > 0) {
+                $request->session()->put('recovery_warning', $failures);
+            }
+        }
 
         return redirect()->intended(route($account->homeRoute()));
     }

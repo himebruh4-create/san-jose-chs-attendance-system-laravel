@@ -169,6 +169,31 @@
 
         @endif
 
+        <!-- Super Admin recovery codes (Forgot Password -> use a recovery code) -->
+        <div class="recovery-codes-panel" id="recoveryCodes">
+            <h3><i class="fa-solid fa-key"></i> Recovery Codes</h3>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>One-time codes for Forgot Password if you lose both your password and your security answers. Print them and keep them somewhere safe.</span></p>
+
+            @if ($recoveryCodesLeft === 0)
+                <p class="recovery-codes-status warn"><i class="fa-solid fa-triangle-exclamation"></i> No recovery codes yet. Generate a set now.</p>
+            @else
+                <p class="recovery-codes-status {{ $recoveryCodesLeft <= \App\Support\RecoveryCodes::LOW ? 'warn' : '' }}">
+                    <strong>{{ $recoveryCodesLeft }} of {{ \App\Support\RecoveryCodes::COUNT }}</strong> unused
+                    &middot; generated {{ date('M j, Y g:i A', strtotime($recoveryCodesGeneratedAt)) }}
+                    @if ($recoveryCodesLeft <= \App\Support\RecoveryCodes::LOW)
+                        &middot; only a few left: generate a new set.
+                    @endif
+                </p>
+            @endif
+
+            <form method="POST" action="{{ route('superadmin.settings.recovery-codes') }}" class="recovery-codes-form">
+                @csrf
+                <input type="password" name="current_password" placeholder="Current password" required autocomplete="current-password" aria-label="Current password">
+                <button type="submit" class="add-option-btn"><i class="fa-solid fa-rotate"></i> Generate New Codes</button>
+            </form>
+            <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>A new set replaces the old codes. The codes are shown once, on the next page.</span></p>
+        </div>
+
     </div>
 
     <!-- ===== MANAGE SUBJECTS & POSITIONS ===== -->

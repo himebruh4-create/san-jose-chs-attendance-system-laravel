@@ -418,3 +418,39 @@ body.modal-open {
         margin-left: 6px;
     }
 }
+
+/* Super Admin: failed password-recovery tries since the last login
+   (partials/recovery-warning.blade.php) */
+.recovery-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 0 0 20px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid #f0b5b0;
+    border-left: 5px solid #c62828;
+    background: #fdecea;
+    color: #7f1d1d;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.recovery-warning > i { margin-top: 0.2em; color: #c62828; font-size: 17px; }
+
+.recovery-warning > div { flex: 1; min-width: 0; }
+
+.recovery-warning-close {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(198, 40, 40, 0.12);
+    color: #7f1d1d;
+    font-size: 18px;
+    line-height: 28px;
+    cursor: pointer;
+}
+
+.recovery-warning-close:hover { background: rgba(198, 40, 40, 0.22); }

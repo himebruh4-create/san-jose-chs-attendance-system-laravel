@@ -16,6 +16,8 @@
         <p>Attendance overview for {{ date('l, F j, Y', strtotime($today)) }}.</p>
     </div>
 
+    @include('partials.recovery-warning')
+
     @if ($resetRequests->isNotEmpty())
         <div class="card password-reset-alert">
             <h3><i class="fa-solid fa-triangle-exclamation"></i> Password Reset Request{{ $resetRequests->count() > 1 ? 's' : '' }}</h3>

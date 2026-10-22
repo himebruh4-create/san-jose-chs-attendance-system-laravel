@@ -45,14 +45,8 @@
             <label>Confirm Password</label>
             <input type="password" name="password_confirmation" minlength="8" required>
         </div>
-        <div class="input-group">
-            <label>Security Question (for password recovery)</label>
-            <input type="text" name="security_question" value="{{ old('security_question') }}" placeholder="A question only you can answer" required>
-        </div>
-        <div class="input-group">
-            <label>Security Answer</label>
-            <input type="text" name="security_answer" minlength="4" required autocomplete="off">
-        </div>
+        <p class="step-note">Security questions (for Forgot Password): choose 3 different questions. Use answers that people who know you cannot guess, and a different answer for each.</p>
+        @include('partials.security-questions-fields', ['groupClass' => 'input-group', 'selected' => old('security_questions', [])])
         <button type="submit" class="login-btn">Create Super Admin</button>
     </form>
 

@@ -33,6 +33,7 @@ class Account extends Authenticatable
             'is_deleted' => 'boolean',
             'deleted_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'security_questions_disabled_at' => 'datetime',
         ];
     }
 

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\EnsureSecurityQuestionsSet;
 use App\Http\Middleware\RedirectToSetupWhenNoSuperAdmin;
 use App\Http\Middleware\RequireKioskDevice;
 use App\Http\Middleware\SecurityHeaders;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureRole::class,
             'kiosk' => RequireKioskDevice::class,
             'setup.done' => RedirectToSetupWhenNoSuperAdmin::class,
+            'security.questions' => EnsureSecurityQuestionsSet::class,
         ]);
 
         $middleware->redirectGuestsTo(fn () => route('login'));

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\KioskDevice;
 use App\Support\Audit;
+use App\Support\RecoveryCodes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -32,7 +33,36 @@ class SettingsController extends Controller
             'accounts' => $accounts,
             'kiosks' => $kiosks,
             'currentKioskId' => $currentKiosk?->id,
+            'recoveryCodesLeft' => RecoveryCodes::remaining($request->user()->id),
+            'recoveryCodesGeneratedAt' => RecoveryCodes::generatedAt($request->user()->id),
         ]);
+    }
+
+    /**
+     * A new set of the Super Admin's own recovery codes (replacing the old
+     * set), after re-entering the current password. The codes are shown
+     * on this response only, never stored or shown again.
+     */
+    public function generateRecoveryCodes(Request $request)
+    {
+        $account = $request->user();
+
+        if (! Hash::check((string) $request->input('current_password'), $account->password)) {
+            Audit::log('recovery_codes.generate_failed', 'account', $account->id);
+
+            return redirect()->route('superadmin.settings', ['tab' => 'accounts'])
+                ->with('message', 'Current password is incorrect. No new recovery codes were made.')
+                ->with('message_type', 'error');
+        }
+
+        $codes = RecoveryCodes::generate($account->id);
+        Audit::log('recovery_codes.generated', 'account', $account->id, ['count' => count($codes)]);
+
+        return response()->view('superadmin.recovery-codes', [
+            'codes' => $codes,
+            'account' => $account,
+            'generatedAt' => now(),
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     public function createAccount(Request $request)

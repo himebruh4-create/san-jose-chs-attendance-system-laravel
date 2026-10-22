@@ -20,6 +20,8 @@
         <p>Manage your own login credentials.</p>
     </div>
 
+    @include('partials.recovery-warning')
+
     <div class="account-grid">
 
     <div class="account-col">
@@ -55,27 +57,27 @@
         </div>
 
         @if ($account->role === 'superadmin')
-        <div class="card">
-            <h3><i class="fa-solid fa-shield-halved"></i> Security Question</h3>
-            <p class="card-sub">Used to recover your account via "Forgot Password" on the login page.</p>
+        <div class="card" id="securityQuestions">
+            <h3><i class="fa-solid fa-shield-halved"></i> Security Questions</h3>
 
-            @if ($account->security_question)
-                <p class="current-question-note">Current question: <strong>{{ $account->security_question }}</strong></p>
+            @if (count($securityQuestionKeys) === \App\Support\SecurityQuestions::COUNT)
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Your 3 questions are set. Forgot Password asks all 3; to change them, re-enter all 3 answers.</span></p>
             @else
-                <p class="current-question-note">No security question set yet — Forgot Password will not work until you set one.</p>
+                <div class="setup-required" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                    <span>Set your 3 security questions to continue using the system. Forgot Password asks all 3.</span>
+                </div>
             @endif
 
-            <form method="POST" action="{{ route('account.security-question') }}">
+            <form method="POST" action="{{ route('account.security-questions') }}">
                 @csrf
                 <div class="form-group">
-                    <label>Security Question</label>
-                    <input type="text" name="security_question" placeholder="e.g. What is the name of your first school?" required>
+                    <label for="securityCurrentPassword">Current Password</label>
+                    <input type="password" id="securityCurrentPassword" name="current_password" required autocomplete="current-password">
                 </div>
-                <div class="form-group">
-                    <label>Answer</label>
-                    <input type="text" name="security_answer" minlength="4" required autocomplete="off">
-                </div>
-                <button type="submit" class="save-btn">Save Security Question</button>
+                @include('partials.security-questions-fields', ['groupClass' => 'form-group', 'selected' => $securityQuestionKeys])
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Use answers people who know you cannot guess, and a different answer for each. Spaces, punctuation and accents are ignored.</span></p>
+                <button type="submit" class="save-btn">Save Security Questions</button>
             </form>
         </div>
         @endif

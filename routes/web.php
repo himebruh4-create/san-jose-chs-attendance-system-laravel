@@ -58,11 +58,13 @@ Route::get('/photos/{filename}', [PhotoController::class, 'personnel'])
 
 // ---------------------------------------------------------------- signed-in
 
-Route::middleware('auth')->group(function () {
+// security.questions: a Super Admin without their 3 security questions can
+// only use My Account until they are set.
+Route::middleware(['auth', 'security.questions'])->group(function () {
 
     Route::get('/my-account', [AccountController::class, 'show'])->name('account');
     Route::post('/my-account/password', [AccountController::class, 'updatePassword'])->name('account.password');
-    Route::post('/my-account/security-question', [AccountController::class, 'updateSecurityQuestion'])->name('account.security-question');
+    Route::post('/my-account/security-questions', [AccountController::class, 'updateSecurityQuestions'])->name('account.security-questions');
 
     // Monthly Summary report (all three roles; was dtr/monthly-summary.php).
     Route::get('/reports/monthly-summary', MonthlySummaryController::class)
@@ -92,6 +94,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/settings/accounts/reset-password', [SuperAdmin\SettingsController::class, 'resetPassword'])->name('settings.accounts.reset-password');
         Route::post('/settings/kiosk-devices', [SuperAdmin\KioskDeviceController::class, 'register'])->name('settings.kiosk.register');
         Route::post('/settings/kiosk-devices/revoke', [SuperAdmin\KioskDeviceController::class, 'revoke'])->name('settings.kiosk.revoke');
+        Route::post('/settings/recovery-codes', [SuperAdmin\SettingsController::class, 'generateRecoveryCodes'])
+            ->middleware('throttle:5,1')->name('settings.recovery-codes');
 
         Route::redirect('/account-management', '/superadmin/settings');
     });

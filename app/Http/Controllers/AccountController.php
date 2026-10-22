@@ -3,20 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Support\Audit;
+use App\Support\SecurityQuestions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * My Account: change password (every role) and the security question used
- * by Forgot Password (Super Admin only). Ported from my-account.php. Only
- * ever touches the signed-in account's own row.
+ * My Account: change password (every role) and the 3 security questions
+ * used by Forgot Password (Super Admin only). Ported from my-account.php.
+ * Only ever touches the signed-in account's own row.
  */
 class AccountController extends Controller
 {
     public function show()
     {
-        return view('account.show', ['account' => Auth::user()]);
+        $account = Auth::user();
+
+        return view('account.show', [
+            'account' => $account,
+            'securityQuestionKeys' => $account->role === 'superadmin' ? SecurityQuestions::keysFor($account->id) : [],
+        ]);
     }
 
     public function updatePassword(Request $request)
@@ -55,31 +61,29 @@ class AccountController extends Controller
         return back()->with('success', 'Password changed successfully.');
     }
 
-    public function updateSecurityQuestion(Request $request)
+    /** The Super Admin's 3 security questions (all replaced together). */
+    public function updateSecurityQuestions(Request $request)
     {
         $account = $request->user();
 
         abort_unless($account->role === 'superadmin', 403);
 
-        $question = trim((string) $request->input('security_question'));
-        $answer = trim((string) $request->input('security_answer'));
+        if (! Hash::check((string) $request->input('current_password'), $account->password)) {
+            Audit::log('security_questions.change_failed', 'account', $account->id);
 
-        if ($question === '' || $answer === '') {
-            return back()->with('error', 'Please provide both a security question and an answer.');
+            return back()->with('error', 'Current password is incorrect.');
         }
 
-        if (mb_strlen($answer) < 4) {
-            return back()->with('error', 'The answer must be at least 4 characters. Choose one that others cannot guess.');
+        $questions = (array) $request->input('security_questions', []);
+        $answers = (array) $request->input('security_answers', []);
+
+        if ($problems = SecurityQuestions::problems($questions, $answers, $account->full_name, $account->email)) {
+            return back()->with('error', implode(' ', $problems));
         }
 
-        $account->forceFill([
-            'security_question' => mb_substr($question, 0, 255),
-            // Normalized the same way Forgot Password verifies it.
-            'security_answer_hash' => Hash::make(strtolower($answer)),
-        ])->save();
+        SecurityQuestions::save($account->id, array_values($questions), array_values($answers));
+        Audit::log('security_questions.changed', 'account', $account->id);
 
-        Audit::log('security_question.changed', 'account', $account->id);
-
-        return back()->with('success', 'Security question saved.');
+        return back()->with('success', 'Security questions saved.');
     }
 }

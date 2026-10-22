@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
 use App\Models\KioskDevice;
 use App\Support\PersonnelPhotos;
+use App\Support\SecurityQuestions;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\TestWith;
@@ -118,11 +120,12 @@ class SecurityTest extends TestCase
             'email' => 'head@test.local',
             'password' => 'LongPass#1',
             'password_confirmation' => 'LongPass#1',
-            'security_question' => 'First school?',
-            'security_answer' => 'San Jose',
+            'security_questions' => self::SECURITY_QUESTIONS,
+            'security_answers' => self::SECURITY_ANSWERS,
         ])->assertRedirect(route('superadmin.dashboard'));
 
         $this->assertDatabaseHas('accounts', ['email' => 'head@test.local', 'role' => 'superadmin']);
+        $this->assertSame(self::SECURITY_QUESTIONS, SecurityQuestions::keysFor(Account::where('email', 'head@test.local')->value('id')));
 
         auth()->logout();
         $this->get('/setup')->assertRedirect('/login');

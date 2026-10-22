@@ -5,6 +5,7 @@ namespace Tests;
 use App\Models\Account;
 use App\Models\KioskDevice;
 use App\Models\Teacher;
+use App\Support\SecurityQuestions;
 use Database\Seeders\SystemSettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -39,17 +40,33 @@ abstract class TestCase extends BaseTestCase
         }
     }
 
-    protected function account(string $role = 'superadmin', array $attributes = []): Account
+    /** Questions and answers every test Super Admin starts with. */
+    protected const SECURITY_QUESTIONS = ['childhood_best_friend', 'grade1_street', 'first_concert'];
+
+    protected const SECURITY_ANSWERS = ['Juan Dela Cruz', 'Sto. Niño Street', 'Eraserheads 1997'];
+
+    /**
+     * A login. A Super Admin gets the 3 security questions above, like a
+     * finished setup, unless $withSecurityQuestions is false (they are then
+     * kept on My Account until they set them).
+     */
+    protected function account(string $role = 'superadmin', array $attributes = [], bool $withSecurityQuestions = true): Account
     {
         static $n = 0;
         $n++;
 
-        return Account::create($attributes + [
+        $account = Account::create($attributes + [
             'full_name' => ucfirst($role)." User {$n}",
             'email' => "{$role}{$n}@test.local",
             'password' => 'Secret#2026',
             'role' => $role,
         ]);
+
+        if ($role === 'superadmin' && $withSecurityQuestions) {
+            SecurityQuestions::save($account->id, self::SECURITY_QUESTIONS, self::SECURITY_ANSWERS);
+        }
+
+        return $account;
     }
 
     /** A personnel record with a Mon–Fri schedule (default 07:00–15:00). */
