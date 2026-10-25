@@ -215,8 +215,13 @@ table.dept-table thead th {
     text-align: left;
     padding: 10px 12px;
     font-size: 12px;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.4px;
 }
+
+table.dept-table thead th:first-child { border-top-left-radius: 8px; }
+table.dept-table thead th:last-child { border-top-right-radius: 8px; }
 
 table.dept-table tbody td { padding: 10px 12px; border-bottom: 1px solid #f1ede0; }
 

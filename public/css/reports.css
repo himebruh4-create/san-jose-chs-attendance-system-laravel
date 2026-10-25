@@ -264,18 +264,22 @@ input[type="date"]:focus,
 
 .report-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 
+/* The system's table header style (dark green, white, uppercase), as on
+   every other table and the calendar's weekday bar. */
 .report-table th {
-    background: #fbf8f0;
-    color: #5c5238;
+    background: #14390f;
+    color: #ffffff;
     font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.4px;
     padding: 12px 10px;
-    border-bottom: 2px solid #ecdfc0;
     text-align: center;
     white-space: nowrap;
 }
+
+.report-table thead th:first-child { border-top-left-radius: 8px; }
+.report-table thead th:last-child { border-top-right-radius: 8px; }
 
 .report-table td { padding: 11px 10px; border-bottom: 1px solid #f1ede0; text-align: center; white-space: nowrap; }
 
@@ -419,15 +423,33 @@ button.strip-thumb:focus-visible { border-color: #e8a317; box-shadow: 0 0 0 3px 
 
 .cal-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
 
+/* Weekday header: one bar in the table header style (dark green, white,
+   uppercase), rounded at the top like the day cells. Same columns and gap
+   as the grid, so each label sits over its day. Status colors are only
+   for the dots and counts. */
+.cal-weekdays {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: inherit;
+    border-radius: 10px 10px 0 0;
+    background: #14390f;
+}
+
 .cal-weekday {
-    padding: 4px 0;
+    padding: 9px 0;
     text-align: center;
     font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    color: #8a7d5c;
+    color: #ffffff;
 }
+
+/* Today's weekday (current month): gold text and underline */
+.cal-weekday.is-today { color: #f2c94c; box-shadow: inset 0 -3px 0 #e8a317; }
+
+.cal-weekday-short { display: none; }
 
 .cal-cell {
     min-width: 0;
@@ -574,7 +596,21 @@ button.cal-cell:focus-visible { border-color: #e8a317; box-shadow: 0 0 0 3px rgb
 @media screen and (max-width: 767.98px) {
     .cal-grid { gap: 4px; }
 
-    .cal-weekday { font-size: 11px; letter-spacing: 0; }
+    .cal-weekday { padding: 7px 0; font-size: 11px; letter-spacing: 0; }
+
+    .cal-weekdays { border-radius: 8px 8px 0 0; }
+
+    /* M T W T F S; the full name stays for screen readers */
+    .cal-weekday-short { display: inline; }
+
+    .cal-weekday-full {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
 
     .cal-cell { min-height: 54px; padding: 4px; align-items: center; gap: 3px; border-radius: 8px; }
 

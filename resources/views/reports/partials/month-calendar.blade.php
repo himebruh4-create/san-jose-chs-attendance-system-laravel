@@ -13,6 +13,10 @@
         null => $day['label'],
         default => null,
     };
+    // 1 (Mon) to 6 (Sat) when today is in this month; Sundays are not shown.
+    $todaysWeekday = substr($today, 0, 7) === substr($monthStart, 0, 7) && date('N', strtotime($today)) < 7
+        ? (int) date('N', strtotime($today))
+        : null;
 @endphp
 
 <div class="month-calendar" aria-label="{{ $monthLabel }} calendar">
@@ -24,9 +28,16 @@
     </ul>
 
     <div class="cal-grid">
-        @foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $weekday)
-            <div class="cal-weekday">{{ $weekday }}</div>
-        @endforeach
+        {{-- One header bar in the table header style; today's weekday is
+             marked when this is the current month. Phones show M T W T F S. --}}
+        <div class="cal-weekdays">
+            @foreach (['Mon' => 'M', 'Tue' => 'T', 'Wed' => 'W', 'Thu' => 'T', 'Fri' => 'F', 'Sat' => 'S'] as $weekday => $initial)
+                @php $isTodaysWeekday = $todaysWeekday === $loop->iteration; @endphp
+                <div @class(['cal-weekday', 'is-today' => $isTodaysWeekday]) @if ($isTodaysWeekday) title="Today" @endif>
+                    <span class="cal-weekday-full">{{ $weekday }}</span><span class="cal-weekday-short" aria-hidden="true">{{ $initial }}</span>
+                </div>
+            @endforeach
+        </div>
 
         @foreach ($calendar['weeks'] as $week)
             @foreach ($week as $cellDate)

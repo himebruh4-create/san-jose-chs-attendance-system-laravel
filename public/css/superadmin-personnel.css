@@ -223,7 +223,8 @@ thead th {
     padding: 11px 12px;
     background: #14390f;
     color: #fff;
-    font-size: 11.5px;
+    font-size: 12px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.4px;
     white-space: nowrap;

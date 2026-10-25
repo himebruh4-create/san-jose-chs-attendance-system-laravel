@@ -103,7 +103,20 @@ p.help-note.stats-note { margin: -14px 0 20px; }
 
 table.flagged-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 
-table.flagged-table th { background: #ffebee; color: #b71c1c; text-align: left; padding: 8px 10px; }
+/* The system's table header style; the red is kept for the absence count badges. */
+table.flagged-table th {
+    background: #14390f;
+    color: #ffffff;
+    text-align: left;
+    padding: 9px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+table.flagged-table th:first-child { border-top-left-radius: 8px; }
+table.flagged-table th:last-child { border-top-right-radius: 8px; }
 
 table.flagged-table td { padding: 8px 10px; border-bottom: 1px solid #f1ede0; }
 

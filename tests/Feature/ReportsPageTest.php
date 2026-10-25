@@ -249,6 +249,19 @@ class ReportsPageTest extends TestCase
         $response->assertSee('data-date="2026-09-02"', false);
     }
 
+    public function test_the_calendar_marks_todays_weekday_only_in_the_current_month(): void
+    {
+        $this->actingAs($this->account('admin'));
+
+        $thisMonth = $this->get(route('admin.reports', ['tab' => 'monthly', 'monthPicker' => date('Y-m')]));
+        $lastMonth = $this->get(route('admin.reports', ['tab' => 'monthly', 'monthPicker' => date('Y-m', strtotime('first day of last month'))]));
+
+        // Sundays are not on the calendar, so on a Sunday no weekday is marked.
+        $this->assertSame(date('N') < 7 ? 1 : 0, substr_count($thisMonth->getContent(), 'class="cal-weekday is-today"'));
+        $lastMonth->assertDontSee('cal-weekday is-today', false)
+            ->assertSee('<span class="cal-weekday-full">Mon</span><span class="cal-weekday-short" aria-hidden="true">M</span>', false);
+    }
+
     public function test_calendar_days_after_today_cannot_be_opened(): void
     {
         $this->person();
