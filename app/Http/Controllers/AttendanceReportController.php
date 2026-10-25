@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Attendance\AttendanceData;
+use App\Domain\PersonnelDirectory;
 use App\Support\Printout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,9 +34,11 @@ abstract class AttendanceReportController extends Controller
         $monthEnd = date('Y-m-t', strtotime($monthStart));
 
         $search = trim((string) $request->query('search'));
+        $personnelType = PersonnelDirectory::typeTab($request->query('academic_status'));
 
         $query = DB::table('teachers')
             ->where('is_deleted', 0)
+            ->when($personnelType !== '', fn ($q) => $q->where('academic_status', $personnelType))
             ->when($search !== '', fn ($q) => $q->where(fn ($q2) => $q2->where('fullname', 'like', "%{$search}%")->orWhere('id_number', 'like', "%{$search}%")))
             ->orderBy('fullname');
 
@@ -75,7 +78,9 @@ abstract class AttendanceReportController extends Controller
             'teacherReports' => (clone $query)->offset(($page - 1) * self::PER_PAGE)->limit(self::PER_PAGE)->get($columns)->map($withRecords)->all(),
             // Every matching person, for Generate All DTR.
             'allTeachersForDTR' => $query->get($columns)->map($withRecords)->all(),
-            'allDtrPrint' => Printout::job($account, 'DTR', $printMonth, 'All Personnel'),
+            // "DTR - Teaching Staff - 2026-10 - Administrative Officer": the selected tab.
+            'allDtrPrint' => Printout::job($account, 'DTR', $printMonth, PersonnelDirectory::TYPE_TABS[$personnelType], personnelType: $personnelType ?: null),
+            'personnelType' => $personnelType,
         ]);
     }
 

@@ -9,8 +9,11 @@
 @php
     $reportRoute = $role.'.attendance-report';
     $monthValue = sprintf('%04d-%02d', $year, $month);
-    $listQuery = array_filter(['search' => $search, 'monthPicker' => $monthValue], fn ($v) => $v !== '');
+    $listQuery = array_filter(['search' => $search, 'monthPicker' => $monthValue, 'academic_status' => $personnelType], fn ($v) => $v !== '');
     $pageUrl = fn ($p) => route($reportRoute, $listQuery + ['page' => $p]);
+    // A tab keeps the search and month and starts again at page 1.
+    $tabUrl = fn (string $type) => route($reportRoute, array_filter(['academic_status' => $type] + $listQuery, fn ($v) => $v !== ''));
+    $typeLabel = \App\Domain\PersonnelDirectory::TYPE_TABS[$personnelType];
 @endphp
 
 @section('content')
@@ -29,6 +32,8 @@
             <input type="text" id="reportSearch" name="search" placeholder="Search by name or ID" value="{{ $search }}" autocomplete="off">
             <label for="reportMonth">Month:</label>
             <input type="month" id="reportMonth" name="monthPicker" value="{{ $monthValue }}">
+            {{-- The personnel type tab: the search and month stay inside it. --}}
+            <input type="hidden" name="academic_status" value="{{ $personnelType }}">
             <noscript><button type="submit" class="btn btn-primary">Apply</button></noscript>
         </form>
     </div>
@@ -41,7 +46,7 @@
                 <div class="summary-stat-value">{{ $monthStart }} &nbsp;&rarr;&nbsp; {{ $monthEnd }}</div>
             </div>
             <div>
-                <div class="summary-stat-label">Total Personnel</div>
+                <div class="summary-stat-label">{{ $personnelType === '' ? 'Total Personnel' : $typeLabel }}</div>
                 <div class="summary-stat-value">{{ $totalTeachers }}</div>
             </div>
         </div>
@@ -57,21 +62,27 @@
 
     <div class="card" id="reportPersonnel">
 
+        @include('partials.personnel-type-tabs')
+
         <div class="report-header-row">
             <h3><i class="fa-solid fa-list-check"></i> Personnel</h3>
             <span class="page-tag">Page {{ $page }} of {{ $totalPages }}</span>
         </div>
 
-        {{-- Every person matching the current search, for Generate All DTR (the
-             same per-person DTR as Generate DTR). Kept inside this card so a
-             live search replaces it together with the list. --}}
+        {{-- Every person in the selected tab matching the current search, for
+             Generate All DTR (the same per-person DTR as Generate DTR). Kept
+             inside this card so a live search replaces it together with the
+             list (and the tabs). --}}
         <script type="application/json" id="allTeachersForDTR">@json($allTeachersForDTR)</script>
 
         <button class="generate-report-btn" onclick="printAllDTR(JSON.parse(document.getElementById('allTeachersForDTR').textContent), {{ Js::from($monthStart) }}, {{ Js::from($monthEnd) }}, {{ Js::from($allDtrPrint) }})" style="margin-top: 10px;">
-            <i class="fa-solid fa-file-export"></i> Generate All DTR
+            <i class="fa-solid fa-file-export"></i> Generate All DTR ({{ $typeLabel }})
         </button>
 
         <div class="teacher-list">
+            @if (empty($teacherReports))
+                <p class="empty-note">No {{ $personnelType === '' ? 'personnel' : $typeLabel }} found{{ $search !== '' ? ' for this search' : '' }}.</p>
+            @endif
             @foreach ($teacherReports as $teacher)
                 <div class="teacher-item">
                     <div class="teacher-header">

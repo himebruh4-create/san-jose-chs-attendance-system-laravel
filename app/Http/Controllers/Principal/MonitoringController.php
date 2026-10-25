@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Principal;
 
 use App\Domain\Attendance\AttendanceData;
+use App\Domain\PersonnelDirectory;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,11 +29,12 @@ class MonitoringController extends Controller
         $today = date('Y-m-d');
         $effectiveDateTo = $dateTo > $today ? $today : $dateTo;
 
-        // "All Personnel" is limited to 7 days at a time.
-        $daysRequested = (strtotime($effectiveDateTo) - strtotime($dateFrom)) / 86400 + 1;
-        $rangeTooLarge = $selectedTeacherId === 0 && $daysRequested > 7;
+        // The personnel type tab: the table and the Personnel list show only that type.
+        $personnelType = PersonnelDirectory::typeTab($request->query('academic_status'));
 
-        $allTeachers = DB::table('teachers')->where('is_deleted', 0)->orderBy('fullname')
+        $allTeachers = DB::table('teachers')->where('is_deleted', 0)
+            ->when($personnelType !== '', fn ($q) => $q->where('academic_status', $personnelType))
+            ->orderBy('fullname')
             ->get(['id', 'fullname', 'id_number', 'department'])
             ->map(fn ($row) => (array) $row)
             ->all();
@@ -43,6 +45,15 @@ class MonitoringController extends Controller
                 $selectedTeacherName = $t['fullname'];
             }
         }
+
+        // A person not in the selected tab (or not found): everyone of that type instead.
+        if ($selectedTeacherName === '') {
+            $selectedTeacherId = 0;
+        }
+
+        // "All Personnel" (or a whole tab) is limited to 7 days at a time.
+        $daysRequested = (strtotime($effectiveDateTo) - strtotime($dateFrom)) / 86400 + 1;
+        $rangeTooLarge = $selectedTeacherId === 0 && $daysRequested > 7;
 
         $rows = [];
 
@@ -93,7 +104,7 @@ class MonitoringController extends Controller
         }
 
         return view('principal.monitoring', compact(
-            'selectedTeacherId', 'dateFrom', 'dateTo', 'rangeTooLarge', 'allTeachers', 'selectedTeacherName', 'rows'
+            'selectedTeacherId', 'dateFrom', 'dateTo', 'rangeTooLarge', 'allTeachers', 'selectedTeacherName', 'rows', 'personnelType'
         ));
     }
 }

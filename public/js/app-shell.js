@@ -44,8 +44,9 @@ function appUrl(path) {
    SHARED PRINT HELPER
    Prints HTML content from a hidden same-origin iframe instead
    of opening a new tab/window. A printout built here (not by the
-   server) passes its printJob ({title, report, range, teacher_id},
-   from App\Support\Printout::job) so the print is logged.
+   server) passes its printJob ({title, report, range, teacher_id,
+   personnel_type}, from App\Support\Printout::job) so the print is
+   logged.
    ========================================================= */
 function printHTMLDocument(htmlString, printJob) {
     var iframe = document.getElementById('__printFrame');
@@ -111,7 +112,12 @@ function logPrint(printJob) {
     fetch(appUrl('reports/print-log'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ report: printJob.report, range: printJob.range, teacher_id: printJob.teacher_id }),
+        body: JSON.stringify({
+            report: printJob.report,
+            range: printJob.range,
+            teacher_id: printJob.teacher_id,
+            personnel_type: printJob.personnel_type
+        }),
         keepalive: true
     }).catch(function () {});
 }

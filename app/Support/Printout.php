@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Domain\PersonnelDirectory;
 use App\Models\Account;
 use App\Models\Teacher;
 
@@ -49,15 +50,19 @@ class Printout
      * A printout the browser builds: its title, and what POST
      * /reports/print-log records for it.
      *
-     * @return array{title: string, report: string, range: ?string, teacher_id: ?int}
+     * $personnelType is a personnel type tab (?academic_status=) when the
+     * printout covers only that type.
+     *
+     * @return array{title: string, report: string, range: ?string, teacher_id: ?int, personnel_type: ?string}
      */
-    public static function job(Account $account, string $report, ?string $range = null, ?string $person = null, ?int $teacherId = null): array
+    public static function job(Account $account, string $report, ?string $range = null, ?string $person = null, ?int $teacherId = null, ?string $personnelType = null): array
     {
         return [
             'title' => self::title($account, $report, $range, $person),
             'report' => $report,
             'range' => $range,
             'teacher_id' => $teacherId,
+            'personnel_type' => $personnelType,
         ];
     }
 
@@ -88,13 +93,17 @@ class Printout
         ];
     }
 
-    /** Records a print in the Audit Log (actor: the account's email). */
-    public static function log(string $report, ?string $range = null, ?Teacher $person = null): void
+    /**
+     * Records a print in the Audit Log (actor: the account's email):
+     * personnel is the person, else the personnel type tab, else All
+     * Personnel.
+     */
+    public static function log(string $report, ?string $range = null, ?Teacher $person = null, ?string $personnelType = null): void
     {
         Audit::log('report.printed', $person ? 'teacher' : null, $person?->id, array_filter([
             'report' => $report,
             'range' => $range,
-            'personnel' => $person?->fullname ?? 'All Personnel',
+            'personnel' => $person?->fullname ?? PersonnelDirectory::TYPE_TABS[PersonnelDirectory::typeTab($personnelType)],
         ]));
     }
 }

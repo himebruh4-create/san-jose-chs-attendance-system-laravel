@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Reports;
 
+use App\Domain\PersonnelDirectory;
 use App\Http\Controllers\Controller;
 use App\Models\Teacher;
 use App\Support\Printout;
@@ -25,11 +26,12 @@ class PrintLogController extends Controller
             'report' => ['required', 'string', Rule::in($reportsForRole)],
             'range' => ['nullable', 'string', 'regex:/^\d{4}-\d{2}(-\d{2}( to \d{4}-\d{2}-\d{2})?)?$/'],
             'teacher_id' => ['nullable', 'integer'],
+            'personnel_type' => ['nullable', 'string', Rule::in(array_filter(array_keys(PersonnelDirectory::TYPE_TABS)))],
         ]);
 
         $person = isset($data['teacher_id']) ? Teacher::query()->find($data['teacher_id'], ['id', 'fullname']) : null;
 
-        Printout::log($data['report'], $data['range'] ?? null, $person);
+        Printout::log($data['report'], $data['range'] ?? null, $person, $data['personnel_type'] ?? null);
 
         return $this->ok();
     }

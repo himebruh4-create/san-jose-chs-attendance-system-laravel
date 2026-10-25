@@ -139,20 +139,7 @@ body { margin: 0; background: #f5f0e1; }
     gap: 10px;
 }
 
-.dept-tabs { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-
-.dept-tab-btn {
-    padding: 8px 18px;
-    border: none;
-    border-radius: 8px;
-    background: #f1ede0;
-    color: #5c5238;
-    cursor: pointer;
-    font-size: 13.5px;
-    font-weight: 700;
-}
-
-.dept-tab-btn.active { background: #14390f; color: white; }
+/* .dept-tabs / .dept-tab-btn (the pill tabs) are in app-shell.css. */
 
 /* Settings sections as tabs (same pill style as the tabs inside the cards) */
 .settings-tabs { margin: 4px 0 20px; }

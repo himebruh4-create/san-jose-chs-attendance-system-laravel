@@ -17,6 +17,9 @@
         'School Event' => 'status-schoolevent',
         'Pending Review' => 'status-pending',
     ];
+    // A tab keeps the date range and shows everyone of that type.
+    $tabUrl = fn (string $type) => route('principal.monitoring', array_filter(['academic_status' => $type, 'date_from' => $dateFrom, 'date_to' => $dateTo]));
+    $typeLabel = \App\Domain\PersonnelDirectory::TYPE_TABS[$personnelType];
 @endphp
 
 @section('content')
@@ -31,7 +34,7 @@
             <div class="filter-group">
                 <label>Personnel</label>
                 <select name="teacher_id">
-                    <option value="0">All Personnel</option>
+                    <option value="0">{{ $personnelType === '' ? 'All Personnel' : 'All '.$typeLabel }}</option>
                     @foreach ($allTeachers as $t)
                         <option value="{{ (int) $t['id'] }}" @selected($selectedTeacherId === (int) $t['id'])>{{ $t['fullname'] }} - {{ $t['id_number'] }}</option>
                     @endforeach
@@ -48,6 +51,9 @@
                 <input type="date" name="date_to" value="{{ $dateTo }}">
             </div>
 
+            {{-- The personnel type tab: the filters stay inside it. --}}
+            <input type="hidden" name="academic_status" value="{{ $personnelType }}">
+
             <noscript><button type="submit" class="apply-btn">Apply Filters</button></noscript>
             <button type="button" class="print-btn" onclick="printAttendanceMonitoring()">Print</button>
 
@@ -55,6 +61,8 @@
     </div>
 
     <div class="card" id="attendanceResultsCard">
+
+        @include('partials.personnel-type-tabs')
 
         @if ($rangeTooLarge)
 
@@ -147,13 +155,16 @@
 @php
     $monitoringData = [
         'printedBy' => auth()->user()->roleLabel(),
+        // "Attendance Monitoring - Teaching Staff - 2026-09-09 to 2026-10-22 - Principal" for a whole tab.
         'print' => \App\Support\Printout::job(
             auth()->user(), 'Attendance Monitoring', \App\Support\Printout::range($dateFrom, $dateTo),
-            $selectedTeacherName ?: null, $selectedTeacherId ?: null
+            $selectedTeacherName ?: ($personnelType !== '' ? $typeLabel : null), $selectedTeacherId ?: null,
+            $selectedTeacherId ? null : ($personnelType ?: null)
         ),
         'dateFromLabel' => date('M j, Y', strtotime($dateFrom)),
         'dateToLabel' => date('M j, Y', strtotime($dateTo)),
         'selectedTeacherName' => $selectedTeacherName,
+        'typeLabel' => $personnelType !== '' ? $typeLabel : '',
     ];
 @endphp
 <script>

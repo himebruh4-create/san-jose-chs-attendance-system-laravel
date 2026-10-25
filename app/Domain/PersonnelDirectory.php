@@ -16,6 +16,22 @@ class PersonnelDirectory
         'Non-Academic' => 'Non-Teaching Staff / School Administrator',
     ];
 
+    /**
+     * Personnel type tabs (Attendance Report, Attendance Monitoring):
+     * ?academic_status= value => tab label. '' is everyone.
+     */
+    public const TYPE_TABS = [
+        '' => 'All Personnel',
+        'Academic' => 'Teaching Staff',
+        'Non-Academic' => 'Non-Teaching Staff',
+    ];
+
+    /** The ?academic_status= of a type tab: 'Academic', 'Non-Academic' or '' (All Personnel). */
+    public static function typeTab(mixed $value): string
+    {
+        return is_string($value) && $value !== '' && array_key_exists($value, self::TYPE_TABS) ? $value : '';
+    }
+
     /** Personnel per page of the card grids (fills 4, 3, 2 or 1 columns evenly). */
     public const PER_PAGE = 12;
 

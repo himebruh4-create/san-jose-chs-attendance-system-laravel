@@ -43,8 +43,10 @@ function printAttendanceMonitoring() {
     const dateFromLabel = window.MONITORING.dateFromLabel;
     const dateToLabel = window.MONITORING.dateToLabel;
     const selectedTeacherName = window.MONITORING.selectedTeacherName;
-    const reportHeading = selectedTeacherName
-        ? `Attendance Monitoring &mdash; ${escapeHtml(selectedTeacherName)}`
+    // The person, else the personnel type tab (e.g. "Teaching Staff"), else everyone.
+    const headingFor = selectedTeacherName || window.MONITORING.typeLabel;
+    const reportHeading = headingFor
+        ? `Attendance Monitoring &mdash; ${escapeHtml(headingFor)}`
         : "Attendance Monitoring";
 
     const printHTML = `
