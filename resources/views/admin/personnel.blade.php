@@ -11,7 +11,7 @@
 <div class="main">
 
     <div class="page-header">
-        <div class="eyebrow">Admin Officer</div>
+        <div class="eyebrow">{{ auth()->user()->roleLabel() }}</div>
         <h1>Personnel List</h1>
         <p>Search and view personnel records and schedules managed by Super Admin.</p>
     </div>

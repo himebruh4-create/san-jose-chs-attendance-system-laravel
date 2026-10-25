@@ -15,7 +15,7 @@ class Account extends Authenticatable
 
     public const ROLE_LABELS = [
         'superadmin' => 'Administrative Aide III',
-        'admin' => 'Administrative Officer IV',
+        'admin' => 'Administrative Officer',
         'principal' => 'Principal',
     ];
 

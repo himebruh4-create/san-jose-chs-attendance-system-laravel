@@ -3518,7 +3518,7 @@ function printDTRWithRemarks(
         <!DOCTYPE html>
         <html>
         <head>
-            <title>DTR - ${teacher.fullname}</title>
+            <title>${escapeHtml(teacher.print ? teacher.print.title : 'DTR - ' + teacher.fullname)}</title>
             <style>${DTR_STYLE_BLOCK}</style>
         </head>
         <body>
@@ -3527,7 +3527,7 @@ function printDTRWithRemarks(
         </html>
     `;
 
-    printHTMLDocument(printHTML);
+    printHTMLDocument(printHTML, teacher.print);
 }
 
 /* =========================================================
@@ -3540,7 +3540,7 @@ function printDTRWithRemarks(
    without changing any remarks).
    ========================================================= */
 
-async function printAllDTR(teacherReports, monthStart, monthEnd) {
+async function printAllDTR(teacherReports, monthStart, monthEnd, printJob = null) {
 
     if (!teacherReports || teacherReports.length === 0) {
         showMessageModal("No personnel found for this month.", { title: "Nothing to Print" });
@@ -3616,7 +3616,7 @@ async function printAllDTR(teacherReports, monthStart, monthEnd) {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>All DTR</title>
+            <title>${escapeHtml(printJob ? printJob.title : 'All DTR')}</title>
             <style>${DTR_STYLE_BLOCK}</style>
         </head>
         <body>
@@ -3625,5 +3625,5 @@ async function printAllDTR(teacherReports, monthStart, monthEnd) {
         </html>
     `;
 
-    printHTMLDocument(printHTML);
+    printHTMLDocument(printHTML, printJob);
 }

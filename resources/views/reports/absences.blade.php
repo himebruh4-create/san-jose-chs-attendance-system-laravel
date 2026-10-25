@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Absence Report</title>
+    <title>{{ $printTitle }}</title>
     <style>
         /* Same print design as the Weekly Roster and the Monthly Summary
            Report: page setup, letterhead, colors and table rules. */

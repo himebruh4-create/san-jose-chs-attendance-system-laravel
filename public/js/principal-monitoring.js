@@ -33,12 +33,12 @@ function printAttendanceMonitoring() {
     });
 
     const printTime = now.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
+        hour: 'numeric',
+        minute: '2-digit'
     });
 
     const printedBy = window.MONITORING.printedBy;
+    const printJob = window.MONITORING.print;
 
     const dateFromLabel = window.MONITORING.dateFromLabel;
     const dateToLabel = window.MONITORING.dateToLabel;
@@ -50,7 +50,7 @@ function printAttendanceMonitoring() {
     const printHTML = `
         <html>
         <head>
-            <title>Attendance Monitoring</title>
+            <title>${escapeHtml(printJob.title)}</title>
             <style>
                 * {
                     -webkit-print-color-adjust: exact !important;
@@ -156,6 +156,6 @@ function printAttendanceMonitoring() {
         </html>
     `;
 
-    printHTMLDocument(printHTML);
+    printHTMLDocument(printHTML, printJob);
 }
 

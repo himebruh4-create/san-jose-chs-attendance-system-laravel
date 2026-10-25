@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Reports;
 
 use App\Domain\Attendance\MonthlySummary;
 use App\Http\Controllers\Controller;
+use App\Support\Printout;
 use Illuminate\Http\Request;
 
 /**
@@ -24,17 +25,15 @@ class MonthlySummaryController extends Controller
         $startDate = sprintf('%04d-%02d-01', $year, $month);
         $endDate = date('Y-m-t', strtotime($startDate));
 
-        $roleLabels = ['superadmin' => 'Super Admin', 'admin' => 'Admin', 'principal' => 'Principal'];
-        $account = $request->user();
+        $range = Printout::month($startDate);
+        Printout::log('Monthly Summary Report', $range);
 
-        return response()->view('reports.monthly-summary', [
+        return response()->view('reports.monthly-summary', Printout::stamp($request->user()) + [
+            'printTitle' => Printout::title($request->user(), 'Monthly Summary Report', $range),
             'summaryReports' => MonthlySummary::build($startDate, $endDate),
             'startDate' => $startDate,
             'endDate' => $endDate,
             'monthLabel' => date('F Y', strtotime($startDate)),
-            'printedBy' => $account->email ?: ($roleLabels[$account->role] ?? 'User'),
-            'printDate' => date('l, F j, Y'),
-            'printTime' => date('h:i:s A'),
         ])->header('Cache-Control', 'no-store');
     }
 }

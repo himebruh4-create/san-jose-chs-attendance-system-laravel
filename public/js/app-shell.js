@@ -43,9 +43,11 @@ function appUrl(path) {
 /* =========================================================
    SHARED PRINT HELPER
    Prints HTML content from a hidden same-origin iframe instead
-   of opening a new tab/window.
+   of opening a new tab/window. A printout built here (not by the
+   server) passes its printJob ({title, report, range, teacher_id},
+   from App\Support\Printout::job) so the print is logged.
    ========================================================= */
-function printHTMLDocument(htmlString) {
+function printHTMLDocument(htmlString, printJob) {
     var iframe = document.getElementById('__printFrame');
     if (!iframe) {
         iframe = document.createElement('iframe');
@@ -63,12 +65,55 @@ function printHTMLDocument(htmlString) {
     iframe.onload = managesOwnPrint ? null : function () {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
+        // print() returns once the dialog closes (Chrome / Edge).
+        restorePageTitle();
     };
 
     var doc = iframe.contentWindow.document;
     doc.open();
     doc.write(htmlString.replace(/<body([^>]*)\sonload="[^"]*"/i, '<body$1'));
     doc.close();
+
+    showPrintTitle(iframe.contentWindow);
+
+    if (printJob) {
+        logPrint(printJob);
+    }
+}
+
+/* Chrome and Edge suggest the MAIN page's title as a saved PDF's file
+   name, even when a frame is printed. So while the print dialog is open
+   the page takes the printout's <title> ("Daily Report - 2026-10-22 -
+   Principal"), and gets its own title back once printing ends. */
+var __titleBeforePrint = null;
+
+function showPrintTitle(frameWindow) {
+    var title = frameWindow.document.title;
+    if (!title) return;
+
+    if (__titleBeforePrint === null) {
+        __titleBeforePrint = document.title;
+    }
+    document.title = title;
+    frameWindow.addEventListener('afterprint', restorePageTitle, { once: true });
+}
+
+function restorePageTitle() {
+    if (__titleBeforePrint !== null) {
+        document.title = __titleBeforePrint;
+        __titleBeforePrint = null;
+    }
+}
+
+/* Audit Log entry (Super Admin's Settings -> Audit Log) for a printout
+   built in the browser. Never blocks or delays printing. */
+function logPrint(printJob) {
+    fetch(appUrl('reports/print-log'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report: printJob.report, range: printJob.range, teacher_id: printJob.teacher_id }),
+        keepalive: true
+    }).catch(function () {});
 }
 
 /* =========================================================

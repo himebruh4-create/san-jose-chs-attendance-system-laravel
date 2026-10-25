@@ -404,6 +404,7 @@ function printTeacherBadge(button) {
     const employment = button.dataset.employment;
     const barcode = button.dataset.barcode;
     const photo = button.dataset.photo;
+    const printJob = window.PAGE.badgePrints[idNumber] || null;
 
     const photoPath = photo
         ? appUrl('photos/' + encodeURIComponent(photo))
@@ -417,7 +418,7 @@ function printTeacherBadge(button) {
 
 <head>
 
-<title>Print Badge</title>
+<title>${escapeHtml(printJob ? printJob.title : 'Print Badge')}</title>
 
 <style>
 
@@ -691,7 +692,7 @@ window.onload = waitForImagesThenPrint;
 
 `;
 
-    printHTMLDocument(content);
+    printHTMLDocument(content, printJob);
 
 }
 
@@ -767,7 +768,7 @@ function printAllTeacherBadges() {
 
 <head>
 
-<title>Print All Personnel Badges</title>
+<title>${escapeHtml(window.PAGE.allBadgesPrint.title)}</title>
 
 <style>
 
@@ -1021,7 +1022,7 @@ window.onload = waitForImagesThenPrint;
 
 `;
 
-    printHTMLDocument(content);
+    printHTMLDocument(content, window.PAGE.allBadgesPrint);
 
 }
 

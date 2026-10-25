@@ -35,18 +35,65 @@ class ReportsPageTest extends TestCase
         ]);
     }
 
-    public function test_the_super_admin_sees_each_scans_photo_in_the_daily_report(): void
+    public function test_the_super_admin_sees_each_scans_photo_on_screen_but_the_daily_printout_has_none(): void
     {
         $ana = $this->person();
         $withPhoto = $this->scan($ana, '2026-10-05', 'am_arrival', '07:28:00');
         $this->scan($ana, '2026-10-05', 'pm_departure', '15:05:00', withPhoto: false);
+        $this->actingAs($this->account('superadmin'));
 
-        $response = $this->actingAs($this->account('superadmin'))->get(route('superadmin.reports', ['date' => '2026-10-05']));
+        $screen = $this->get(route('superadmin.reports', ['date' => '2026-10-05']));
+        $allPersonnelPrint = $this->get(route('reports.attendance-print', ['period' => 'daily', 'date' => '2026-10-05']));
+        $onePersonPrint = $this->get(route('reports.attendance-print', ['period' => 'daily', 'date' => '2026-10-05', 'teacher_id' => $ana->id]));
 
-        $response->assertSeeInOrder([$ana->fullname, '7:28 AM', '3:05 PM'])
+        $screen->assertSeeInOrder([$ana->fullname, '7:28 AM', '3:05 PM'])
             ->assertSee(route('photos.scan', $withPhoto))
             ->assertSee('No photo')
             ->assertSee('id="scanPhotoModal"', false);
+        foreach ([$allPersonnelPrint, $onePersonPrint] as $print) {
+            $print->assertSeeInOrder(['Daily Attendance Report', 'Monday, October 5, 2026', $ana->fullname, '7:28 AM', '3:05 PM'])
+                ->assertDontSee('photo-strip', false)
+                ->assertDontSee('strip-thumb', false)
+                ->assertDontSee('scan-photos')
+                ->assertDontSee(route('photos.scan', $withPhoto));
+        }
+    }
+
+    #[TestWith(['weekly', '2026-10-05'])]
+    #[TestWith(['monthly', '2026-10-01'])]
+    public function test_the_super_admins_one_person_weekly_and_monthly_printouts_have_no_scan_photos(string $period, string $date): void
+    {
+        $ana = $this->person();
+        $photoId = $this->scan($ana, '2026-10-07', 'am_arrival', '06:55:00');
+
+        $response = $this->actingAs($this->account('superadmin'))
+            ->get(route('reports.attendance-print', ['period' => $period, 'date' => $date, 'teacher_id' => $ana->id]));
+
+        $response->assertSeeInOrder([$ana->fullname, 'Wed, Oct 7, 2026', '6:55 AM'])
+            ->assertDontSee('photo-strip', false)
+            ->assertDontSee(route('photos.scan', $photoId));
+    }
+
+    public function test_the_daily_printout_keeps_the_not_yet_recorded_line(): void
+    {
+        $everyDay = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        $this->teacher(['fullname' => 'Ben Waiting', 'created_at' => '2026-01-01 00:00:00'], days: $everyDay);
+
+        $response = $this->actingAs($this->account('admin'))->get(route('reports.attendance-print', ['period' => 'daily', 'date' => date('Y-m-d')]));
+
+        $response->assertSee('1 personnel not yet recorded today.')
+            ->assertSee('No attendance recorded yet today.')
+            ->assertDontSee('Ben Waiting');
+    }
+
+    #[TestWith([['period' => 'daily', 'date' => '2099-01-01']])]
+    #[TestWith([['period' => 'daily', 'date' => '2026-02-31']])]
+    #[TestWith([['period' => 'weekly', 'date' => '2026-10-05']])]
+    public function test_a_printout_for_a_future_or_malformed_date_or_a_weekly_one_without_a_person_is_refused(array $query): void
+    {
+        $response = $this->actingAs($this->account('admin'))->get(route('reports.attendance-print', $query));
+
+        $response->assertUnprocessable();
     }
 
     #[TestWith(['admin'])]

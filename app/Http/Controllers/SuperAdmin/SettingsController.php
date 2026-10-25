@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\KioskDevice;
 use App\Support\Audit;
+use App\Support\Printout;
 use App\Support\RecoveryCodes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -62,6 +63,7 @@ class SettingsController extends Controller
             'codes' => $codes,
             'account' => $account,
             'generatedAt' => now(),
+            'print' => Printout::job($account, 'Recovery Codes', date('Y-m-d')),
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 

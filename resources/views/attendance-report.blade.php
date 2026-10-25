@@ -17,7 +17,7 @@
 <div class="main">
 
     <div class="page-header">
-        <div class="eyebrow">{{ $role === 'superadmin' ? 'Admin Aide' : 'Admin' }}</div>
+        <div class="eyebrow">{{ auth()->user()->roleLabel() }}</div>
         <h1>Attendance Report</h1>
         <p>Review this month's attendance and generate personnel DTRs.</p>
     </div>
@@ -67,7 +67,7 @@
              live search replaces it together with the list. --}}
         <script type="application/json" id="allTeachersForDTR">@json($allTeachersForDTR)</script>
 
-        <button class="generate-report-btn" onclick="printAllDTR(JSON.parse(document.getElementById('allTeachersForDTR').textContent), {{ Js::from($monthStart) }}, {{ Js::from($monthEnd) }})" style="margin-top: 10px;">
+        <button class="generate-report-btn" onclick="printAllDTR(JSON.parse(document.getElementById('allTeachersForDTR').textContent), {{ Js::from($monthStart) }}, {{ Js::from($monthEnd) }}, {{ Js::from($allDtrPrint) }})" style="margin-top: 10px;">
             <i class="fa-solid fa-file-export"></i> Generate All DTR
         </button>
 

@@ -11,7 +11,9 @@ use App\Http\Controllers\KioskController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\Principal;
 use App\Http\Controllers\Reports\AbsenceReportController;
+use App\Http\Controllers\Reports\AttendancePrintController;
 use App\Http\Controllers\Reports\MonthlySummaryController;
+use App\Http\Controllers\Reports\PrintLogController;
 use App\Http\Controllers\SuperAdmin;
 use Illuminate\Support\Facades\Route;
 
@@ -73,6 +75,14 @@ Route::middleware(['auth', 'security.questions'])->group(function () {
     // Absence Report (all three roles; Reports -> Print Absences).
     Route::get('/reports/absences', AbsenceReportController::class)
         ->middleware('role:superadmin,admin,principal')->name('reports.absences');
+
+    // Daily Attendance (and one person's Weekly / Monthly) printout, no scan photos.
+    Route::get('/reports/attendance-print', AttendancePrintController::class)
+        ->middleware('role:superadmin,admin,principal')->name('reports.attendance-print');
+
+    // Audit Log entry for a printout built in the browser.
+    Route::post('/reports/print-log', PrintLogController::class)
+        ->middleware(['role:superadmin,admin,principal', 'throttle:60,1'])->name('reports.print-log');
 
     // ------------------------------------------------------------ Super Admin
     Route::prefix('superadmin')->name('superadmin.')->middleware('role:superadmin')->group(function () {

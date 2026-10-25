@@ -82,6 +82,8 @@
 
     .how { margin: 18px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.6; color: #4a4330; }
 
+    .paper-only { margin: 14px 0 0; font-size: 13px; font-weight: 700; color: #7a4b00; }
+
     .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 
     .actions a, .actions button {
@@ -142,12 +144,44 @@
         <li>Each code works once. Generate a new set in Settings &rarr; Account Management when few are left.</li>
     </ul>
 
+    <p class="paper-only"><i class="fa-solid fa-envelope" aria-hidden="true"></i> Print on paper and keep in a sealed envelope. Don't save as PDF.</p>
+
     <div class="actions">
-        <button type="button" class="print-btn" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Codes</button>
+        <button type="button" class="print-btn" onclick="printRecoveryCodes()"><i class="fa-solid fa-print"></i> Print Codes</button>
         <a href="{{ route('superadmin.settings', ['tab' => 'accounts']) }}" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back to Settings</a>
     </div>
 
 </div>
+
+<script>
+/* While printing, the page's title is the printout's name ("Recovery Codes -
+   2026-10-25 - Administrative Aide III"), which browsers suggest as a file
+   name; the print is recorded in the Audit Log (never the codes). */
+(function () {
+    var pageTitle = document.title;
+    var printJob = @json($print);
+
+    window.addEventListener('beforeprint', function () {
+        document.title = printJob.title;
+        fetch(@json(route('reports.print-log')), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': @json(csrf_token()) },
+            credentials: 'same-origin',
+            body: JSON.stringify({ report: printJob.report, range: printJob.range }),
+            keepalive: true
+        }).catch(function () {});
+    });
+
+    window.addEventListener('afterprint', function () {
+        document.title = pageTitle;
+    });
+
+    window.printRecoveryCodes = function () {
+        document.title = printJob.title;
+        window.print();
+    };
+})();
+</script>
 
 </body>
 </html>

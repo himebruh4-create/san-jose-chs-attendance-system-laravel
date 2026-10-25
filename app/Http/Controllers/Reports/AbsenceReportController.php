@@ -6,6 +6,7 @@ use App\Domain\Attendance\ReportsAnalytics;
 use App\Domain\PersonnelDirectory;
 use App\Http\Controllers\Controller;
 use App\Models\Teacher;
+use App\Support\Printout;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -33,17 +34,15 @@ class AbsenceReportController extends Controller
             ? Teacher::query()->active()->find((int) $request->query('teacher_id'), ['id', 'id_number', 'fullname', 'department', 'academic_status'])
             : null;
 
-        $roleLabels = ['superadmin' => 'Super Admin', 'admin' => 'Admin', 'principal' => 'Principal'];
-        $account = $request->user();
+        $range = $period === 'monthly' ? Printout::month($from) : Printout::range($from, $to);
+        Printout::log('Absence Report', $range, $person);
 
-        return response()->view('reports.absences', [
+        return response()->view('reports.absences', Printout::stamp($request->user()) + [
+            'printTitle' => Printout::title($request->user(), 'Absence Report', $range, $person?->fullname),
             'periodLabel' => $this->periodLabel($period, $from, $to),
             'person' => $person,
             'typeLabels' => PersonnelDirectory::TYPE_LABELS,
             'absences' => (new ReportsAnalytics(date('Y-m-d')))->absences($from, $to, $person?->id),
-            'printedBy' => $account->email ?: ($roleLabels[$account->role] ?? 'User'),
-            'printDate' => date('l, F j, Y'),
-            'printTime' => date('h:i:s A'),
         ])->header('Cache-Control', 'no-store');
     }
 

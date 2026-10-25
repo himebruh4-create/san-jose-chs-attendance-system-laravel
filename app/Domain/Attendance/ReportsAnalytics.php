@@ -328,6 +328,36 @@ class ReportsAnalytics
     }
 
     /**
+     * The Daily tab and its printout: one date's rows for everyone, or for
+     * one person. Only people with a status to report are listed: "Not Yet
+     * Recorded" (no scan yet today) is counted instead. Past days never have
+     * it; those people are Absent or Pending Review as usual.
+     *
+     * @return array{rows: list<array<string, mixed>>, not_yet_recorded: int}
+     */
+    public function dailyReport(string $date, ?int $teacherId = null): array
+    {
+        $rows = $teacherId === null ? $this->daily($date) : $this->personDays($teacherId, $date, $date, false);
+        $notYetRecorded = fn (array $row) => $row['status'] === 'Not Yet Recorded';
+
+        return [
+            'rows' => array_values(array_filter($rows, fn (array $row) => ! $notYetRecorded($row))),
+            'not_yet_recorded' => count(array_filter($rows, $notYetRecorded)),
+        ];
+    }
+
+    /**
+     * One person's working days of a month up to today (the Monthly tab and
+     * its printout).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function personMonth(int $teacherId, string $monthStart, string $monthEnd): array
+    {
+        return $this->personDays($teacherId, $monthStart, min($monthEnd, $this->today), true);
+    }
+
+    /**
      * One person's scans and status for each day of [$from, $to]. With
      * $workingDaysOnly, Sundays and unscheduled Saturdays are left out
      * unless the person scanned that day (the monthly counts skip them too).

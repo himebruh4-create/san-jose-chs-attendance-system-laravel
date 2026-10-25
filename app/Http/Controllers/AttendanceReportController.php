@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Attendance\AttendanceData;
+use App\Support\Printout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -42,6 +43,9 @@ abstract class AttendanceReportController extends Controller
         $totalPages = max(1, (int) ceil($total / self::PER_PAGE));
         $page = min(max(1, (int) $request->query('page', 1)), $totalPages);
 
+        $account = $request->user();
+        $printMonth = Printout::month($monthStart);
+
         $withRecords = fn ($t) => [
             'id' => (int) $t->id,
             'id_number' => $t->id_number,
@@ -52,6 +56,8 @@ abstract class AttendanceReportController extends Controller
             'schedule_session' => null,
             'records' => AttendanceData::teacherRecords((int) $t->id, $monthStart, $monthEnd),
             'monthStart' => $monthStart,
+            // "DTR - Ana Cruz - 2026-10 - Administrative Officer" (saved PDF name)
+            'print' => Printout::job($account, 'DTR', $printMonth, $t->fullname, (int) $t->id),
         ];
 
         $columns = ['id', 'id_number', 'fullname', 'department', 'academic_status', 'employment_type'];
@@ -69,6 +75,7 @@ abstract class AttendanceReportController extends Controller
             'teacherReports' => (clone $query)->offset(($page - 1) * self::PER_PAGE)->limit(self::PER_PAGE)->get($columns)->map($withRecords)->all(),
             // Every matching person, for Generate All DTR.
             'allTeachersForDTR' => $query->get($columns)->map($withRecords)->all(),
+            'allDtrPrint' => Printout::job($account, 'DTR', $printMonth, 'All Personnel'),
         ]);
     }
 

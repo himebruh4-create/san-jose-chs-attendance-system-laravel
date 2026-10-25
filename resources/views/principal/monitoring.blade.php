@@ -146,7 +146,11 @@
 @push('scripts')
 @php
     $monitoringData = [
-        'printedBy' => auth()->user()->email,
+        'printedBy' => auth()->user()->roleLabel(),
+        'print' => \App\Support\Printout::job(
+            auth()->user(), 'Attendance Monitoring', \App\Support\Printout::range($dateFrom, $dateTo),
+            $selectedTeacherName ?: null, $selectedTeacherId ?: null
+        ),
         'dateFromLabel' => date('M j, Y', strtotime($dateFrom)),
         'dateToLabel' => date('M j, Y', strtotime($dateTo)),
         'selectedTeacherName' => $selectedTeacherName,

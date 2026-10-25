@@ -11,7 +11,7 @@
 <div class="main">
 
     <div class="page-header">
-        <div class="eyebrow">Administrative Aide III</div>
+        <div class="eyebrow">{{ auth()->user()->roleLabel() }}</div>
         <h1>Dashboard</h1>
         <p>Attendance overview for {{ date('l, F j, Y', strtotime($today)) }}.</p>
     </div>

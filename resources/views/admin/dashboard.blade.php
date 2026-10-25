@@ -12,8 +12,8 @@
 <div class="main">
 
     <div class="page-header">
-        <div class="eyebrow">Admin Officer</div>
-        <h1>Administrative Officer IV Dashboard</h1>
+        <div class="eyebrow">{{ auth()->user()->roleLabel() }}</div>
+        <h1>{{ auth()->user()->roleLabel() }} Dashboard</h1>
         <p>Attendance overview for {{ date('l, F j, Y', strtotime($today)) }}.</p>
     </div>
 

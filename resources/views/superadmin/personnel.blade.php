@@ -13,7 +13,7 @@
 <div class="main">
 
     <div class="page-header">
-        <div class="eyebrow">Admin Aide</div>
+        <div class="eyebrow">{{ auth()->user()->roleLabel() }}</div>
         <h1>Personnel Management</h1>
         <p>Manage personnel records, schedules, leaves, and school-wide events.</p>
     </div>
@@ -629,6 +629,8 @@
         'paidBreakConfig' => $breakConfig,
         'allTeachers' => $allTeachers,
         'schedulePicker' => $schedulePicker,
+        'badgePrints' => $badgePrints,
+        'allBadgesPrint' => $allBadgesPrint,
     ];
 @endphp
 <script>

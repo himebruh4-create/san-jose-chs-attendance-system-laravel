@@ -6,6 +6,7 @@ use App\Domain\Attendance\MonthlySummary;
 use App\Domain\Attendance\ReportsAnalytics;
 use App\Domain\Attendance\ScanPhotoStrip;
 use App\Models\Teacher;
+use App\Support\Printout;
 use DateTimeImmutable;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,9 +15,9 @@ use Illuminate\View\View;
  * Reports: Daily, Weekly and Monthly tabs, for All Personnel or one person.
  * One page for all three roles (the native-PHP system had a copy per role).
  *
- * The scan photo strip is built for the Super Admin only. Admin and
+ * The scan photo strip is built for the Super Admin only, on screen. Admin and
  * Principal pages never receive the photos or their URLs (RA 10173), so
- * hiding it is not left to CSS.
+ * hiding it is not left to CSS. No printout has it.
  */
 abstract class ReportsController extends Controller
 {
@@ -42,24 +43,18 @@ abstract class ReportsController extends Controller
         $reports = new ReportsAnalytics($today);
         $withPhotos = fn (array $rows) => $showPhotos ? ScanPhotoStrip::attach($rows) : $rows;
 
+        ['rows' => $daily, 'not_yet_recorded' => $dailyNotYetRecorded] = $reports->dailyReport($date, $person?->id);
+
         if ($person) {
-            $daily = $reports->personDays($person->id, $date, $date, false);
             $personWeek = $reports->personDays($person->id, $weekStart, $weekEnd, false);
-            $personMonth = $reports->personDays($person->id, $monthStart, min($monthEnd, $today), true);
+            $personMonth = $reports->personMonth($person->id, $monthStart, $monthEnd);
             $personMonthSummary = collect(MonthlySummary::build($monthStart, $monthEnd))->firstWhere('id', $person->id);
         } else {
-            $daily = $reports->daily($date);
             $weekly = $reports->weekly($weekStart);
             $monthly = $reports->monthly($monthStart, $monthEnd);
         }
 
         $calendar = $reports->monthCalendar($monthStart, $monthEnd, $person?->id);
-
-        // Daily lists only people with a status to report: "Not Yet Recorded"
-        // (no scan yet today) is shown as a count instead. Past days never
-        // have it; those people are Absent or Pending Review as usual.
-        $dailyNotYetRecorded = count(array_filter($daily, fn (array $row) => $row['status'] === 'Not Yet Recorded'));
-        $daily = array_values(array_filter($daily, fn (array $row) => $row['status'] !== 'Not Yet Recorded'));
 
         // Previous / next school week; never a week that has not started.
         $previousWeek = date('Y-m-d', strtotime($weekStart.' -7 days'));
@@ -70,8 +65,20 @@ abstract class ReportsController extends Controller
             'period' => $period, 'from' => $from, 'to' => $to, 'teacher_id' => $person?->id,
         ]));
 
+        // Daily, and one person's Weekly / Monthly: printouts built by the
+        // server (Reports\AttendancePrintController), never with scan photos.
+        $printUrl = fn (string $period, string $anyDay) => route('reports.attendance-print', array_filter([
+            'period' => $period, 'date' => $anyDay, 'teacher_id' => $person?->id,
+        ]));
+
         return view('reports', [
             'dailyNotYetRecorded' => $dailyNotYetRecorded,
+            'printUrls' => [
+                'daily' => $printUrl('daily', $date),
+                'weekly' => $printUrl('weekly', $weekStart),
+                'monthly' => $printUrl('monthly', $monthStart),
+            ],
+            'weeklyRosterPrint' => Printout::job($request->user(), 'Weekly Roster', Printout::range($weekStart, $weekEnd)),
             'previousWeek' => $previousWeek,
             'nextWeek' => $nextWeek <= $today ? $nextWeek : null,
             'absenceUrls' => [

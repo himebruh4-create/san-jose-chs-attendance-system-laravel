@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Monthly Summary Report</title>
+    <title>{{ $printTitle }}</title>
     <style>
         /* Same print design as the Weekly Attendance Roster (Reports -> Print Weekly Roster):
            identical page setup, header, colors and table rules; only the report title,

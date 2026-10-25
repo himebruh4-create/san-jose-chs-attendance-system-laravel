@@ -9,6 +9,7 @@ use App\Http\Controllers\Data\SchoolEventController;
 use App\Models\Teacher;
 use App\Support\Audit;
 use App\Support\PersonnelPhotos;
+use App\Support\Printout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -80,6 +81,11 @@ class PersonnelController extends Controller
             'filterEmployment' => $filterEmployment,
             'teachers' => $teachers,
             'allTeachers' => $allTeachers,
+            // Saved-PDF names: "ID Badge - Ana Cruz - Administrative Aide III", by ID number.
+            'badgePrints' => collect($allTeachers)->mapWithKeys(fn (array $t) => [
+                $t['id_number'] => Printout::job($request->user(), 'ID Badge', null, $t['fullname'], (int) $t['id']),
+            ])->all(),
+            'allBadgesPrint' => Printout::job($request->user(), 'ID Badges', null, 'All Personnel'),
             'page' => $page,
             'limit' => self::PER_PAGE,
             'totalPages' => $totalPages,
