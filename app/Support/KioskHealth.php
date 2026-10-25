@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\DB;
  *
  * The kiosk (public/js/kiosk.js, with the constants below from
  * kioskConfig()) checks its camera on every scan and every
- * CHECK_INTERVAL_MINUTES while idle, and reports "ok", "blocked",
+ * CHECK_INTERVAL_MINUTES while idle (ALERT_CHECK_INTERVAL_SECONDS while a
+ * camera alert is open), and reports "ok", "blocked",
  * "disconnected" or "denied" to POST /kiosk/health; that report is also its
  * check-in. The server checks each scan photo itself for the "Camera
  * blocked" flag. `kiosk:check-offline` (every minute) opens "Kiosk offline"
@@ -52,6 +53,9 @@ class KioskHealth
 
     /** The kiosk checks its camera (and checks in) this often while idle. */
     public const CHECK_INTERVAL_MINUTES = 5;
+
+    /** ...and this often while it has an open camera alert, so the alert closes soon after the camera is fixed. */
+    public const ALERT_CHECK_INTERVAL_SECONDS = 30;
 
     /** A blocked picture is checked again after this long before it is reported (someone leaning close is not a problem). */
     public const RECHECK_SECONDS = 30;
@@ -326,6 +330,7 @@ class KioskHealth
             'sampleWidth' => self::SAMPLE_WIDTH,
             'sampleHeight' => self::SAMPLE_HEIGHT,
             'checkIntervalMs' => self::CHECK_INTERVAL_MINUTES * 60_000,
+            'alertCheckIntervalMs' => self::ALERT_CHECK_INTERVAL_SECONDS * 1000,
             'recheckMs' => self::RECHECK_SECONDS * 1000,
             'retryMs' => self::CAMERA_RETRY_SECONDS * 1000,
             'warmupMs' => self::CAMERA_WARMUP_MS,

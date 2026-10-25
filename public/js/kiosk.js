@@ -128,8 +128,12 @@ const camera = {
     problem: "starting",
     lastReported: null,
     retryTimer: null,
-    recheckTimer: null
+    recheckTimer: null,
+    idleTimer: null
 };
+
+// Reported states that keep a camera alert open on the server.
+const CAMERA_ALERT_STATES = ["blocked", "disconnected", "denied"];
 
 const CAMERA_MESSAGES = {
     ok: ["Camera on — a photo is taken with each scan", true],
@@ -275,13 +279,32 @@ function checkCamera(always, confirming) {
 }
 
 function reportCameraHealth(state) {
+    const alertChanged = hasCameraAlert(camera.lastReported) !== hasCameraAlert(state);
     camera.lastReported = state;
+    if (alertChanged) scheduleIdleCheck();
 
     fetch(CAMERA_CONFIG.healthUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ camera: state })
     }).catch(function () {});
+}
+
+function hasCameraAlert(state) {
+    return CAMERA_ALERT_STATES.indexOf(state) !== -1;
+}
+
+/* The idle camera check, which is also the kiosk's check-in: every few
+   minutes, or more often while a camera alert is open so it closes soon
+   after the camera is fixed. */
+function scheduleIdleCheck() {
+    clearTimeout(camera.idleTimer);
+
+    const delay = hasCameraAlert(camera.lastReported) ? CAMERA_CONFIG.alertCheckIntervalMs : CAMERA_CONFIG.checkIntervalMs;
+    camera.idleTimer = setTimeout(function () {
+        checkCamera(true);
+        scheduleIdleCheck();
+    }, delay);
 }
 
 /* =========================
@@ -472,8 +495,7 @@ window.addEventListener("load", function () {
     loadFaceDetector();
     focusBarcode();
 
-    // The idle camera check, which is also the kiosk's check-in.
-    setInterval(function () { checkCamera(true); }, CAMERA_CONFIG.checkIntervalMs);
+    scheduleIdleCheck();
 });
 
 /* =========================
