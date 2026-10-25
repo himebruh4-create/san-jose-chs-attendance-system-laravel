@@ -48,6 +48,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware('kiosk')->group(function () {
     Route::get('/kiosk', [KioskController::class, 'index'])->name('kiosk');
     Route::post('/kiosk/scan', [KioskController::class, 'scan'])->middleware('throttle:120,1')->name('kiosk.scan');
+    Route::post('/kiosk/health', [KioskController::class, 'health'])->middleware('throttle:30,1')->name('kiosk.health');
 });
 
 // Local CA certificate for kiosk devices (public: needed before anyone signs in).

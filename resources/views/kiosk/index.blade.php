@@ -86,6 +86,10 @@
     </div>
 </div>
 
+{{-- Camera health thresholds, intervals and the bundled face detector (App\Support\KioskHealth). --}}
+<script>
+window.KIOSK_CAMERA = @json(\App\Support\KioskHealth::kioskConfig());
+</script>
 <script src="{{ asset_v('js/kiosk.js') }}"></script>
 
 </body>

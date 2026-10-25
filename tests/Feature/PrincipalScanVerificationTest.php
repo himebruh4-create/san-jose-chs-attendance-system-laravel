@@ -75,6 +75,8 @@ class PrincipalScanVerificationTest extends TestCase
             'unknown_week' => 1,
             'nophoto_week' => 2,
             'manual_week' => 2,
+            'blocked_week' => 0,
+            'noface_week' => 0,
             'unreviewed' => 2,
         ], array_diff_key($response->json(), ['loaded_at' => true]));
         $this->assertSame('2026-10-07T10:00:00+08:00', $response->json('loaded_at'));

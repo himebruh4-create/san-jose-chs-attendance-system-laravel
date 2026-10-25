@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Attendance\DashboardStats;
 use App\Domain\Attendance\ScheduleChanges;
 use App\Http\Controllers\Controller;
+use App\Support\KioskHealth;
 
 class DashboardController extends Controller
 {
@@ -20,6 +21,7 @@ class DashboardController extends Controller
             'employmentTypeCounts' => $stats->employmentTypeCounts(),
             'todayCounts' => $todayStats['counts'],
             'monthTotals' => $stats->thisMonth($today),
+            'kioskAlerts' => KioskHealth::openAlerts(),
             'teachersOnLeaveToday' => $todayStats['on_leave'],
             'week' => $stats->week($today),
             'scheduleChanges' => ScheduleChanges::forDisplay($stats->events(), $today, $stats->teachers()),

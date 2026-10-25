@@ -5,6 +5,7 @@
 @push('head')
 <link rel="stylesheet" href="{{ asset_v('css/admin-dashboard.css') }}">
 <link rel="stylesheet" href="{{ asset_v('css/month-summary.css') }}">
+<link rel="stylesheet" href="{{ asset_v('css/kiosk-alerts.css') }}">
 <link rel="stylesheet" href="{{ asset_v('css/schedule-changes.css') }}">
 <script src="{{ asset('vendor/chartjs/chart.umd.min.js') }}"></script>
 @endpush
@@ -17,6 +18,8 @@
         <h1>{{ auth()->user()->roleLabel() }} Dashboard</h1>
         <p>Attendance overview for {{ date('l, F j, Y', strtotime($today)) }}.</p>
     </div>
+
+    @include('partials.kiosk-alerts')
 
     <div class="stats-wrapper">
 

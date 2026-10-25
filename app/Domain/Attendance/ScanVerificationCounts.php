@@ -12,8 +12,10 @@ use Illuminate\Support\Facades\DB;
  *
  * Until scans carry their own verification flags, a scan is flagged when it
  * is a repeat (duplicate / already complete), an unknown barcode (not found /
- * invalid), has no photo, was a manual entry (barcode typed, not scanned), or
- * was a rapid scan (see rapidScanCondition()). A scan can have more than one flag.
+ * invalid), has no photo, was a manual entry (barcode typed, not scanned),
+ * was a rapid scan (see rapidScanCondition()), had its camera blocked (photo
+ * too dark or one flat color) or had no face detected in its photo. A scan can
+ * have more than one flag.
  * "Waiting for review" is the Super Admin's unreviewed Rejected Scan Log.
  */
 class ScanVerificationCounts
@@ -56,7 +58,7 @@ class ScanVerificationCounts
     }
 
     /**
-     * @return array{flagged_week: int, repeat_week: int, rapid_week: int, unknown_week: int, nophoto_week: int, manual_week: int, unreviewed: int, loaded_at: string}
+     * @return array{flagged_week: int, repeat_week: int, rapid_week: int, unknown_week: int, nophoto_week: int, manual_week: int, blocked_week: int, noface_week: int, unreviewed: int, loaded_at: string}
      */
     public static function get(): array
     {
@@ -68,15 +70,19 @@ class ScanVerificationCounts
         $unknown = "p.outcome IN ('".implode("','", self::UNKNOWN)."')";
         $noPhoto = 'p.path IS NULL';
         $manual = "p.input_method = '".ScanPhotos::INPUT_TYPED."'";
+        $blocked = 'p.camera_blocked = 1';
+        $noFace = 'p.face_detected = 0';
 
         $row = DB::table('scan_photos as p')
             ->where('p.scanned_at', '>=', $weekStart)
-            ->selectRaw("COALESCE(SUM(CASE WHEN {$repeat} OR {$rapid} OR {$unknown} OR {$noPhoto} OR {$manual} THEN 1 ELSE 0 END), 0) AS flagged_week")
+            ->selectRaw("COALESCE(SUM(CASE WHEN {$repeat} OR {$rapid} OR {$unknown} OR {$noPhoto} OR {$manual} OR {$blocked} OR {$noFace} THEN 1 ELSE 0 END), 0) AS flagged_week")
             ->selectRaw("COALESCE(SUM(CASE WHEN {$repeat} THEN 1 ELSE 0 END), 0) AS repeat_week")
             ->selectRaw("COALESCE(SUM(CASE WHEN {$rapid} THEN 1 ELSE 0 END), 0) AS rapid_week")
             ->selectRaw("COALESCE(SUM(CASE WHEN {$unknown} THEN 1 ELSE 0 END), 0) AS unknown_week")
             ->selectRaw("COALESCE(SUM(CASE WHEN {$noPhoto} THEN 1 ELSE 0 END), 0) AS nophoto_week")
             ->selectRaw("COALESCE(SUM(CASE WHEN {$manual} THEN 1 ELSE 0 END), 0) AS manual_week")
+            ->selectRaw("COALESCE(SUM(CASE WHEN {$blocked} THEN 1 ELSE 0 END), 0) AS blocked_week")
+            ->selectRaw("COALESCE(SUM(CASE WHEN {$noFace} THEN 1 ELSE 0 END), 0) AS noface_week")
             ->selectRaw('(SELECT COUNT(*) FROM attendance_rejected_scans WHERE reviewed_at IS NULL) AS unreviewed')
             ->first();
 
@@ -87,6 +93,8 @@ class ScanVerificationCounts
             'unknown_week' => (int) $row->unknown_week,
             'nophoto_week' => (int) $row->nophoto_week,
             'manual_week' => (int) $row->manual_week,
+            'blocked_week' => (int) $row->blocked_week,
+            'noface_week' => (int) $row->noface_week,
             'unreviewed' => (int) $row->unreviewed,
             'loaded_at' => $now->toIso8601String(),
         ];

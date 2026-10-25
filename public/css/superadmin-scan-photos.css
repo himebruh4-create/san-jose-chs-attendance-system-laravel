@@ -83,6 +83,8 @@
 .flag-chip { padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
 .flag-chip.flag-manual { background: #e8eaf6; color: #3949ab; }
 .flag-chip.flag-rapid { background: #fce4ec; color: #ad1457; }
+.flag-chip.flag-camera { background: #eceff1; color: #37474f; }
+.flag-chip.flag-noface { background: #fff3e0; color: #a14a00; }
 
 .scan-photos-pages { display: flex; justify-content: center; align-items: center; gap: 14px; margin: 22px 0 6px; color: #5c5238; font-size: 13.5px; }
 .page-btn { padding: 8px 14px; border-radius: 10px; background: #14390f; color: #fffdf8; text-decoration: none; }

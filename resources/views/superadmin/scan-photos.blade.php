@@ -92,6 +92,8 @@
                             <span class="outcome-badge outcome-{{ $photo['outcome'] }}">{{ $photo['outcome_label'] }}</span>
                             @if ($photo['rapid_scan'])<span class="flag-chip flag-rapid" title="Another person's accepted scan on this kiosk was within {{ \App\Domain\Attendance\ScanVerificationCounts::RAPID_SECONDS }} seconds"><i class="fa-solid fa-bolt"></i> Rapid scan</span>@endif
                             @if ($photo['manual_entry'])<span class="flag-chip flag-manual" title="Barcode was typed, not scanned"><i class="fa-solid fa-keyboard"></i> Manual entry</span>@endif
+                            @if ($photo['camera_blocked'])<span class="flag-chip flag-camera" title="The photo was too dark or one flat color (lens covered?). The scan was still saved."><i class="fa-solid fa-video-slash"></i> Camera blocked</span>@endif
+                            @if ($photo['no_face'])<span class="flag-chip flag-noface" title="The kiosk found no face in the photo. Can be wrong in poor light or at a side angle."><i class="fa-solid fa-user-slash"></i> No face detected</span>@endif
                             @if ($photo['kiosk'])<span class="kiosk-name" title="Kiosk"><i class="fa-solid fa-desktop"></i> {{ $photo['kiosk'] }}</span>@endif
                         </span>
                     </figcaption>

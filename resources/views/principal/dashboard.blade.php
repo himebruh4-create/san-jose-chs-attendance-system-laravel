@@ -120,6 +120,8 @@
                         <div><strong data-sv="unknown_week">{{ $scanVerification['unknown_week'] }}</strong><span>Unknown barcode</span></div>
                         <div><strong data-sv="nophoto_week">{{ $scanVerification['nophoto_week'] }}</strong><span>No photo</span></div>
                         <div><strong data-sv="manual_week">{{ $scanVerification['manual_week'] }}</strong><span>Manual entry</span></div>
+                        <div><strong data-sv="blocked_week">{{ $scanVerification['blocked_week'] }}</strong><span>Camera blocked</span></div>
+                        <div><strong data-sv="noface_week">{{ $scanVerification['noface_week'] }}</strong><span>No face detected</span></div>
                     </div>
                     <p class="help-note sv-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>A scan can have more than one flag.</span></p>
                 </div>

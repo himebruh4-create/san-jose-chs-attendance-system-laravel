@@ -10,6 +10,9 @@
    - names and messages are escaped before being shown
    - a webcam photo is taken with each scan (when a camera is available)
      and shown in the result
+   - the camera is checked on every scan and every few minutes (blocked,
+     too dark, disconnected, not allowed) and the kiosk checks in; the
+     Super Admin and Admin are alerted. Scanning never waits on it.
    - no attendance records are shown: the day's attendance log and the
      weekly DTR viewer are gone (DTRs are on the staff pages)
    ========================================================= */
@@ -101,13 +104,38 @@ document.addEventListener("click", function (e) {
 /* =========================
    WEBCAM
    Browsers only allow the camera on http://localhost or https://.
+
+   Camera health (settings in window.KIOSK_CAMERA, from
+   App\Support\KioskHealth): the camera's own errors and a check of the
+   picture (too dark, or one flat color = lens covered) on every scan and
+   every few minutes are reported to the server, which alerts the Super
+   Admin and Admin. That report is also the kiosk's check-in. A camera
+   problem never stops a scan.
 ========================= */
+
+const CAMERA_CONFIG = window.KIOSK_CAMERA;
 
 const camera = {
     video: document.getElementById("cameraPreview"),
     status: document.getElementById("cameraStatus"),
     canvas: document.createElement("canvas"),
-    ready: false
+    sample: document.createElement("canvas"),
+    stream: null,
+    // Photos are only taken once the first frame has arrived and the
+    // camera has had a moment to adjust its exposure.
+    ready: false,
+    // Why it is not ready: "starting", "disconnected" or "denied".
+    problem: "starting",
+    lastReported: null,
+    retryTimer: null,
+    recheckTimer: null
+};
+
+const CAMERA_MESSAGES = {
+    ok: ["Camera on — a photo is taken with each scan", true],
+    blocked: ["Camera blocked or too dark — scans are still saved", false],
+    disconnected: ["Camera not available — scans are saved without a photo", false],
+    denied: ["Camera not allowed in this browser — scans are saved without a photo", false]
 };
 
 function setCameraStatus(text, ok) {
@@ -115,26 +143,185 @@ function setCameraStatus(text, ok) {
     camera.status.className = "camera-status " + (ok ? "camera-ok" : "camera-off");
 }
 
+function showCameraState(state) {
+    if (CAMERA_MESSAGES[state]) setCameraStatus(CAMERA_MESSAGES[state][0], CAMERA_MESSAGES[state][1]);
+}
+
 function startCamera() {
+    clearTimeout(camera.retryTimer);
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        // Not a secure connection: retrying cannot help.
+        cameraLost("disconnected", false);
         setCameraStatus("Camera unavailable on this connection — scans are saved without a photo", false);
         return;
     }
 
     navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
         .then(function (stream) {
+            camera.stream = stream;
+            stream.getVideoTracks().forEach(function (track) {
+                // Unplugged, or taken by the system.
+                track.addEventListener("ended", function () { cameraLost("disconnected", true); });
+            });
             camera.video.srcObject = stream;
-            camera.video.play();
-            camera.ready = true;
-            setCameraStatus("Camera on — a photo is taken with each scan", true);
+
+            return camera.video.play().then(waitForFirstFrame);
         })
-        .catch(function () {
-            setCameraStatus("Camera not available — scans are saved without a photo", false);
+        .then(function () {
+            camera.ready = true;
+            camera.problem = null;
+            checkCamera(true);
+        })
+        .catch(function (error) {
+            const name = error && error.name;
+            cameraLost(name === "NotAllowedError" || name === "SecurityError" ? "denied" : "disconnected", true);
         });
 }
 
+/* Resolves once a real frame has been shown, plus the warm-up time. */
+function waitForFirstFrame() {
+    return new Promise(function (resolve) {
+        const afterWarmUp = function () { setTimeout(resolve, CAMERA_CONFIG.warmupMs); };
+
+        if (camera.video.requestVideoFrameCallback) {
+            camera.video.requestVideoFrameCallback(afterWarmUp);
+        } else if (camera.video.readyState >= 2) {
+            afterWarmUp();
+        } else {
+            camera.video.addEventListener("loadeddata", afterWarmUp, { once: true });
+        }
+    });
+}
+
+function cameraLost(problem, retry) {
+    camera.ready = false;
+    camera.problem = problem;
+
+    if (camera.stream) {
+        camera.stream.getTracks().forEach(function (track) { track.stop(); });
+        camera.stream = null;
+    }
+
+    showCameraState(problem);
+    if (camera.lastReported !== problem) reportCameraHealth(problem);
+
+    clearTimeout(camera.retryTimer);
+    if (retry) camera.retryTimer = setTimeout(startCamera, CAMERA_CONFIG.retryMs);
+}
+
+/* "ok" or "blocked" from the current picture, or why there is none. */
+function cameraState() {
+    if (!camera.ready || camera.video.readyState < 2 || !camera.video.videoWidth) {
+        return camera.problem || "disconnected";
+    }
+
+    const width = CAMERA_CONFIG.sampleWidth;
+    const height = CAMERA_CONFIG.sampleHeight;
+    camera.sample.width = width;
+    camera.sample.height = height;
+
+    const context = camera.sample.getContext("2d", { willReadFrequently: true });
+    context.drawImage(camera.video, 0, 0, width, height);
+    const pixels = context.getImageData(0, 0, width, height).data;
+
+    let sum = 0;
+    let squares = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+        const luminance = 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+        sum += luminance;
+        squares += luminance * luminance;
+    }
+
+    const count = width * height;
+    const mean = sum / count;
+    const stddev = Math.sqrt(Math.max(0, squares / count - mean * mean));
+
+    return mean < CAMERA_CONFIG.darkMean || stddev < CAMERA_CONFIG.flatStddev ? "blocked" : "ok";
+}
+
+/* Checks the camera and reports it: always for the idle check-in
+   (`always`), otherwise only when it changed. A newly blocked picture is
+   checked again a little later (`confirming`) before it is reported, so
+   someone leaning close to the camera does not raise an alert. */
+function checkCamera(always, confirming) {
+    let state;
+    try {
+        state = cameraState();
+    } catch (error) {
+        console.error("Camera check failed:", error);
+        return "ok";
+    }
+
+    if (state === "starting") {
+        if (always) reportCameraHealth("starting");
+        return state;
+    }
+
+    showCameraState(state);
+
+    if (state === "blocked" && camera.lastReported !== "blocked" && !confirming) {
+        if (!camera.recheckTimer) {
+            camera.recheckTimer = setTimeout(function () {
+                camera.recheckTimer = null;
+                checkCamera(true, true);
+            }, CAMERA_CONFIG.recheckMs);
+        }
+    } else if (always || camera.lastReported !== state) {
+        reportCameraHealth(state);
+    }
+
+    return state;
+}
+
+function reportCameraHealth(state) {
+    camera.lastReported = state;
+
+    fetch(CAMERA_CONFIG.healthUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ camera: state })
+    }).catch(function () {});
+}
+
+/* =========================
+   FACE DETECTION ("No face detected" flag)
+   MediaPipe Face Detection, bundled with the app (works offline), run on
+   the scan photo in this browser. Only the yes/no result is sent; it is a
+   flag for the Super Admin, never a reason to refuse a scan.
+========================= */
+
+let faceDetector = null;
+
+async function loadFaceDetector() {
+    try {
+        const vision = await import(CAMERA_CONFIG.faceDetector.module);
+        const fileset = await vision.FilesetResolver.forVisionTasks(CAMERA_CONFIG.faceDetector.wasm);
+
+        faceDetector = await vision.FaceDetector.createFromOptions(fileset, {
+            baseOptions: { modelAssetPath: CAMERA_CONFIG.faceDetector.model, delegate: "CPU" },
+            runningMode: "IMAGE",
+            minDetectionConfidence: 0.5
+        });
+    } catch (error) {
+        console.warn("Face detection is not available; scans are sent without it.", error);
+    }
+}
+
+/* "1" a face, "0" none, "" not checked. */
+function faceResult(image) {
+    if (!faceDetector) return "";
+
+    try {
+        return faceDetector.detect(image).detections.length > 0 ? "1" : "0";
+    } catch (error) {
+        console.error("Face detection failed:", error);
+        return "";
+    }
+}
+
 function capturePhoto() {
-    if (!camera.ready || !camera.video.videoWidth) return "";
+    if (!camera.ready || camera.video.readyState < 2 || !camera.video.videoWidth) return "";
 
     const width = 480;
     const height = Math.round(width * camera.video.videoHeight / camera.video.videoWidth);
@@ -231,12 +418,16 @@ function processBarcode() {
     scanInProgress = true;
 
     const typedManually = wasTypedManually(barcode);
+    const cameraNow = checkCamera(false);
     const snapshot = capturePhoto();
+    // A blocked picture has no face to find; the server flags it as blocked.
+    const face = snapshot && cameraNow === "ok" ? faceResult(camera.canvas) : "";
 
     const body = new URLSearchParams();
     body.set("barcode", barcode);
     body.set("photo", snapshot);
     body.set("input_method", typedManually ? "typed" : "scanned");
+    body.set("face_detected", face);
 
     fetch(appUrl("kiosk/scan"), {
         method: "POST",
@@ -278,7 +469,11 @@ function processBarcode() {
 
 window.addEventListener("load", function () {
     startCamera();
+    loadFaceDetector();
     focusBarcode();
+
+    // The idle camera check, which is also the kiosk's check-in.
+    setInterval(function () { checkCamera(true); }, CAMERA_CONFIG.checkIntervalMs);
 });
 
 /* =========================

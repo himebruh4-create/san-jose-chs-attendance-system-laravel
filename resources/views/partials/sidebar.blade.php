@@ -2,6 +2,9 @@
     $account = auth()->user();
     $role = $account?->role;
 
+    // Open kiosk camera / offline alerts (Super Admin and Admin; the banner is on their dashboard).
+    $openKioskAlerts = in_array($role, ['superadmin', 'admin'], true) ? \App\Support\KioskHealth::openCount() : 0;
+
     $menus = [
         'admin' => [
             ['admin.dashboard', 'Dashboard'],
@@ -52,6 +55,9 @@
         @foreach ($menus[$role] ?? [] as [$routeName, $label])
             <a href="{{ route($routeName) }}" class="{{ request()->routeIs($routeName) ? 'active' : '' }}">
                 <span>{{ $label }}</span>
+                @if ($openKioskAlerts > 0 && $routeName === $role.'.dashboard')
+                    <span class="sidebar-pending-badge sidebar-kiosk-badge" title="Open kiosk alerts (see the dashboard)">{{ $openKioskAlerts }}</span>
+                @endif
                 @if ($routeName === 'superadmin.adjustments')
                     <span id="sidebarPendingBadge" class="sidebar-pending-badge" style="display:none;" title="Unresolved Pending Review items">0</span>
                 @endif

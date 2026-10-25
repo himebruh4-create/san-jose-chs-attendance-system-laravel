@@ -1,0 +1,31 @@
+/* Kiosk alert banner (partials/kiosk-alerts.blade.php), Super Admin and
+   Admin dashboards. Same warning colors as the password reset alert. */
+
+.kiosk-alert-banner {
+    margin-bottom: 20px;
+    padding: 14px 18px;
+    border: 1px solid #f0c36d;
+    border-left: 5px solid #e8a317;
+    border-radius: 12px;
+    background: #fff6e0;
+    color: #7a4b00;
+}
+
+.kiosk-alert-banner h3 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    color: #7a4b00;
+}
+
+.kiosk-alert-banner ul {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.kiosk-alert-banner .help-note { margin: 8px 0 0; }
+
+@media (max-width: 767.98px) {
+    .kiosk-alert-banner { padding: 12px 14px; }
+}

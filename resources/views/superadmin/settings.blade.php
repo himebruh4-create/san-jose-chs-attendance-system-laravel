@@ -632,6 +632,39 @@
         </table>
         </div>
 
+        {{-- Camera / offline alerts of the last 30 days (text only). --}}
+        <h3 class="kiosk-alert-history-title">Camera and Offline Alerts (last 30 days)</h3>
+        <div class="table-scroll">
+        <table class="dept-table">
+            <thead>
+                <tr>
+                    <th>Kiosk</th>
+                    <th>Problem</th>
+                    <th>Started</th>
+                    <th>Fixed</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($kioskAlertHistory as $alert)
+                    <tr>
+                        <td>{{ $alert->kiosk?->name ?? '—' }}</td>
+                        <td>{{ \App\Models\KioskAlert::TYPES[$alert->type] ?? $alert->type }}</td>
+                        <td>{{ $alert->started_at->format('M j, Y g:i A') }}</td>
+                        <td>
+                            @if ($alert->resolved_at)
+                                {{ $alert->resolved_at->format('M j, Y g:i A') }}<br><small>{{ \App\Models\KioskAlert::RESOLUTIONS[$alert->resolution] ?? $alert->resolution }}</small>
+                            @else
+                                <strong>Still open</strong>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="4" style="text-align:center;">No kiosk problems in the last 30 days.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+        </div>
+
     </div>
 
     <!-- ===== AUDIT LOG (new) ===== -->

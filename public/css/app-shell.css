@@ -352,6 +352,9 @@ body {
 
 
 /* Super Admin only: persistent Pending Review count, on the label's line */
+/* Open kiosk alerts (on "Dashboard") */
+.sidebar-pending-badge.sidebar-kiosk-badge { background: #c62828; color: #ffffff; }
+
 .sidebar-pending-badge {
     display: inline-block;
     flex: none;

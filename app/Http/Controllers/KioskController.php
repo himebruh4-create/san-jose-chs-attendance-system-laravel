@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Domain\Attendance\Scanner;
 use App\Domain\Attendance\ScanPhotos;
+use App\Support\KioskHealth;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
 
@@ -54,7 +57,8 @@ class KioskController extends Controller
             $inputMethod = ScanPhotos::inputMethod($request->input('input_method'));
 
             try {
-                ScanPhotos::record($request->input('photo'), $result, $barcode, $now, $device->id, $inputMethod);
+                ScanPhotos::record($request->input('photo'), $result, $barcode, $now, $device->id, $inputMethod,
+                    ScanPhotos::faceDetected($request->input('face_detected')));
             } catch (Throwable $e) {
                 Log::error('Kiosk scan photo/flags could not be recorded.', [
                     'teacher_id' => $result['teacher_id'] ?? null,
@@ -69,5 +73,21 @@ class KioskController extends Controller
         unset($result['outcome'], $result['attendance_date']);
 
         return response()->json($result);
+    }
+
+    /**
+     * The kiosk's camera check (every few minutes, and when its camera
+     * changes): opens or closes this kiosk's alert. Also its check-in, so
+     * an offline alert closes. Text only; no photo is ever sent here.
+     */
+    public function health(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'camera' => ['required', 'string', Rule::in(KioskHealth::STATUSES)],
+        ]);
+
+        KioskHealth::report($request->attributes->get('kiosk_device'), $data['camera']);
+
+        return $this->ok();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Attendance;
 
+use App\Support\KioskHealth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -38,13 +39,27 @@ class ScanPhotos
     }
 
     /**
+     * The kiosk's face detection result: "1" a face, "0" none (the "No face
+     * detected" flag), anything else not checked.
+     */
+    public static function faceDetected(mixed $value): ?bool
+    {
+        return match ($value) {
+            '1' => true,
+            '0' => false,
+            default => null,
+        };
+    }
+
+    /**
      * Stores the photo (if any) and its scan_photos row. A missing or
      * unreadable photo still records the row, with path = null, so a scan
-     * without a picture is visible to the reviewer.
+     * without a picture is visible to the reviewer. A photo too dark or of
+     * one flat color carries the camera_blocked flag (and no face result).
      */
-    public static function record(?string $dataUrl, array $scan, string $barcode, string $scannedAt, ?int $kioskDeviceId, string $inputMethod = self::INPUT_SCANNED): ?int
+    public static function record(?string $dataUrl, array $scan, string $barcode, string $scannedAt, ?int $kioskDeviceId, string $inputMethod = self::INPUT_SCANNED, ?bool $faceDetected = null): ?int
     {
-        $path = self::storeImage($dataUrl, $scannedAt);
+        [$path, $cameraBlocked] = self::storeImage($dataUrl, $scannedAt);
 
         return DB::table('scan_photos')->insertGetId([
             'teacher_id' => $scan['teacher_id'] ?? null,
@@ -56,31 +71,38 @@ class ScanPhotos
             'scan_kind' => $scan['kind'] ?? null,
             'input_method' => self::inputMethod($inputMethod),
             'path' => $path,
+            'camera_blocked' => $cameraBlocked,
+            'face_detected' => $path && ! $cameraBlocked ? $faceDetected : null,
             'kiosk_device_id' => $kioskDeviceId,
         ]);
     }
 
-    private static function storeImage(?string $dataUrl, string $scannedAt): ?string
+    /**
+     * @return array{0: ?string, 1: bool} [stored path or null, camera blocked]
+     */
+    private static function storeImage(?string $dataUrl, string $scannedAt): array
     {
         if (! is_string($dataUrl) || ! str_starts_with($dataUrl, 'data:image/')) {
-            return null;
+            return [null, false];
         }
 
         $comma = strpos($dataUrl, ',');
         if ($comma === false) {
-            return null;
+            return [null, false];
         }
 
         $bytes = base64_decode(substr($dataUrl, $comma + 1), true);
 
         if ($bytes === false || strlen($bytes) > self::MAX_BYTES || ! @getimagesizefromstring($bytes)) {
-            return null;
+            return [null, false];
         }
 
         $image = @imagecreatefromstring($bytes);
         if ($image === false) {
-            return null;
+            return [null, false];
         }
+
+        $cameraBlocked = KioskHealth::isBlocked($image);
 
         ob_start();
         imagejpeg($image, null, 75);
@@ -91,7 +113,7 @@ class ScanPhotos
 
         Storage::disk('local')->put($path, $jpeg);
 
-        return $path;
+        return [$path, $cameraBlocked];
     }
 
     /**

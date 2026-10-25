@@ -5,6 +5,7 @@
 @push('head')
 <link rel="stylesheet" href="{{ asset_v('css/superadmin-dashboard.css') }}">
 <link rel="stylesheet" href="{{ asset_v('css/month-summary.css') }}">
+<link rel="stylesheet" href="{{ asset_v('css/kiosk-alerts.css') }}">
 <script src="{{ asset('vendor/chartjs/chart.umd.min.js') }}"></script>
 @endpush
 
@@ -18,6 +19,8 @@
     </div>
 
     @include('partials.recovery-warning')
+
+    @include('partials.kiosk-alerts')
 
     @if ($resetRequests->isNotEmpty())
         <div class="card password-reset-alert">

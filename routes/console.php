@@ -5,6 +5,7 @@ use App\Models\Account;
 use App\Support\AccountRecovery;
 use App\Support\Audit;
 use App\Support\DatabaseBackup;
+use App\Support\KioskHealth;
 use App\Support\RecoveryCodes;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -125,5 +126,11 @@ Artisan::command('account:reset-superadmin {email}
     return 0;
 })->purpose('Reset a Super Admin password on the server PC (forgotten password and security answers)');
 
+Artisan::command('kiosk:check-offline', function () {
+    $opened = KioskHealth::checkOffline();
+    $this->info("{$opened} kiosk offline alert(s) opened.");
+})->purpose('Alert the Super Admin and Admin when a kiosk stops checking in during a scan window');
+
 Schedule::command('backup:run')->dailyAt('18:30');
 Schedule::command('attendance:prune-scan-photos')->dailyAt('02:00');
+Schedule::command('kiosk:check-offline')->everyMinute()->withoutOverlapping();

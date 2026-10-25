@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\KioskDevice;
 use App\Support\Audit;
+use App\Support\KioskHealth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 
@@ -45,6 +46,7 @@ class KioskDeviceController extends Controller
         }
 
         $device->forceFill(['revoked_at' => now()])->save();
+        KioskHealth::closeForRevokedKiosk($device);
 
         Audit::log('kiosk.revoked', 'kiosk_device', $device->id, ['name' => $device->name]);
 

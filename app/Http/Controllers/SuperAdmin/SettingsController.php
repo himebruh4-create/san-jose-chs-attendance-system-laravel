@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\KioskDevice;
 use App\Support\Audit;
+use App\Support\KioskHealth;
 use App\Support\Printout;
 use App\Support\RecoveryCodes;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class SettingsController extends Controller
             'accounts' => $accounts,
             'kiosks' => $kiosks,
             'currentKioskId' => $currentKiosk?->id,
+            'kioskAlertHistory' => KioskHealth::history(30),
             'recoveryCodesLeft' => RecoveryCodes::remaining($request->user()->id),
             'recoveryCodesGeneratedAt' => RecoveryCodes::generatedAt($request->user()->id),
         ]);

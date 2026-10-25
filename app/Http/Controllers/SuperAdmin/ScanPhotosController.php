@@ -76,7 +76,7 @@ class ScanPhotosController extends Controller
             ->when($outcome === 'not_found', fn ($query) => $query->where('p.outcome', 'not_found'))
             ->orderByDesc('p.scanned_at')
             ->orderByDesc('p.id')
-            ->select(['p.id', 'p.teacher_id', 'p.barcode', 'p.scanned_at', 'p.outcome', 'p.scan_kind', 'p.input_method', 'p.path',
+            ->select(['p.id', 'p.teacher_id', 'p.barcode', 'p.scanned_at', 'p.outcome', 'p.scan_kind', 'p.input_method', 'p.path', 'p.camera_blocked', 'p.face_detected',
                 't.fullname', 't.id_number', 't.photo', 'k.name as kiosk_name'])
             ->selectRaw(ScanVerificationCounts::rapidScanCondition('p').' AS rapid_scan')
             ->paginate(self::PER_PAGE)
@@ -92,6 +92,8 @@ class ScanPhotosController extends Controller
             'outcome_label' => self::OUTCOME_LABELS[$p->outcome] ?? ucfirst(str_replace('_', ' ', $p->outcome)),
             'manual_entry' => $p->input_method === ScanPhotos::INPUT_TYPED,
             'rapid_scan' => (bool) $p->rapid_scan,
+            'camera_blocked' => (bool) $p->camera_blocked,
+            'no_face' => $p->face_detected !== null && ! $p->face_detected,
             'kiosk' => $p->kiosk_name,
             'url' => $p->path ? route('photos.scan', $p->id) : null,
             'registered_photo' => $p->photo ? route('photos.personnel', basename($p->photo)) : null,
