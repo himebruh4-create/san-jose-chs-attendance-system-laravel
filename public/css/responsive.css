@@ -34,6 +34,26 @@
         cursor: pointer;
     }
 
+    /* Chrome / Edge: no blue highlight on the clicked part of the value
+       ("October", "2026", "AM"). The field's own focus style (gold border
+       or focus ring) still shows which field is active, and typing into
+       each part works as before.
+
+       The :focus is on the input, not on the part: Chrome highlights the
+       focused part with its own `input::-webkit-datetime-edit-month-field:focus`
+       rule, but a page's rule written that way is never matched (only the
+       browser's own stylesheet can match :focus on those inner parts). */
+    input:is([type="date"], [type="month"], [type="time"], [type="week"], [type="datetime-local"]):focus::-webkit-datetime-edit-month-field,
+    input:is([type="date"], [type="month"], [type="time"], [type="week"], [type="datetime-local"]):focus::-webkit-datetime-edit-day-field,
+    input:is([type="date"], [type="month"], [type="time"], [type="week"], [type="datetime-local"]):focus::-webkit-datetime-edit-year-field,
+    input:is([type="date"], [type="month"], [type="time"], [type="week"], [type="datetime-local"]):focus::-webkit-datetime-edit-hour-field,
+    input:is([type="date"], [type="month"], [type="time"], [type="week"], [type="datetime-local"]):focus::-webkit-datetime-edit-minute-field,
+    input:is([type="date"], [type="month"], [type="time"], [type="week"], [type="datetime-local"]):focus::-webkit-datetime-edit-ampm-field,
+    input:is([type="date"], [type="month"], [type="time"], [type="week"], [type="datetime-local"]):focus::-webkit-datetime-edit-week-field {
+        background-color: transparent !important;
+        color: inherit !important;
+    }
+
     :where(body[data-role]) :is(img, svg, video, canvas) {
         max-width: 100%;
     }
