@@ -41,7 +41,7 @@
             <button class="tab-btn active" onclick="switchAdjustmentTab('adjustments', this)">
                 Attendance Adjustments
             </button>
-            <button class="tab-btn" onclick="switchAdjustmentTab('pending', this)">
+            <button class="tab-btn" id="pendingTabBtn" onclick="switchAdjustmentTab('pending', this)">
                 Pending Review <span class="pending-badge" id="pendingCountBadge">0</span>
             </button>
             <button class="tab-btn" onclick="switchAdjustmentTab('rejected', this); loadRejectedScans();">

@@ -1246,6 +1246,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
 document.addEventListener('DOMContentLoaded', loadPendingReview);
 
+// ?tab=pending (the dashboard's "This month" Pending Review number) opens that tab.
+document.addEventListener('DOMContentLoaded', function () {
+    if (new URLSearchParams(window.location.search).get('tab') === 'pending') {
+        switchAdjustmentTab('pending', document.getElementById('pendingTabBtn'));
+    }
+});
+
 function scrollPending(direction) {
     const wrapper = document.getElementById('pendingScrollWrapper');
     if (!wrapper) return;

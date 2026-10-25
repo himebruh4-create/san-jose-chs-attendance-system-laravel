@@ -110,6 +110,21 @@ class DashboardStats
     }
 
     /**
+     * The "This month" row: this month's status totals up to today, exactly
+     * as Reports -> Monthly counts them (ReportsAnalytics::monthly()).
+     *
+     * @return array{Present: int, Late: int, Absent: int, 'On Leave': int, 'Pending Review': int}
+     */
+    public function thisMonth(string $today): array
+    {
+        $totals = (new ReportsAnalytics($today))->monthly(date('Y-m-01', strtotime($today)), date('Y-m-t', strtotime($today)))['totals'];
+
+        $order = ['Present', 'Late', 'Absent', 'On Leave', 'Pending Review'];
+
+        return array_combine($order, array_map(fn (string $status) => $totals[$status], $order));
+    }
+
+    /**
      * Mon–Sat trend of the current week (dates after today are left at 0).
      * Dates before a person's record was created are not counted for them.
      *

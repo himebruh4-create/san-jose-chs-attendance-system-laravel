@@ -1,0 +1,86 @@
+/* "This month" row (partials/month-summary.blade.php), shared by the Super
+   Admin, Admin and Principal dashboards. Status colors are the dashboards'. */
+
+.month-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin-bottom: 20px;
+    padding: 12px 18px;
+    border: 1px solid #efe8d6;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(20, 57, 15, 0.07);
+    font-size: 14px;
+    color: #5c5238;
+}
+
+.month-summary-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #14390f;
+}
+
+.month-summary-counts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.month-summary-counts li { white-space: nowrap; font-weight: 600; }
+
+.month-summary-counts li + li::before {
+    content: "\00B7";
+    margin: 0 10px;
+    color: #c9bb93;
+    font-weight: 700;
+}
+
+.month-summary-counts strong,
+.month-summary-counts a {
+    margin-left: 3px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.month-summary-counts a { text-decoration: underline; text-underline-offset: 2px; }
+.month-summary-counts a:hover,
+.month-summary-counts a:focus-visible { text-decoration-thickness: 2px; }
+
+.ms-present strong { color: #1b5e20; }
+.ms-late strong { color: #e65100; }
+.ms-absent strong { color: #b71c1c; }
+.ms-leave strong { color: #a3720f; }
+.ms-pending strong,
+.ms-pending a { color: #616161; }
+
+.month-summary-link {
+    margin-left: auto;
+    font-weight: 700;
+    color: #14390f;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.month-summary-link:hover,
+.month-summary-link:focus-visible { text-decoration: underline; }
+
+/* Phones: the title and "View calendar" share the first line; the
+   numbers wrap underneath (two lines), without the dot separators. */
+@media (max-width: 767.98px) {
+    .month-summary { padding: 12px 14px; }
+
+    .month-summary-counts {
+        order: 3;
+        flex-basis: 100%;
+        gap: 6px 16px;
+    }
+
+    .month-summary-counts li + li::before { content: none; }
+}

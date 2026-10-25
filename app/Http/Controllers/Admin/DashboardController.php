@@ -19,6 +19,7 @@ class DashboardController extends Controller
             'totalPersonnel' => $stats->totalPersonnel(),
             'employmentTypeCounts' => $stats->employmentTypeCounts(),
             'todayCounts' => $todayStats['counts'],
+            'monthTotals' => $stats->thisMonth($today),
             'teachersOnLeaveToday' => $todayStats['on_leave'],
             'week' => $stats->week($today),
             'scheduleChanges' => ScheduleChanges::forDisplay($stats->events(), $today, $stats->teachers()),

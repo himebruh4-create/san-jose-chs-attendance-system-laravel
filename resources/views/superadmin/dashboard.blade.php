@@ -4,6 +4,7 @@
 
 @push('head')
 <link rel="stylesheet" href="{{ asset_v('css/superadmin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ asset_v('css/month-summary.css') }}">
 <script src="{{ asset('vendor/chartjs/chart.umd.min.js') }}"></script>
 @endpush
 
@@ -90,6 +91,8 @@
         </div>
 
     </div>
+
+    @include('partials.month-summary')
 
     <div class="charts-row">
 
