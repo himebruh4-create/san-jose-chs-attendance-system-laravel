@@ -95,7 +95,7 @@
                                     <td>{{ $leave->department }}</td>
                                     <td>{{ date('M d, Y', strtotime($leave->leave_from)) }}</td>
                                     <td>{{ date('M d, Y', strtotime($leave->leave_until)) }}</td>
-                                    <td><span class="pill pill-leave">On Leave</span></td>
+                                    <td><span class="pill pill-leave pill-leave-detail">On Leave @if ($leave->leave_type !== '')&middot; {{ $leave->leave_type }}@endif</span></td>
                                     <td>
                                         <div class="action-buttons">
                                             <button type="button" class="btn btn-danger btn-sm" aria-label="Archive" title="Archive"

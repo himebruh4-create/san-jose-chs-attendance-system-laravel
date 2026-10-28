@@ -126,6 +126,17 @@ class LeaveTypesTest extends TestCase
             ->assertSeeInOrder(['Ben Reyes', 'Special Privilege Leave']);
     }
 
+    #[TestWith(['Wellness Leave'])]
+    #[TestWith(['Sick Leave'])]
+    public function test_the_personnel_on_leave_table_shows_the_leave_type_in_the_on_leave_pill(string $type): void
+    {
+        $teacher = $this->teacher(['academic_status' => 'Academic', 'fullname' => 'Ana Cruz']);
+        $this->addLeave($teacher, $type, date('Y-m-d'));
+
+        $this->actingAs($this->superAdmin)->get('/superadmin/personnel')
+            ->assertSeeInOrder(['Ana Cruz', '<span class="pill pill-leave pill-leave-detail">On Leave &middot; '.$type.'</span>'], false);
+    }
+
     public function test_an_existing_leave_keeps_its_type_even_when_it_is_no_longer_offered(): void
     {
         $teacher = $this->teacher(['academic_status' => 'Academic', 'created_at' => '2026-01-01 00:00:00']);

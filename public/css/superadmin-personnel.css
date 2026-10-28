@@ -257,6 +257,12 @@ tbody tr:hover { background: #fbf8f0; }
 }
 
 .pill-leave     { background: #fff3cd; color: #856404; }
+
+/* Personnel on Leave: "On Leave · Wellness Leave". On phones the leave type
+   wraps inside the pill instead of widening the table. */
+@media (max-width: 767.98px) {
+    .pill-leave-detail { white-space: normal; max-width: 150px; line-height: 1.35; border-radius: 14px; }
+}
 .pill-active    { background: #fdf3d9; color: #a3720f; }
 .pill-academic  { background: #e8f5e9; color: #1b5e20; }
 .pill-non-academic { background: #e3f2fd; color: #1565c0; }
