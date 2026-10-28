@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Domain\Attendance\BreakConfig;
+use App\Domain\LeaveTypes;
 use App\Domain\PersonnelDirectory;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Data\SchoolEventController;
@@ -12,6 +13,7 @@ use App\Support\PersonnelPhotos;
 use App\Support\Printout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Personnel Management (Super Admin). Ported from superadmin/super-admin.php.
@@ -59,8 +61,8 @@ class PersonnelController extends Controller
             ->all();
 
         $allTeachers = Teacher::query()->active()->orderBy('fullname')
-            ->get(['id', 'id_number', 'fullname', 'department', 'barcode', 'photo'])
-            ->map(fn ($t) => $t->only(['id', 'id_number', 'fullname', 'department', 'barcode', 'photo']))
+            ->get(['id', 'id_number', 'fullname', 'department', 'academic_status', 'barcode', 'photo'])
+            ->map(fn ($t) => $t->only(['id', 'id_number', 'fullname', 'department', 'academic_status', 'barcode', 'photo']))
             ->all();
 
         $today = date('Y-m-d');
@@ -260,8 +262,9 @@ class PersonnelController extends Controller
         $reason = trim((string) $request->input('leave_reason'));
 
         $errors = [];
+        $teacher = $teacherId > 0 ? Teacher::query()->active()->find($teacherId, ['id', 'academic_status']) : null;
 
-        if ($teacherId <= 0 || ! Teacher::query()->active()->whereKey($teacherId)->exists()) {
+        if (! $teacher) {
             $errors[] = 'Please select a teacher.';
         }
         if (! $from) {
@@ -275,6 +278,11 @@ class PersonnelController extends Controller
         }
         if ($type === '') {
             $errors[] = 'Please select a leave type.';
+        } elseif ($teacher && ! LeaveTypes::allows($teacher->academic_status, $type)) {
+            $personnelType = isset(LeaveTypes::BY_PERSONNEL_TYPE[$teacher->academic_status])
+                ? Str::lower(PersonnelDirectory::TYPE_TABS[$teacher->academic_status])
+                : 'this personnel';
+            $errors[] = "{$type} is not available for {$personnelType}. Please choose another leave type.";
         }
 
         // An Approved leave already covering any part of the range.

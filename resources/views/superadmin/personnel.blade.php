@@ -442,24 +442,19 @@
 
                 <div class="field-group">
                     <label>Personnel</label>
-                    <select name="leave_teacher_id" required>
+                    <select name="leave_teacher_id" id="leaveTeacherSelect" required>
                         <option value="">Select Personnel</option>
                         @foreach ($allTeachers as $option)
-                            <option value="{{ (int) $option['id'] }}">{{ $option['fullname'] }} - {{ $option['id_number'] }}</option>
+                            <option value="{{ (int) $option['id'] }}" data-personnel-type="{{ $option['academic_status'] }}">{{ $option['fullname'] }} - {{ $option['id_number'] }}</option>
                         @endforeach
                     </select>
                 </div>
 
+                {{-- Filled in for the selected personnel's type (App\Domain\LeaveTypes). --}}
                 <div class="field-group">
                     <label>Leave Type</label>
-                    <select name="leave_type" required>
+                    <select name="leave_type" id="leaveTypeSelect" data-leave-types="{{ json_encode(\App\Domain\LeaveTypes::options()) }}" required disabled>
                         <option value="">Select Leave Type</option>
-                        <option value="Sick Leave">Sick Leave</option>
-                        <option value="Vacation Leave">Vacation Leave</option>
-                        <option value="Emergency Leave">Emergency Leave</option>
-                        <option value="Maternity Leave">Maternity Leave</option>
-                        <option value="Paternity Leave">Paternity Leave</option>
-                        <option value="Other">Other</option>
                     </select>
                 </div>
 

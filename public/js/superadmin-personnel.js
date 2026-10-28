@@ -1155,9 +1155,42 @@ async function populateDeptOptions(context, academicStatus, currentValue) {
 // =====================================================
 
 function openLeaveModal() {
+    refreshLeaveTypes();
     document.getElementById('leaveModal').classList.add('active');
     lockBodyScroll();
 }
+
+// The Leave Type options follow the selected personnel's type (teaching /
+// non-teaching; App\Domain\LeaveTypes). Disabled until someone is chosen;
+// a chosen type the new person cannot have goes back to "Select Leave Type".
+function refreshLeaveTypes() {
+    const personSelect = document.getElementById('leaveTeacherSelect');
+    const typeSelect = document.getElementById('leaveTypeSelect');
+    if (!personSelect || !typeSelect) return;
+
+    const typesByPersonnel = JSON.parse(typeSelect.dataset.leaveTypes || '{}');
+    const person = personSelect.selectedOptions[0];
+    const current = typeSelect.value;
+
+    typeSelect.innerHTML = '';
+    typeSelect.appendChild(new Option('Select Leave Type', ''));
+
+    if (!person || !person.value) {
+        typeSelect.disabled = true;
+        return;
+    }
+
+    const allowed = typesByPersonnel[person.dataset.personnelType] || typesByPersonnel[''] || [];
+    allowed.forEach(type => typeSelect.appendChild(new Option(type, type)));
+
+    typeSelect.disabled = false;
+    typeSelect.value = allowed.includes(current) ? current : '';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const personSelect = document.getElementById('leaveTeacherSelect');
+    if (personSelect) personSelect.addEventListener('change', refreshLeaveTypes);
+});
 
 function closeLeaveModal() {
     document.getElementById('leaveModal').classList.remove('active');
