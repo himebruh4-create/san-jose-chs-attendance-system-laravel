@@ -162,6 +162,69 @@ class ReportsPageTest extends TestCase
         $this->assertStringNotContainsString('7:28 AM', $dailyTab);
     }
 
+    /**
+     * Monday 2026-10-05. Mia's latest scan is her 3:10 PM time-out; Ben and
+     * Cora both scanned in at 7:20 AM, and Ben's later adjusted time-out is
+     * not a scan; Zoe has only an adjustment and Abe is on leave.
+     *
+     * @return list<string> The daily list's expected order.
+     */
+    private function dailyOrderRecords(): array
+    {
+        $mia = $this->person(['fullname' => 'Mia Santos']);
+        $ben = $this->person(['fullname' => 'Ben Reyes']);
+        $cora = $this->person(['fullname' => 'Cora Lim']);
+        $zoe = $this->person(['fullname' => 'Zoe Tan']);
+        $abe = $this->person(['fullname' => 'Abe Cruz']);
+        $this->scan($mia, '2026-10-05', 'am_arrival', '06:50:00');
+        $this->scan($mia, '2026-10-05', 'pm_departure', '15:10:00');
+        $this->scan($cora, '2026-10-05', 'am_arrival', '07:20:00');
+        $this->scan($ben, '2026-10-05', 'am_arrival', '07:20:00');
+        $adjustment = ['adjustment_date' => '2026-10-05', 'reason' => 'Forgot to scan', 'adjustment_type' => 'Time Correction', 'status' => 'Approved'];
+        DB::table('attendance_adjustments')->insert($adjustment + ['teacher_id' => $ben->id, 'pm_departure' => '16:00:00']);
+        DB::table('attendance_adjustments')->insert($adjustment + ['teacher_id' => $zoe->id, 'am_arrival' => '07:00:00', 'pm_departure' => '17:00:00']);
+        DB::table('teacher_leaves')->insert(['teacher_id' => $abe->id, 'leave_type' => 'Sick Leave', 'leave_from' => '2026-10-05', 'leave_until' => '2026-10-05']);
+
+        return ['Mia Santos', 'Ben Reyes', 'Cora Lim', 'Abe Cruz', 'Zoe Tan'];
+    }
+
+    public function test_the_daily_report_lists_the_newest_scan_first_and_people_without_a_scan_last_by_name(): void
+    {
+        $expected = $this->dailyOrderRecords();
+
+        $this->actingAs($this->account('principal'))->get(route('principal.reports', ['date' => '2026-10-05']))
+            ->assertViewHas('daily', fn (array $rows) => array_column($rows, 'fullname') === $expected);
+    }
+
+    public function test_a_new_scan_moves_the_person_to_the_top_of_the_daily_report(): void
+    {
+        $ana = $this->person(['fullname' => 'Ana Cruz']);
+        $ben = $this->person(['fullname' => 'Ben Reyes']);
+        $this->scan($ana, '2026-10-05', 'am_arrival', '06:55:00');
+        $this->scan($ben, '2026-10-05', 'am_arrival', '07:05:00');
+        $this->actingAs($this->account('admin'));
+        $names = fn () => array_column($this->get(route('admin.reports', ['date' => '2026-10-05']))->viewData('daily'), 'fullname');
+        $this->assertSame(['Ben Reyes', 'Ana Cruz'], $names());
+
+        $this->scan($ana, '2026-10-05', 'am_departure', '12:16:00');
+
+        $this->assertSame(['Ana Cruz', 'Ben Reyes'], $names());
+    }
+
+    #[TestWith(['superadmin'])]
+    #[TestWith(['admin'])]
+    #[TestWith(['principal'])]
+    public function test_the_daily_printout_lists_personnel_in_the_same_order_as_the_screen(string $role): void
+    {
+        $expected = $this->dailyOrderRecords();
+        $this->actingAs($this->account($role));
+
+        $this->get(route("{$role}.reports", ['date' => '2026-10-05']))
+            ->assertViewHas('daily', fn (array $rows) => array_column($rows, 'fullname') === $expected);
+        $this->get(route('reports.attendance-print', ['period' => 'daily', 'date' => '2026-10-05']))
+            ->assertViewHas('rows', fn (array $rows) => array_column($rows, 'fullname') === $expected);
+    }
+
     public function test_today_lists_not_yet_recorded_personnel_as_a_count_but_past_days_still_list_them(): void
     {
         $everyDay = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];

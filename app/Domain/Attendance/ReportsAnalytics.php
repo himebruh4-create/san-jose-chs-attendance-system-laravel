@@ -331,7 +331,8 @@ class ReportsAnalytics
      * The Daily tab and its printout: one date's rows for everyone, or for
      * one person. Only people with a status to report are listed: "Not Yet
      * Recorded" (no scan yet today) is counted instead. Past days never have
-     * it; those people are Absent or Pending Review as usual.
+     * it; those people are Absent or Pending Review as usual. Listed by
+     * latest scan, newest first (newestScanFirst).
      *
      * @return array{rows: list<array<string, mixed>>, not_yet_recorded: int}
      */
@@ -341,9 +342,32 @@ class ReportsAnalytics
         $notYetRecorded = fn (array $row) => $row['status'] === 'Not Yet Recorded';
 
         return [
-            'rows' => array_values(array_filter($rows, fn (array $row) => ! $notYetRecorded($row))),
+            'rows' => self::newestScanFirst(array_filter($rows, fn (array $row) => ! $notYetRecorded($row))),
             'not_yet_recorded' => count(array_filter($rows, $notYetRecorded)),
         ];
+    }
+
+    /**
+     * The daily list's order: each person's latest kiosk scan of the day,
+     * newest first, then everyone without a scan. The rows hold the
+     * attendance table's real scans only (adjustments and the auto-filled
+     * lunch are never stored there). usort is stable, so equal times and
+     * the no-scan group keep the by-name order of $this->teachers.
+     *
+     * A departure earlier than the day's first arrival is the next
+     * morning's OUT of an overnight shift (dtrLastScanTs); a day shift
+     * never has one, since the kiosk records an arrival first.
+     *
+     * @param  array<array<string, mixed>>  $rows
+     * @return list<array<string, mixed>>
+     */
+    private static function newestScanFirst(array $rows): array
+    {
+        $keyed = array_map(fn (array $row) => [dtrLastScanTs($row, $row['date'], true) ?? PHP_INT_MIN, $row], array_values($rows));
+
+        usort($keyed, fn (array $a, array $b) => $b[0] <=> $a[0]);
+
+        return array_column($keyed, 1);
     }
 
     /**
