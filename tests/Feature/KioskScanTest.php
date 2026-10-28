@@ -141,6 +141,34 @@ class KioskScanTest extends TestCase
         ]);
     }
 
+    public function test_a_repeat_after_the_lunch_out_says_to_scan_again_when_back_from_lunch(): void
+    {
+        $t = $this->teacher();
+        $this->scan($t->barcode, '2026-10-05 06:50:00');
+        $this->scan($t->barcode, '2026-10-05 12:16:00')->assertJson(['kind' => 'BREAK_OUT']);
+
+        $this->scan($t->barcode, '2026-10-05 12:18:00')->assertJson([
+            'success' => false,
+            'title' => 'Duplicate Scan',
+            'badge' => 'duplicate',
+            'fullname' => $t->fullname,
+            'message' => 'Your lunch-out is already recorded. Scan again when you return from lunch.',
+        ]);
+    }
+
+    public function test_a_repeat_after_the_return_from_lunch_says_to_scan_again_when_leaving(): void
+    {
+        $t = $this->teacher();
+        $this->scan($t->barcode, '2026-10-05 06:50:00');
+        $this->scan($t->barcode, '2026-10-05 12:16:00');
+        $this->scan($t->barcode, '2026-10-05 12:58:00')->assertJson(['kind' => 'BREAK_IN']);
+
+        $this->scan($t->barcode, '2026-10-05 13:00:00')->assertJson([
+            'badge' => 'duplicate',
+            'message' => 'Your time-in is already recorded. Scan again when you leave to record your time-out.',
+        ]);
+    }
+
     public function test_a_scan_after_the_time_out_says_attendance_is_complete(): void
     {
         $t = $this->teacher();

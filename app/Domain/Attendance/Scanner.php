@@ -22,6 +22,8 @@ class Scanner
     // unknown / time_in / time_out) is the colored pill above the title.
     public const DUPLICATE_AFTER_TIME_IN = 'Your time-in is already recorded. Scan again when you leave to record your time-out.';
 
+    public const DUPLICATE_AFTER_LUNCH_OUT = 'Your lunch-out is already recorded. Scan again when you return from lunch.';
+
     public const DUPLICATE_AFTER_TIME_OUT = 'Your attendance for today is already complete. No more scans are needed.';
 
     public const DUPLICATE_RAPID = 'This scan was already recorded a moment ago. No need to scan again.';
@@ -90,14 +92,12 @@ class Scanner
             $this->logRejected($teacherId, $now, $route['date'], $route['reason'], $route['detail'], $route['existing_out']);
 
             if ($route['reason'] === 'DUPLICATE_SCAN') {
-                // No OUT yet: the repeat guard after the time-in. With an
-                // OUT: a re-scan within the debounce window of the time-out.
                 return $base + [
                     'success' => false,
                     'outcome' => 'duplicate',
                     'badge' => 'duplicate',
                     'title' => 'Duplicate Scan',
-                    'message' => $route['existing_out'] === '' ? self::DUPLICATE_AFTER_TIME_IN : self::DUPLICATE_RAPID,
+                    'message' => $this->duplicateMessage($route, $route['date'] === $date ? $todayRow : null),
                 ];
             }
 
@@ -206,6 +206,27 @@ class Scanner
             'title' => $route['title'],
             'message' => $message,
         ];
+    }
+
+    /**
+     * A DUPLICATE_SCAN with an OUT is a re-scan within the debounce window of
+     * the time-out. Without one it is the repeat guard: after the lunch-out
+     * (AM departure stored, no PM arrival yet) or else after a time-in.
+     *
+     * @param  array{existing_out: string}  $route
+     * @param  ?array<string, ?string>  $row  The attendance row the scan was routed to.
+     */
+    private function duplicateMessage(array $route, ?array $row): string
+    {
+        if ($route['existing_out'] !== '') {
+            return self::DUPLICATE_RAPID;
+        }
+
+        $isOutForLunch = $row
+            && dtrClockOrEmpty($row['am_departure'] ?? '') !== ''
+            && dtrClockOrEmpty($row['pm_arrival'] ?? '') === '';
+
+        return $isOutForLunch ? self::DUPLICATE_AFTER_LUNCH_OUT : self::DUPLICATE_AFTER_TIME_IN;
     }
 
     private function row(int $teacherId, string $date): ?array
