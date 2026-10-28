@@ -80,6 +80,7 @@
 <!-- MODAL -->
 <div id="modal" class="modal">
     <div class="modal-content" onclick="event.stopPropagation()">
+        <span id="scanBadge" class="scan-badge" hidden></span>
         <h2 id="title"></h2>
         <div id="message"></div>
         <div id="modalCountdown" class="modal-countdown" hidden></div>

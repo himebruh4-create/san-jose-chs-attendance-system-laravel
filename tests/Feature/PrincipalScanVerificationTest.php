@@ -190,12 +190,15 @@ class PrincipalScanVerificationTest extends TestCase
         $principal = $this->account('principal');
 
         $this->actingAs($principal)->getJson(self::ENDPOINT)->assertJson(['unreviewed' => 2]);
+        // Back to the Principal's own browser below: a fresh session for the
+        // same account would be a second device (App\Support\ActiveSessions).
+        $principalSession = session()->all();
 
         $this->flushSession();
         $this->actingAs($this->account('superadmin'))->postJson('/data/rejected-scans/review', ['id' => $first])
             ->assertJson(['success' => true]);
 
         $this->flushSession();
-        $this->actingAs($principal)->getJson(self::ENDPOINT)->assertJson(['unreviewed' => 1]);
+        $this->withSession($principalSession)->actingAs($principal)->getJson(self::ENDPOINT)->assertJson(['unreviewed' => 1]);
     }
 }

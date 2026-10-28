@@ -20,6 +20,10 @@
 
 @yield('content')
 
+@auth
+    @include('partials.session-guard')
+@endauth
+
 @stack('scripts')
 </body>
 </html>

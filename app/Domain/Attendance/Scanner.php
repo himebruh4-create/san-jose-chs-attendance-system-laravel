@@ -18,6 +18,16 @@ use Illuminate\Support\Facades\Log;
  */
 class Scanner
 {
+    // Kiosk messages for a scan that is not recorded. `badge` (duplicate /
+    // unknown / time_in / time_out) is the colored pill above the title.
+    public const DUPLICATE_AFTER_TIME_IN = 'Your time-in is already recorded. Scan again when you leave to record your time-out.';
+
+    public const DUPLICATE_AFTER_TIME_OUT = 'Your attendance for today is already complete. No more scans are needed.';
+
+    public const DUPLICATE_RAPID = 'This scan was already recorded a moment ago. No need to scan again.';
+
+    public const UNKNOWN_BARCODE = 'This barcode is not registered in the system. Please check your ID or contact the Administrative Aide.';
+
     public function scan(string $barcode, ?string $now = null): array
     {
         $now = $now ?? date('Y-m-d H:i:s');
@@ -43,7 +53,7 @@ class Scanner
             ->first(['id', 'fullname', 'department', 'photo']);
 
         if (! $t) {
-            return ['success' => false, 'outcome' => 'not_found', 'title' => 'Not Found', 'message' => 'Invalid barcode.'];
+            return ['success' => false, 'outcome' => 'not_found', 'badge' => 'unknown', 'title' => 'Not Found', 'message' => self::UNKNOWN_BARCODE];
         }
 
         $teacherId = (int) $t->id;
@@ -80,23 +90,23 @@ class Scanner
             $this->logRejected($teacherId, $now, $route['date'], $route['reason'], $route['detail'], $route['existing_out']);
 
             if ($route['reason'] === 'DUPLICATE_SCAN') {
+                // No OUT yet: the repeat guard after the time-in. With an
+                // OUT: a re-scan within the debounce window of the time-out.
                 return $base + [
                     'success' => false,
                     'outcome' => 'duplicate',
+                    'badge' => 'duplicate',
                     'title' => 'Duplicate Scan',
-                    'message' => 'Your scan was already recorded a moment ago. Please scan only once.',
+                    'message' => $route['existing_out'] === '' ? self::DUPLICATE_AFTER_TIME_IN : self::DUPLICATE_RAPID,
                 ];
             }
-
-            $outText = $route['existing_out'] !== ''
-                ? ' (OUT recorded at '.date('h:i A', strtotime($route['existing_out'])).')'
-                : '';
 
             return $base + [
                 'success' => false,
                 'outcome' => 'complete',
+                'badge' => 'duplicate',
                 'title' => 'Attendance Already Complete',
-                'message' => "{$fullname}, your attendance for this shift is already complete{$outText}. This extra scan was not saved. Please see the Super Admin if a correction is needed.",
+                'message' => self::DUPLICATE_AFTER_TIME_OUT,
             ];
         }
 
@@ -149,8 +159,9 @@ class Scanner
             return $base + [
                 'success' => false,
                 'outcome' => 'duplicate',
+                'badge' => 'duplicate',
                 'title' => 'Duplicate Scan',
-                'message' => 'Your scan was already recorded a moment ago. Please scan only once.',
+                'message' => self::DUPLICATE_RAPID,
             ];
         }
 
@@ -188,6 +199,7 @@ class Scanner
             'success' => true,
             'outcome' => 'accepted',
             'kind' => $route['kind'],
+            'badge' => in_array($route['kind'], ['OUT', 'BREAK_OUT'], true) ? 'time_out' : 'time_in',
             'status' => $status,
             'date' => date('M d, Y', strtotime($now)),
             'attendance_date' => $targetDate,

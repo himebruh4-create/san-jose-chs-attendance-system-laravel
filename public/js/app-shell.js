@@ -36,8 +36,30 @@ function appUrl(path) {
             if (!init.credentials) init.credentials = 'same-origin';
         }
 
-        return nativeFetch(input, init);
+        var request = nativeFetch(input, init);
+
+        if (sameOrigin) {
+            request.then(followSessionChange, function () {});
+        }
+
+        return request;
     };
+
+    /* One device per account (App\Support\ActiveSessions): a request from
+       a session that was signed out (401) goes to the login page; one that
+       was replaced by another device (409) opens the prompt at once. The
+       caller still gets the response as before. */
+    function followSessionChange(response) {
+        if (response.status !== 401 && response.status !== 409) return;
+
+        response.clone().json().then(function (data) {
+            if (data && data.session_ended) {
+                window.location.href = data.redirect || appUrl('login');
+            } else if (data && data.session_replaced && window.checkSessionNow) {
+                window.checkSessionNow();
+            }
+        }).catch(function () {});
+    }
 })();
 
 /* =========================================================

@@ -118,6 +118,69 @@ class KioskScanTest extends TestCase
         $this->assertDatabaseCount('attendance', 0);
     }
 
+    public function test_recorded_scans_carry_a_time_in_or_time_out_badge(): void
+    {
+        $t = $this->teacher();
+
+        $this->scan($t->barcode, '2026-10-05 06:58:00')->assertJson(['kind' => 'IN', 'badge' => 'time_in']);
+        $this->scan($t->barcode, '2026-10-05 12:16:00')->assertJson(['kind' => 'BREAK_OUT', 'badge' => 'time_out']);
+        $this->scan($t->barcode, '2026-10-05 12:58:00')->assertJson(['kind' => 'BREAK_IN', 'badge' => 'time_in']);
+        $this->scan($t->barcode, '2026-10-05 15:02:00')->assertJson(['kind' => 'OUT', 'badge' => 'time_out']);
+    }
+
+    public function test_a_repeat_after_the_time_in_says_to_scan_again_when_leaving(): void
+    {
+        $t = $this->teacher();
+        $this->scan($t->barcode, '2026-10-05 06:50:00');
+
+        $this->scan($t->barcode, '2026-10-05 06:52:00')->assertJson([
+            'success' => false,
+            'badge' => 'duplicate',
+            'fullname' => $t->fullname,
+            'message' => 'Your time-in is already recorded. Scan again when you leave to record your time-out.',
+        ]);
+    }
+
+    public function test_a_scan_after_the_time_out_says_attendance_is_complete(): void
+    {
+        $t = $this->teacher();
+        $this->scan($t->barcode, '2026-10-05 06:50:00');
+        $this->scan($t->barcode, '2026-10-05 15:02:00');
+
+        $this->scan($t->barcode, '2026-10-05 16:30:00')->assertJson([
+            'success' => false,
+            'title' => 'Attendance Already Complete',
+            'badge' => 'duplicate',
+            'fullname' => $t->fullname,
+            'message' => 'Your attendance for today is already complete. No more scans are needed.',
+        ]);
+    }
+
+    public function test_a_re_scan_within_a_second_of_the_time_out_says_it_was_just_recorded(): void
+    {
+        $t = $this->teacher();
+        $this->scan($t->barcode, '2026-10-05 06:50:00');
+        $this->scan($t->barcode, '2026-10-05 15:02:00');
+
+        $this->scan($t->barcode, '2026-10-05 15:02:01')->assertJson([
+            'success' => false,
+            'title' => 'Duplicate Scan',
+            'badge' => 'duplicate',
+            'message' => 'This scan was already recorded a moment ago. No need to scan again.',
+        ]);
+    }
+
+    public function test_an_unknown_barcode_gets_the_unknown_badge_and_no_name(): void
+    {
+        $this->scan('999999', '2026-10-05 07:00:00')
+            ->assertJson([
+                'success' => false,
+                'badge' => 'unknown',
+                'message' => 'This barcode is not registered in the system. Please check your ID or contact the Administrative Aide.',
+            ])
+            ->assertJsonMissingPath('fullname');
+    }
+
     public function test_repeated_unknown_barcodes_pause_the_kiosk(): void
     {
         for ($i = 0; $i < 10; $i++) {

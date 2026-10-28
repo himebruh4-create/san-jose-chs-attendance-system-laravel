@@ -60,9 +60,28 @@ modal.addEventListener("click", function(e){
     }
 });
 
-function showModal(title, message){
+/* The colored pill above the title, from the scan's `badge`
+   (App\Domain\Attendance\Scanner). No badge for other results. */
+const SCAN_BADGES = {
+    duplicate: { text: "Duplicate Scan", icon: "fa-clone", tone: "scan-badge-duplicate" },
+    unknown: { text: "Unknown Barcode", icon: "fa-circle-xmark", tone: "scan-badge-unknown" },
+    time_in: { text: "Time In Recorded", icon: "fa-circle-check", tone: "scan-badge-recorded" },
+    time_out: { text: "Time Out Recorded", icon: "fa-circle-check", tone: "scan-badge-recorded" }
+};
+
+function paintBadge(badge) {
+    const el = document.getElementById("scanBadge");
+    const spec = SCAN_BADGES[badge];
+
+    el.hidden = !spec;
+    el.className = "scan-badge" + (spec ? " " + spec.tone : "");
+    el.innerHTML = spec ? `<i class="fa-solid ${spec.icon}" aria-hidden="true"></i> ${spec.text}` : "";
+}
+
+function showModal(title, message, badge){
     stopModalCountdown();
 
+    paintBadge(badge);
     document.getElementById("title").innerText = title;
     document.getElementById("message").innerHTML = message;
     modal.style.display = "flex";
@@ -461,7 +480,7 @@ function processBarcode() {
     .then(data => {
 
         if (!data.success) {
-            showModal(data.title || "Not Recorded", rejectionHTML(data, snapshot, escapeHtml(data.message || "Your scan was not recorded. Please try again.")));
+            showModal(data.title || "Not Recorded", rejectionHTML(data, snapshot, escapeHtml(data.message || "Your scan was not recorded. Please try again.")), data.badge);
             return;
         }
 
@@ -478,7 +497,7 @@ function processBarcode() {
             </div>
         `;
 
-        showModal(data.title, scanPhotoHTML(snapshot) + messageHTML);
+        showModal(data.title, scanPhotoHTML(snapshot) + messageHTML, data.badge);
     })
     .catch(err => {
         console.error("Scan request failed:", err);

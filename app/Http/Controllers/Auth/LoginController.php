@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Support\AccountRecovery;
+use App\Support\ActiveSessions;
 use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -61,6 +62,9 @@ class LoginController extends Controller
         $account->forceFill(['last_login_at' => now()])->save();
         Audit::log('login', 'account', $account->id);
 
+        // This device becomes the account's only active one.
+        ActiveSessions::start($account, $request);
+
         // Super Admin: warn about failed Forgot Password tries since the
         // last login (shown once by partials.recovery-warning).
         if ($account->role === 'superadmin') {
@@ -78,6 +82,7 @@ class LoginController extends Controller
     {
         if ($request->user()) {
             Audit::log('logout', 'account', $request->user()->id);
+            ActiveSessions::endCurrent($request);
         }
 
         Auth::logout();

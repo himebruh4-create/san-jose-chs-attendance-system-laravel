@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Auth\SetupController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\Data;
@@ -43,6 +44,14 @@ Route::middleware(['guest', 'setup.done'])->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+// One device per account (App\Support\ActiveSessions): the open page's
+// 10-second check and the answers to "signed in on another device".
+Route::middleware(['auth', 'single.session'])->prefix('session')->name('session.')->group(function () {
+    Route::get('/status', [SessionController::class, 'status'])->middleware('throttle:120,1')->name('status');
+    Route::post('/stay', [SessionController::class, 'stay'])->middleware('throttle:10,1')->name('stay');
+    Route::post('/timeout', [SessionController::class, 'timeout'])->middleware('throttle:10,1')->name('timeout');
+});
+
 // ---------------------------------------------------------------- kiosk
 
 Route::middleware('kiosk')->group(function () {
@@ -57,13 +66,14 @@ Route::get('/certificate/download', [CertificateController::class, 'download'])-
 
 // Personnel photos: shown on the signed-in staff pages only.
 Route::get('/photos/{filename}', [PhotoController::class, 'personnel'])
-    ->where('filename', '[A-Za-z0-9._-]+')->name('photos.personnel');
+    ->where('filename', '[A-Za-z0-9._-]+')->middleware('single.session')->name('photos.personnel');
 
 // ---------------------------------------------------------------- signed-in
 
+// single.session: one device per account (App\Support\ActiveSessions).
 // security.questions: a Super Admin without their 3 security questions can
 // only use My Account until they are set.
-Route::middleware(['auth', 'security.questions'])->group(function () {
+Route::middleware(['auth', 'single.session', 'security.questions'])->group(function () {
 
     Route::get('/my-account', [AccountController::class, 'show'])->name('account');
     Route::post('/my-account/password', [AccountController::class, 'updatePassword'])->name('account.password');

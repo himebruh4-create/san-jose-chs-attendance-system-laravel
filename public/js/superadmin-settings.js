@@ -863,7 +863,17 @@ document.addEventListener('DOMContentLoaded', loadDatabaseBackups);
    AUDIT LOG (new): who changed what, newest first.
    ========================================================= */
 
+/* Actions whose wording is not just the action name (App\Support\ActiveSessions). */
+const AUDIT_ACTION_LABELS = {
+    'session.signed_in_elsewhere': 'Signed in on another device',
+    'session.stayed': 'Chose to stay logged in',
+    'session.logged_out_other_device': 'Logged out because the account was used on another device',
+    'session.logged_out_no_response': 'Logged out (no response)'
+};
+
 function auditActionLabel(action) {
+    if (AUDIT_ACTION_LABELS[action]) return AUDIT_ACTION_LABELS[action];
+
     return String(action || '').replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 

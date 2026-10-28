@@ -371,6 +371,25 @@ body {
     margin-top: 0;
 }
 
+/* Scan result badge above the title (same pill shape as .status-pill). */
+.scan-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.scan-badge[hidden] { display: none; }
+
+.scan-badge-duplicate { background: #fbc02d; color: #3e2c00; }
+.scan-badge-unknown { background: #c62828; color: #fff; }
+.scan-badge-recorded { background: #2e7d32; color: #fff; }
+
 /* Shrinks from full width to nothing while the modal counts down to closing. */
 .modal-content {
     position: relative;
