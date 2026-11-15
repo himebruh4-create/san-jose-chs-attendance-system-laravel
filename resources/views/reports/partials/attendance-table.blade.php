@@ -1,9 +1,17 @@
 {{-- Report rows: one per person ($byPerson) or one per day. Each record is
      its own <tbody> so its photo strip (Super Admin only) prints on the
      same page as the record; each photo sits in its own scan's column.
-     A record without any scan has no strip. --}}
+     A record without any scan has no strip. The time columns are
+     $row['times'] (App\Domain\Attendance\ReportTimes: the kiosk scan, else
+     the attendance adjustment's time, in the DTR's columns); an adjusted
+     time is marked "adj", on screen and on the printout. --}}
 @php
     $showTime = fn ($t) => $t ? date('g:i A', strtotime($t)) : '—';
+    $timeColumns = ['am_arrival', 'am_departure', 'pm_arrival', 'pm_departure'];
+    // Rows without times (none today) fall back to the raw scans.
+    $cellOf = fn (array $row, string $column) => array_key_exists('times', $row)
+        ? $row['times'][$column]
+        : ($row[$column] ? ['time' => $row[$column], 'source' => 'scan'] : null);
     $statusClass = fn ($status) => match ($status) {
         'Present' => 'present',
         'Late' => 'late',
@@ -48,10 +56,15 @@
                     @else
                         <td class="td-left"><strong>{{ date('D, M j, Y', strtotime($row['date'])) }}</strong></td>
                     @endif
-                    <td>{{ $showTime($row['am_arrival']) }}</td>
-                    <td>{{ $showTime($row['am_departure']) }}</td>
-                    <td>{{ $showTime($row['pm_arrival']) }}</td>
-                    <td>{{ $showTime($row['pm_departure']) }}</td>
+                    @foreach ($timeColumns as $column)
+                        @php $cell = $cellOf($row, $column); @endphp
+                        <td>
+                            {{ $showTime($cell['time'] ?? null) }}
+                            @if (($cell['source'] ?? null) === \App\Domain\Attendance\ReportTimes::ADJUSTMENT)
+                                <small class="time-source" title="From an attendance adjustment, not a kiosk scan">adj</small>
+                            @endif
+                        </td>
+                    @endforeach
                     <td>
                         <span class="status-tag status-{{ $statusClass($row['status']) }}">{{ $row['status'] !== '' ? $row['status'] : '—' }}</span>
                         @if ($row['detail'] !== '' && $row['detail'] !== $row['status'])
@@ -77,3 +90,7 @@
         @endforelse
     </table>
 </div>
+
+@if (collect($rows)->contains(fn (array $row) => collect($timeColumns)->contains(fn (string $column) => ($cellOf($row, $column)['source'] ?? null) === \App\Domain\Attendance\ReportTimes::ADJUSTMENT)))
+    <p class="help-note time-source-key"><small class="time-source">adj</small> <span>The time is from an attendance adjustment, not a kiosk scan.</span></p>
+@endif

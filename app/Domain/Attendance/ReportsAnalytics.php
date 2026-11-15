@@ -28,6 +28,8 @@ class ReportsAnalytics
 
     private WorkingDays $workingDays;
 
+    private array $breakConfig;
+
     public function __construct(private string $today)
     {
         $this->events = AttendanceData::activeEvents();
@@ -39,6 +41,7 @@ class ReportsAnalytics
             ->map(fn ($row) => (array) $row)
             ->all();
         $this->workingDays = WorkingDays::load();
+        $this->breakConfig = BreakConfig::load();
     }
 
     /**
@@ -571,6 +574,10 @@ class ReportsAnalytics
                 'am_departure' => $scans['am_departure'] ?? null,
                 'pm_arrival' => $scans['pm_arrival'] ?? null,
                 'pm_departure' => $scans['pm_departure'] ?? null,
+                // The four time columns as shown (scan, else adjustment; the
+                // DTR's layout), each with its source. The raw scans above
+                // stay for the photo strip and the newest-scan-first order.
+                'times' => ReportTimes::cells($scans, $adjustments[$date] ?? null, $schedules[strtolower(date('l', $c))] ?? null, $this->breakConfig),
                 'status' => (string) $result['status'],
                 'detail' => (string) ($result['detail'] ?? ''),
             ];

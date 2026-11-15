@@ -100,6 +100,8 @@
         .status-adjusted { color: #1565c0; }
         .status-none { color: #999; }
         .status-detail { display: block; font-size: 9.5px; color: #666; }
+        /* A time from an attendance adjustment, not a kiosk scan. */
+        .time-source { margin-left: 2px; font-size: 8px; font-weight: 700; color: #1565c0; text-transform: lowercase; }
 
         @media print {
             body { margin: 0; }
