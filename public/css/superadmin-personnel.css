@@ -464,27 +464,7 @@ tbody tr:hover { background: #fbf8f0; }
    PAGINATION
 ========================== */
 
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 22px 0 4px;
-}
-
-.pagination a, .pagination span {
-    padding: 8px 13px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 13px;
-    transition: 0.15s ease;
-}
-
-.pagination a { background: #14390f; color: #fff; }
-.pagination a:hover { background: #e8a317; color: #14390f; transform: translateY(-1px); }
-.pagination .active { background: #e8a317; color: #14390f; }
+/* One style for every list, in app-shell.css. */
 
 /* ==========================
    TOAST

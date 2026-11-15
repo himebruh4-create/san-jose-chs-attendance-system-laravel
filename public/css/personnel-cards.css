@@ -383,3 +383,9 @@
 }
 
 .pd-barcode svg { max-width: none; }
+
+/* The card grid scrolls inside its card (.scroll-panel in app-shell.css);
+   room is kept so a card's hover lift and shadow are not clipped. */
+.personnel-scroll { padding: 0 4px 8px; }
+
+.personnel-scroll .personnel-grid { margin-top: 12px; }

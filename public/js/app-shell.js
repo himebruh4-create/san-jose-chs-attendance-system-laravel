@@ -264,6 +264,136 @@ function showMessageModal(message, options) {
     ok.focus();
 }
 
+/* =========================================================
+   PAGINATION for lists built in the browser (Attendance
+   Adjustments, Audit Log, Recycle Bin). The same page numbers as
+   App\Support\Pagination (keep the two the same): no Previous /
+   Next, "…" for gaps, "First" / "Last" on a long list only.
+   ========================================================= */
+var PAGINATION_SHOW_ALL_UP_TO = 7;
+var PAGINATION_LONG_LIST_PAGES = 10;
+
+/* Page numbers to show, with null for each "…" gap. */
+function paginationWindow(page, totalPages) {
+    var pages = [];
+    var i;
+
+    if (totalPages <= PAGINATION_SHOW_ALL_UP_TO) {
+        for (i = 1; i <= Math.max(1, totalPages); i++) pages.push(i);
+        return pages;
+    }
+
+    page = Math.min(Math.max(1, page), totalPages);
+
+    var from = page <= 4 ? 1 : (page >= totalPages - 3 ? totalPages - 4 : page - 1);
+    var to = page <= 4 ? 5 : (page >= totalPages - 3 ? totalPages : page + 1);
+
+    if (from > 1) {
+        pages.push(1);
+        if (from > 2) pages.push(null);
+    }
+    for (i = from; i <= to; i++) pages.push(i);
+    if (to < totalPages) {
+        if (to < totalPages - 1) pages.push(null);
+        pages.push(totalPages);
+    }
+
+    return pages;
+}
+
+/* Fills `container` with the page buttons; onSelect(page) runs on a click.
+   Nothing is shown for a single page. */
+function renderPagination(container, page, totalPages, onSelect, label) {
+    if (!container) return;
+
+    container.innerHTML = '';
+    container.classList.add('pagination');
+    container.setAttribute('aria-label', label || 'Pages');
+    container.hidden = totalPages <= 1;
+
+    if (totalPages <= 1) return;
+
+    var longList = totalPages >= PAGINATION_LONG_LIST_PAGES;
+
+    function button(text, target, ariaLabel, extraClass) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = text;
+        if (extraClass) b.className = extraClass;
+        if (ariaLabel) b.setAttribute('aria-label', ariaLabel);
+        b.addEventListener('click', function () {
+            container.querySelectorAll('button').forEach(function (other) { other.disabled = true; });
+            onSelect(target);
+        });
+        container.appendChild(b);
+    }
+
+    if (longList && page > 1) button('First', 1, 'First page', 'page-edge');
+
+    paginationWindow(page, totalPages).forEach(function (number) {
+        var span;
+        if (number === null) {
+            span = document.createElement('span');
+            span.className = 'page-gap';
+            span.setAttribute('aria-hidden', 'true');
+            span.textContent = '…';
+            container.appendChild(span);
+        } else if (number === page) {
+            span = document.createElement('span');
+            span.className = 'active';
+            span.setAttribute('aria-current', 'page');
+            span.textContent = String(number);
+            container.appendChild(span);
+        } else {
+            button(String(number), number, 'Page ' + number);
+        }
+    });
+
+    if (longList && page < totalPages) button('Last', totalPages, 'Last page', 'page-edge');
+}
+
+/* =========================================================
+   "OTHER" CHOICE -> TEXT BOX (every dropdown with an Other option)
+   <select data-other-input="#someInput"> shows #someInput (and its
+   [data-other-wrap] parent, if any) while "Other" / "Others" is
+   chosen, and makes it required; any other choice hides it and
+   clears it. The server checks the same (App\Support\OtherChoice).
+   Call syncOtherField(select) after setting a select's value in code.
+   ========================================================= */
+function isOtherChoice(value) {
+    var v = String(value || '').trim().toLowerCase();
+    return v === 'other' || v === 'others';
+}
+
+function syncOtherField(select) {
+    if (!select || !select.dataset || !select.dataset.otherInput) return;
+
+    var input = document.querySelector(select.dataset.otherInput);
+    if (!input) return;
+
+    var wrap = input.closest('[data-other-wrap]') || input;
+    var on = isOtherChoice(select.value);
+
+    wrap.hidden = !on;
+    input.required = on;
+
+    if (!on) input.value = '';
+}
+
+document.addEventListener('change', function (e) {
+    if (e.target && e.target.matches && e.target.matches('select[data-other-input]')) {
+        syncOtherField(e.target);
+        if (isOtherChoice(e.target.value)) {
+            var input = document.querySelector(e.target.dataset.otherInput);
+            if (input) input.focus();
+        }
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('select[data-other-input]').forEach(syncOtherField);
+});
+
 /* Escapes text for safe insertion into innerHTML templates. */
 function escapeHtml(value) {
     return String(value === null || value === undefined ? '' : value)

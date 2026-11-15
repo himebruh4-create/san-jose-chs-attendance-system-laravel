@@ -86,9 +86,6 @@
 .flag-chip.flag-camera { background: #eceff1; color: #37474f; }
 .flag-chip.flag-noface { background: #fff3e0; color: #a14a00; }
 
-.scan-photos-pages { display: flex; justify-content: center; align-items: center; gap: 14px; margin: 22px 0 6px; color: #5c5238; font-size: 13.5px; }
-.page-btn { padding: 8px 14px; border-radius: 10px; background: #14390f; color: #fffdf8; text-decoration: none; }
-.page-btn.disabled { opacity: 0.35; }
 
 .scan-photo-viewer { border: none; border-radius: 16px; padding: 18px; max-width: min(960px, 94vw); background: #fffdf8; }
 .scan-photo-viewer::backdrop { background: rgba(20, 30, 15, 0.75); }

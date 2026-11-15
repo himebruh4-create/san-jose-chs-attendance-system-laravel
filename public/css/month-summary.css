@@ -84,3 +84,7 @@
 
     .month-summary-counts li + li::before { content: none; }
 }
+
+/* Holidays / Schedule Changes: days, not people; they open the calendar. */
+.ms-holidays a { color: #6a1b9a; }
+.ms-changes a { color: #4a1270; }

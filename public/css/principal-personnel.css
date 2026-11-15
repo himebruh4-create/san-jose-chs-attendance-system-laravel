@@ -48,15 +48,6 @@ body { margin: 0; background: #f5f0e1; }
 
 .stat-mini-label { display: block; font-size: 11.5px; color: #5c5238; margin-top: 4px; font-weight: 600; }
 
-.pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
-
-.pagination a,
-.pagination span { padding: 8px 12px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px; }
-
-.pagination a { background: #14390f; color: white; }
-
-.pagination a:hover { background: #e8a317; color: #14390f; }
-
-.pagination .active { background: #e8a317; color: #14390f; }
+/* PAGINATION: one style for every list, in app-shell.css. */
 
 /* RESPONSIVE: page layout is in app-shell.css, shared screen-size rules in responsive.css. */

@@ -250,7 +250,7 @@ function switchRecycleBinTab(type, btn) {
     document.querySelectorAll('#recycleBinTabs .dept-tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
-    loadRecycleBin(type);
+    loadRecycleBin(type, 1);
 }
 
 function updateRecycleBinDeleteAllButton(rowCount) {
@@ -259,25 +259,33 @@ function updateRecycleBinDeleteAllButton(rowCount) {
     btn.innerHTML = `<i class="fa-solid fa-trash-can"></i> Delete All (${RECYCLE_BIN_CATEGORY_NAMES[currentRecycleBinTab] || ''})`;
 }
 
-async function loadRecycleBin(type) {
+/* The page of the open category; a reload after Restore / Delete stays on
+   it (the server gives the last page if it no longer exists). */
+let currentRecycleBinPage = 1;
+
+async function loadRecycleBin(type, page = currentRecycleBinPage) {
 
     const tbody = document.getElementById('recycleBinTableBody');
+    const pager = document.getElementById('recycleBinPagination');
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>`;
     updateRecycleBinDeleteAllButton(0);
 
     try {
 
-        const response = await fetch(appUrl('data/recycle-bin') + `?type=${encodeURIComponent(type)}`);
+        const response = await fetch(appUrl('data/recycle-bin') + `?type=${encodeURIComponent(type)}&page=${encodeURIComponent(page)}`);
         const result = await response.json();
 
         if (!result.success) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Unable to load records.</td></tr>`;
+            renderPagination(pager, 1, 1);
             return;
         }
 
         const rows = result.rows || [];
 
-        updateRecycleBinDeleteAllButton(rows.length);
+        currentRecycleBinPage = result.page || 1;
+        renderPagination(pager, currentRecycleBinPage, result.last_page || 1, p => loadRecycleBin(type, p), 'Recycle Bin pages');
+        updateRecycleBinDeleteAllButton(result.total ?? rows.length);
 
         if (rows.length === 0) {
             tbody.innerHTML = `
@@ -877,15 +885,19 @@ function auditActionLabel(action) {
     return String(action || '').replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-async function loadAuditLog() {
+/* Refresh (no page given) reloads page 1, the newest entries. */
+async function loadAuditLog(page = 1) {
     const tbody = document.getElementById('auditLogTableBody');
+    const pager = document.getElementById('auditLogPagination');
     if (!tbody) return;
 
     try {
-        const response = await fetch(appUrl('data/audit-log') + '?limit=200');
+        const response = await fetch(appUrl('data/audit-log') + '?page=' + encodeURIComponent(page));
         const result = await response.json();
 
         if (!result.success) throw new Error(result.message || 'failed');
+
+        renderPagination(pager, result.page || 1, result.last_page || 1, loadAuditLog, 'Audit Log pages');
 
         if (!result.entries.length) {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No activity recorded yet.</td></tr>';

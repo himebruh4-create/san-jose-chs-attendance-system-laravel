@@ -224,6 +224,7 @@ async function openEditModal(teacher) {
     // teacher's actual saved value, otherwise the option won't exist yet.
     await populateDeptOptions('edit', teacher.academic_status, teacher.department);
     document.getElementById('modalTeacherDeptSelect').value = teacher.department;
+    syncOtherField(document.getElementById('modalTeacherDeptSelect'));
 
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
@@ -1103,6 +1104,7 @@ async function populateDeptOptions(context, academicStatus, currentValue) {
 
     if (!academicStatus) {
         select.innerHTML = '<option value="">Select Personnel Type first</option>';
+        syncOtherField(select);
         return;
     }
 
@@ -1123,24 +1125,26 @@ async function populateDeptOptions(context, academicStatus, currentValue) {
         const options = (result.success && result.options) ? result.options : [];
 
         let optionsHTML = options.map(opt =>
-            `<option value="${opt.option_name.replace(/"/g, '&quot;')}">${opt.option_name}</option>`
+            `<option value="${escapeHtml(opt.option_name)}">${escapeHtml(opt.option_name)}</option>`
         ).join('');
 
         // If this teacher's currently saved value isn't in the filtered
         // list (e.g. an existing Teaching Staff record still holding a
-        // legacy Subject name from before this change), keep it as a
-        // selectable option instead of silently dropping it — it only
+        // legacy Subject name, or a position typed for "Other"), keep it
+        // as a selectable option instead of silently dropping it — it only
         // changes if the user deliberately picks something else.
         if (currentValue && !options.some(opt => opt.option_name === currentValue)) {
-            optionsHTML += `<option value="${currentValue.replace(/"/g, '&quot;')}">${currentValue} (current)</option>`;
+            optionsHTML += `<option value="${escapeHtml(currentValue)}">${escapeHtml(currentValue)} (current)</option>`;
         }
 
         if (!optionsHTML) {
             select.innerHTML = `<option value="">No positions available — add one in Settings</option>`;
+            syncOtherField(select);
             return;
         }
 
         select.innerHTML = '<option value="">Select Position</option>' + optionsHTML;
+        syncOtherField(select);
 
     } catch (error) {
         console.error("Failed to load department options:", error);
@@ -1177,6 +1181,7 @@ function refreshLeaveTypes() {
 
     if (!person || !person.value) {
         typeSelect.disabled = true;
+        syncOtherField(typeSelect);
         return;
     }
 
@@ -1185,6 +1190,7 @@ function refreshLeaveTypes() {
 
     typeSelect.disabled = false;
     typeSelect.value = allowed.includes(current) ? current : '';
+    syncOtherField(typeSelect);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -1427,6 +1433,14 @@ async function saveSchoolHoliday() {
         return;
     }
 
+    const typeOther = document.getElementById("holidayTypeOtherInput").value.trim();
+
+    if (isOtherChoice(type) && !typeOther) {
+        showErrorModal("Please type the schedule change type for Other.");
+        document.getElementById("holidayTypeOtherInput").focus();
+        return;
+    }
+
     if (!dateFrom || !dateTo) {
         showErrorModal("Please select both start and end dates.");
         return;
@@ -1452,6 +1466,7 @@ async function saveSchoolHoliday() {
         const formData = new FormData();
         formData.append("event_name", name);
         formData.append("event_type", type);
+        formData.append("event_type_other", typeOther);
         formData.append("date_from", dateFrom);
         formData.append("date_to", dateTo);
         formData.append("duration", duration);
@@ -1597,6 +1612,7 @@ function openHolidayModal() {
     // Reset to defaults every time it's opened
     document.getElementById("holidayNameInput").value = "";
     document.getElementById("holidayTypeInput").value = "Holiday";
+    syncOtherField(document.getElementById("holidayTypeInput"));
     document.getElementById("holidayDateFromInput").value = "";
     document.getElementById("holidayDateToInput").value = "";
     document.getElementById("holidayDurationInput").value = "Whole Day";
@@ -1624,7 +1640,12 @@ function openEditHolidayModal(id) {
     document.getElementById("holidayEditId").value = event.id;
     document.getElementById("holidayModalTitle").textContent = "Edit School Schedule Change";
     document.getElementById("holidayNameInput").value = event.event_name || "";
-    document.getElementById("holidayTypeInput").value = event.event_type || "Holiday";
+    // A typed type is saved as "Other: <text>" (App\Support\OtherChoice).
+    const savedType = event.event_type || "Holiday";
+    const typedOther = savedType.indexOf("Other: ") === 0 ? savedType.slice(7) : "";
+    document.getElementById("holidayTypeInput").value = typedOther ? "Other" : savedType;
+    syncOtherField(document.getElementById("holidayTypeInput"));
+    document.getElementById("holidayTypeOtherInput").value = typedOther;
     document.getElementById("holidayDateFromInput").value = event.date_from || "";
     document.getElementById("holidayDateToInput").value = event.date_to || "";
     document.getElementById("holidayDurationInput").value = event.duration || "Whole Day";

@@ -13,6 +13,15 @@ const weekRangeLabel = window.REPORT.weekRangeLabel;
 
 function switchTab(tab, btn) {
 
+    // The server builds only the open tab: a tab not built yet is loaded,
+    // keeping the filters (and the other tabs' periods) in the URL.
+    const pane = document.getElementById(tab + 'Tab');
+    if (pane.dataset.tabUrl) {
+        btn.setAttribute('aria-busy', 'true');
+        window.location.assign(pane.dataset.tabUrl);
+        return;
+    }
+
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
 
@@ -405,6 +414,39 @@ function calendarPersonHTML(day) {
         </dl>`;
 }
 
+/* The day's School Schedule Changes: type, dates, duration, description and
+   who it affects. Shown apart from the attendance counts, which never
+   include them. */
+function calendarChangesHTML(changes) {
+    if (!changes.length) {
+        return '';
+    }
+
+    return `<div class="cal-changes">${changes.map(change => {
+        const workers = change.scheduled_to_work.length
+            ? `<details class="cal-change-workers"><summary>${change.scheduled_to_work.length} personnel scheduled to work (not affected)</summary>
+                   <ul>${change.scheduled_to_work.map(name => `<li>${escapeHtml(name)}</li>`).join('')}</ul></details>`
+            : '';
+        const forPerson = change.applies_to_person === null
+            ? ''
+            : `<div><dt>This person</dt><dd>${change.applies_to_person ? 'Affected' : 'Not affected (scheduled to work)'}</dd></div>`;
+
+        return `
+            <section class="cal-change-detail">
+                <h4><i class="fa-solid fa-calendar-xmark" aria-hidden="true"></i> Schedule change: ${escapeHtml(change.name)}</h4>
+                <dl>
+                    <div><dt>Type</dt><dd>${escapeHtml(change.type)}</dd></div>
+                    <div><dt>Date</dt><dd>${escapeHtml(change.dates)}</dd></div>
+                    <div><dt>Duration</dt><dd>${escapeHtml(change.duration)}</dd></div>
+                    <div><dt>Description</dt><dd>${change.description ? escapeHtml(change.description) : '—'}</dd></div>
+                    <div><dt>Personnel affected</dt><dd>${escapeHtml(change.affected)}</dd></div>
+                    ${forPerson}
+                </dl>
+                ${workers}
+            </section>`;
+    }).join('')}</div>`;
+}
+
 function openCalendarDay(date) {
     const day = window.REPORT.calendar.days[date];
 
@@ -413,17 +455,22 @@ function openCalendarDay(date) {
     }
 
     const title = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const label = day.label ? `<p class="cal-day-label">${escapeHtml(day.labelTitle || day.label)}</p>` : '';
+    const changes = day.changes || [];
+    // The schedule change section replaces the plain label; "No work" stays.
+    const label = day.label && changes.length === 0 ? `<p class="cal-day-label">${escapeHtml(day.labelTitle || day.label)}</p>` : '';
+    // A future day opens only for its schedule change: there is no attendance yet.
+    const attendance = day.future ? '' : (window.REPORT.calendar.person ? calendarPersonHTML(day) : calendarGroupsHTML(day));
 
     document.getElementById('calendarDayTitle').textContent = title;
-    document.getElementById('calendarDayBody').innerHTML = label +
-        (window.REPORT.calendar.person ? calendarPersonHTML(day) : calendarGroupsHTML(day));
+    document.getElementById('calendarDayBody').innerHTML = calendarChangesHTML(changes) + label + attendance;
 
     // The Daily tab for this date, keeping the Personnel filter and the other tabs' periods.
     const dailyUrl = new URL(window.location.href);
     dailyUrl.searchParams.set('tab', 'daily');
     dailyUrl.searchParams.set('date', date);
-    document.getElementById('calendarDayDailyLink').href = dailyUrl.toString();
+    const dailyLink = document.getElementById('calendarDayDailyLink');
+    dailyLink.href = dailyUrl.toString();
+    dailyLink.hidden = !!day.future;
 
     document.getElementById('calendarDayModal').classList.add('active');
     lockBodyScroll();

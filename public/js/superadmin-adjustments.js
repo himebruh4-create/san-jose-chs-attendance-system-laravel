@@ -30,236 +30,150 @@
         }
 
 
-
-        /* ==============================
-           LOAD ADJUSTMENTS
-        ============================== */
-
-        async function loadAttendanceAdjustments() {
-
-            const tbody =
-                document.getElementById(
-                    "adjustmentsTableBody"
-                );
-
-
-            try {
-
-                const response =
-                    await fetch(
-                        appUrl('data/adjustments')
-                    );
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        "HTTP error: " +
-                        response.status
-                    );
-
-                }
-
-
-                const result =
-                    await response.json();
-
-
-                console.log(
-                    "Attendance Adjustments:",
-                    result
-                );
-
-
-                if (!result.success) {
-
-                    tbody.innerHTML = `
-
-                        <tr>
-
-                            <td
-                                colspan="5"
-                                class="empty-state"
-                            >
-
-                                Unable to load attendance adjustments.
-
-                            </td>
-
-                        </tr>
-
-                    `;
-
-                    return;
-
-                }
-
-
-                const adjustments =
-                    result.adjustments || [];
-
-
-                /* ==========================
-                   NO RECORDS
-                ========================== */
-
-                if (
-                    adjustments.length === 0
-                ) {
-
-                    tbody.innerHTML = `
-
-                        <tr>
-
-                            <td
-                                colspan="5"
-                                class="empty-state"
-                            >
-
-                                <strong>
-                                    No Attendance Adjustments
-                                </strong>
-
-                                <span>
-                                    No teacher attendance records require adjustment.
-                                </span>
-
-                            </td>
-
-                        </tr>
-
-                    `;
-
-                    return;
-
-                }
-
-
-
-                /* ==========================
-                   DISPLAY RECORDS
-                ========================== */
-
-                tbody.innerHTML =
-                    adjustments.map(
-                        adjustment => {
-
-                            return `
-
-                                <tr>
-
-                                    <td>
-
-                                        <strong>
-                                            ${escapeHTML(
-                                                adjustment.fullname
-                                            )}
-                                        </strong>
-
-                                    </td>
-
-
-                                    <td>
-
-                                        ${escapeHTML(
-                                            adjustment.date
-                                        )}
-
-                                    </td>
-
-
-                                    <td>
-
-                                        ${escapeHTML(
-                                            adjustment.adjustment_type
-                                        )}
-
-                                    </td>
-
-
-                                    <td>
-
-                                        ${
-                                            adjustment.remarks
-                                                ? escapeHTML(
-                                                    adjustment.remarks
-                                                )
-                                                : "-"
-                                        }
-
-                                    </td>
-
-
-                                    <td>
-
-                                        <div class="action-buttons">
-
-                                            <button
-                                                type="button"
-                                                class="review-btn"
-                                                onclick="openAdjustmentModal(${Number(adjustment.id)})"
-                                            >
-
-                                                Review
-
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                class="delete-adjustment-btn"
-                                                onclick="openDeleteAdjustmentModal(${Number(adjustment.id)}, ${escapeHtml(JSON.stringify(adjustment.fullname))}, ${escapeHtml(JSON.stringify(adjustment.date))})"
-                                            >
-
-                                                Archive
-
-                                            </button>
-
-                                        </div>
-
-                                    </td>
-
-                                </tr>
-
-                            `;
-
-                        }
-                    ).join("");
-
-
-            } catch (error) {
-
-                console.error(
-                    "Load Adjustments Error:",
-                    error
-                );
-
-
-                tbody.innerHTML = `
-
-                    <tr>
-
-                        <td
-                            colspan="5"
-                            class="empty-state"
-                        >
-
-                            <strong>
-                                Failed to Load Adjustments
-                            </strong>
-
-                            <span>
-                                Please check the connection to the server.
-                            </span>
-
-                        </td>
-
-                    </tr>
-
-                `;
-
-            }
-
+/* ==============================
+   LOAD ADJUSTMENTS
+   One page at a time, newest first, with page numbers below the list
+   (renderPagination in app-shell.js). A refresh (after a save, or the
+   live update below) reloads the page on screen. A background refresh
+   that fails leaves the table as it is.
+============================== */
+
+let adjustmentsPage = 1;
+
+function adjustmentRow(adjustment) {
+    return `
+        <tr data-adjustment-id="${Number(adjustment.id)}">
+            <td><strong>${escapeHTML(adjustment.fullname)}</strong></td>
+            <td>${escapeHTML(adjustment.date)}</td>
+            <td>${escapeHTML(adjustment.adjustment_type)}</td>
+            <td>${adjustment.remarks ? escapeHTML(adjustment.remarks) : "-"}</td>
+            <td>
+                <div class="action-buttons">
+                    <button type="button" class="review-btn" onclick="openAdjustmentModal(${Number(adjustment.id)})">Review</button>
+                    <button type="button" class="delete-adjustment-btn"
+                        onclick="openDeleteAdjustmentModal(${Number(adjustment.id)}, ${escapeHtml(JSON.stringify(adjustment.fullname))}, ${escapeHtml(JSON.stringify(adjustment.date))})">Archive</button>
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+function adjustmentsMessageRow(title, text) {
+    return `<tr><td colspan="5" class="empty-state"><strong>${escapeHTML(title)}</strong><span>${escapeHTML(text)}</span></td></tr>`;
+}
+
+/* options.page: the page to show (default: the one on screen);
+   options.quiet: a background refresh. */
+async function loadAttendanceAdjustments(options = {}) {
+
+    const tbody = document.getElementById("adjustmentsTableBody");
+    const pager = document.getElementById("adjustmentsPagination");
+    const page = options.page || adjustmentsPage;
+
+    try {
+        const response = await fetch(appUrl("data/adjustments") + "?page=" + encodeURIComponent(page));
+
+        if (!response.ok) {
+            throw new Error("HTTP error: " + response.status);
         }
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message || "Unable to load attendance adjustments.");
+        }
+
+        const adjustments = result.adjustments || [];
+
+        tbody.innerHTML = adjustments.map(adjustmentRow).join("")
+            || adjustmentsMessageRow("No Attendance Adjustments", "No teacher attendance records require adjustment.");
+
+        // A new page starts at its top; a refresh keeps the reader's place.
+        if (adjustmentsPage !== result.page) {
+            const wrapper = document.getElementById("adjustmentsScrollWrapper");
+            if (wrapper) wrapper.scrollTop = 0;
+        }
+
+        adjustmentsPage = result.page || 1;
+        renderPagination(pager, adjustmentsPage, result.last_page || 1, p => loadAttendanceAdjustments({ page: p }), "Attendance adjustment pages");
+
+        const count = document.getElementById("adjustmentsCount");
+        if (count) {
+            count.textContent = result.total ? `${result.total} adjustment${result.total === 1 ? "" : "s"}` : "";
+        }
+
+    } catch (error) {
+        console.error("Load Adjustments Error:", error);
+
+        // A background refresh keeps what is on screen.
+        if (!options.quiet) {
+            tbody.innerHTML = adjustmentsMessageRow("Failed to Load Adjustments", "Please check the connection to the server.");
+        }
+
+        // Page buttons were disabled on click: allow trying again.
+        if (pager) pager.querySelectorAll("button").forEach(b => { b.disabled = false; });
+    }
+}
+
+
+/* =========================================================
+   LIVE UPDATES
+   After an item is resolved here, Pending Review, its counts (tab and
+   sidebar) and the Adjustments list are refreshed at once. Every 30
+   seconds while the page is visible (and when it becomes visible again)
+   they are refreshed quietly, so items resolved elsewhere also update
+   without a reload. A failed refresh changes nothing on screen.
+========================================================= */
+
+const LIVE_REFRESH_MS = 30000;
+let liveRefreshTimer = null;
+let liveRefreshRunning = false;
+
+async function refreshReviewLists(quiet = true) {
+    if (liveRefreshRunning) return;
+    liveRefreshRunning = true;
+
+    try {
+        await Promise.all([
+            loadPendingReview({ quiet: quiet }),
+            loadAttendanceAdjustments({ quiet: quiet })
+        ]);
+    } finally {
+        liveRefreshRunning = false;
+    }
+}
+
+function scheduleLiveRefresh() {
+    clearInterval(liveRefreshTimer);
+    liveRefreshTimer = setInterval(function () {
+        if (document.visibilityState === "visible") {
+            refreshReviewLists(true);
+        }
+    }, LIVE_REFRESH_MS);
+}
+
+document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") {
+        refreshReviewLists(true);
+    }
+});
+
+/* Takes a resolved Pending Review row off the list and the counts at once;
+   the refresh that follows confirms it with the server. */
+function removePendingRow(teacherId, date) {
+    const row = document.querySelector(`#pendingReviewTableBody tr[data-pending-key="${Number(teacherId)}|${date}"]`);
+    if (!row) return;
+
+    row.remove();
+
+    const badge = document.getElementById("pendingCountBadge");
+    const total = Math.max(0, (parseInt(badge.textContent, 10) || 0) - 1);
+    badge.textContent = total;
+
+    if (typeof window.setPendingReviewBadge === "function") {
+        window.setPendingReviewBadge(total);
+    }
+}
 
 /* =========================================================
    OPEN ADD ATTENDANCE ADJUSTMENT MODAL
@@ -281,12 +195,68 @@ function openAddAdjustmentModal() {
         return;
     }
 
+    // No adjustment for a date after today (the server refuses one too).
+    document.getElementById("adjustmentDate").max = adjustmentToday();
+
     modal.classList.add("active");
     lockBodyScroll();
 }
 
+/* Today on this computer, YYYY-MM-DD (the server checks against its own date). */
+function adjustmentToday() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 
       /* =========================================================
+   SAVE A REVIEWED ADJUSTMENT: its times and remarks
+   (POST data/adjustments/update; the person, date and issue
+   stay as recorded). The list refreshes on success.
+========================================================= */
+
+async function saveReviewedAdjustment() {
+
+    const button = document.getElementById("saveReviewAdjustmentBtn");
+    const remarks = document.getElementById("reviewRemarks").value.trim();
+
+    if (!remarks) {
+        showErrorModal("Please enter remarks.");
+        return;
+    }
+
+    const body = new FormData();
+    body.append("id", document.getElementById("reviewAdjustmentId").value);
+    body.append("am_arrival", document.getElementById("reviewAMArrival").value);
+    body.append("am_departure", document.getElementById("reviewAMDeparture").value);
+    body.append("pm_arrival", document.getElementById("reviewPMArrival").value);
+    body.append("pm_departure", document.getElementById("reviewPMDeparture").value);
+    body.append("remarks", remarks);
+
+    button.disabled = true;
+
+    try {
+        const response = await fetch(appUrl("data/adjustments/update"), { method: "POST", body: body });
+        const result = response.ok ? await response.json() : null;
+
+        if (!result || !result.success) {
+            showErrorModal((result && result.message) || "Unable to save the changes. Please try again.");
+            return;
+        }
+
+        showToast(result.message || "Attendance adjustment updated.");
+        closeReviewAdjustmentModal();
+        refreshReviewLists(true);
+    } catch (error) {
+        console.error("Update Adjustment Error:", error);
+        showErrorModal("An error occurred while saving the changes.");
+    } finally {
+        button.disabled = false;
+    }
+}
+
+
+/* =========================================================
    REVIEW ATTENDANCE ADJUSTMENT
 ========================================================= */
 
@@ -361,6 +331,8 @@ async function openAdjustmentModal(id) {
         /* ==========================
            FILL REVIEW MODAL
         ========================== */
+
+        document.getElementById("reviewAdjustmentId").value = adjustment.id;
 
         document.getElementById(
             "reviewTeacher"
@@ -552,9 +524,30 @@ async function saveAttendanceAdjustment() {
     }
 
 
+    if (date > adjustmentToday()) {
+
+        showErrorModal("Cannot add an adjustment for a future date.");
+
+        return;
+    }
+
+
     if (!adjustmentType) {
 
         showErrorModal("Please select an attendance issue.");
+
+        return;
+    }
+
+
+    const adjustmentTypeOther =
+        document.getElementById("adjustmentTypeOther").value.trim();
+
+    if (isOtherChoice(adjustmentType) && !adjustmentTypeOther) {
+
+        showErrorModal("Please type the attendance issue for Other.");
+
+        document.getElementById("adjustmentTypeOther").focus();
 
         return;
     }
@@ -615,6 +608,11 @@ async function saveAttendanceAdjustment() {
     formData.append(
         "adjustment_type",
         adjustmentType
+    );
+
+    formData.append(
+        "adjustment_type_other",
+        adjustmentTypeOther
     );
 
     formData.append(
@@ -698,9 +696,11 @@ async function saveAttendanceAdjustment() {
         closeAdjustmentModal();
 
 
-        /* Reload adjustment table */
+        /* The day is resolved: off Pending Review (and its counts) at
+           once, onto the Adjustments list, then both refreshed. */
 
-        loadAttendanceAdjustments();
+        removePendingRow(teacherId, date);
+        refreshReviewLists(true);
 
 
         /* Clear form */
@@ -716,6 +716,8 @@ async function saveAttendanceAdjustment() {
         document.getElementById(
             "adjustmentType"
         ).value = "";
+
+        syncOtherField(document.getElementById("adjustmentType"));
 
         document.getElementById(
             "adjustmentAMArrival"
@@ -869,7 +871,8 @@ async function confirmDeleteAdjustment() {
         showToast(result.message || 'Attendance adjustment moved to the Recycle Bin.');
 
         closeDeleteAdjustmentModal();
-        loadAttendanceAdjustments();
+        // Archiving an adjustment can put its day back on Pending Review.
+        refreshReviewLists(true);
 
     } catch (error) {
         console.error('Delete Adjustment Error:', error);
@@ -930,37 +933,77 @@ function pendingItemRow(item) {
         ? ''
         : `<button class="confirm-absent-btn" onclick="openConfirmAbsentModal(${Number(item.teacher_id)}, ${escapeHtml(JSON.stringify(item.date))}, ${escapeHtml(JSON.stringify(item.fullname))})">Confirm Absent</button>`;
 
+    // A scan recorded on a leave day: the leave and the scan both stand;
+    // the Super Admin reviews it (or adds an adjustment for the day).
+    const leaveTag = item.leave_conflict_id
+        ? `<br><small>On leave: ${escapeHTML(item.leave_type || 'Leave')}</small>`
+        : '';
+    const leaveReviewBtn = item.leave_conflict_id
+        ? `<button class="confirm-absent-btn" onclick="markLeaveConflictReviewed(${Number(item.leave_conflict_id)}, ${Number(item.teacher_id)}, ${escapeHtml(JSON.stringify(item.date))})">Mark Reviewed</button>`
+        : '';
+    const schedule = item.scheduled_in ? pendingScheduleText(item) : '<small>Not scheduled</small>';
+
     return `
-        <tr>
+        <tr data-pending-key="${Number(item.teacher_id)}|${escapeHTML(item.date)}">
             <td><strong>${escapeHTML(item.fullname)}</strong><br><small>${escapeHTML(item.id_number)}</small></td>
             <td>${new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-            <td>${pendingScheduleText(item)}${reasonTag}${scanText}</td>
+            <td>${schedule}${reasonTag}${leaveTag}${scanText}</td>
             <td>
                 <div class="action-buttons">
-                    <button class="review-btn" onclick="openAdjustmentModalForPending(${item.teacher_id}, '${item.date}')">Add Adjustment</button>
-                    ${absentBtn}
+                    <button class="review-btn" onclick="openAdjustmentModalForPending(${Number(item.teacher_id)}, ${escapeHtml(JSON.stringify(item.date))})">Add Adjustment</button>
+                    ${absentBtn}${leaveReviewBtn}
                 </div>
             </td>
         </tr>
     `;
 }
 
-async function loadPendingReview() {
+async function markLeaveConflictReviewed(id, teacherId, date) {
+
+    try {
+        const response = await fetch(appUrl('data/leave-conflicts/review'), { method: 'POST', body: new URLSearchParams({ id: id }) });
+        const result = await response.json();
+
+        if (!result.success) {
+            showErrorModal(result.message || 'Unable to mark this scan as reviewed.');
+            return;
+        }
+
+        showToast('Marked as reviewed.');
+        removePendingRow(teacherId, date);
+        refreshReviewLists(true);
+    } catch (error) {
+        showErrorModal('An error occurred while saving the review.');
+    }
+}
+
+/* options.quiet: a background refresh, which keeps the table on failure. */
+async function loadPendingReview(options = {}) {
 
     const tbody = document.getElementById('pendingReviewTableBody');
     const badge = document.getElementById('pendingCountBadge');
+    const wrapper = document.getElementById('pendingScrollWrapper');
 
     try {
 
         // No look-back window: every unresolved item is returned, grouped
         // into the current review period and previous review period(s).
         const response = await fetch(appUrl('data/pending-review'));
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
         const result = await response.json();
 
         if (!result.success) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Unable to load pending items.</td></tr>`;
+            if (!options.quiet) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Unable to load pending items.</td></tr>`;
+            }
             return;
         }
+
+        // A refresh keeps the reader's place in the list.
+        const scrollTop = wrapper ? wrapper.scrollTop : 0;
+        requestAnimationFrame(() => { if (wrapper) wrapper.scrollTop = scrollTop; });
 
         const current = result.current;
         const previous = result.previous || [];
@@ -992,7 +1035,9 @@ async function loadPendingReview() {
 
     } catch (error) {
         console.error('Failed to load pending review:', error);
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Failed to load pending items.</td></tr>`;
+        if (!options.quiet) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Failed to load pending items.</td></tr>`;
+        }
     }
 }
 
@@ -1042,8 +1087,12 @@ async function doConfirmAbsent() {
 
         showToast('Personnel marked as Absent successfully.');
 
+        const resolvedTeacherId = pendingAbsentTeacherId;
+        const resolvedDate = pendingAbsentDate;
+
         closeConfirmAbsentModal();
-        loadPendingReview();
+        removePendingRow(resolvedTeacherId, resolvedDate);
+        refreshReviewLists(true);
 
     } catch (error) {
         console.error('Confirm Absent Error:', error);
@@ -1097,7 +1146,21 @@ async function loadRealScansPreview() {
         }
 
         const real = r.real;
-        let html = '<strong>Real scans for this day</strong> (recorded by the scanner)<br>';
+        let html = '';
+
+        // The day is covered by a leave: shown first. The adjustment is
+        // still allowed, needs its remarks (the reason), and does not
+        // change the leave.
+        if (r.leave) {
+            const range = r.leave.leave_from === r.leave.leave_until
+                ? r.leave.leave_from
+                : r.leave.leave_from + ' to ' + r.leave.leave_until;
+            html += '<div class="leave-day-note"><strong>On leave: ' + escapeHTML(r.leave.leave_type) + '</strong> (' + escapeHTML(range) + ')' +
+                (r.leave.reason ? '<br><small>' + escapeHTML(r.leave.reason) + '</small>' : '') +
+                '<br><small>The leave stays as it is. Enter the reason for this adjustment in Remarks.</small></div>';
+        }
+
+        html += '<strong>Real scans for this day</strong> (recorded by the scanner)<br>';
 
         if (!real) {
             html += 'No scans were recorded.';
@@ -1244,7 +1307,10 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(() => {});
 });
 
-document.addEventListener('DOMContentLoaded', loadPendingReview);
+document.addEventListener('DOMContentLoaded', function () {
+    loadPendingReview();
+    scheduleLiveRefresh();
+});
 
 // ?tab=pending (the dashboard's "This month" Pending Review number) opens that tab.
 document.addEventListener('DOMContentLoaded', function () {

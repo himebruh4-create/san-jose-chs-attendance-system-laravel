@@ -195,3 +195,9 @@ body { margin: 0; background: #f5f0e1; color: #3a3527; }
 .modal-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
 
 
+
+.forgot-password-notice p { margin: 0 0 10px; }
+
+.forgot-password-notice .request-password-btn { width: auto; margin: 0; padding: 9px 16px; font-size: 13px; }
+
+.forgot-password-sent { margin: 0; color: #1b5e20; font-weight: 600; }

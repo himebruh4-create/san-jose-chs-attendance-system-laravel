@@ -421,7 +421,7 @@ button.strip-thumb:focus-visible { border-color: #e8a317; box-shadow: 0 0 0 3px 
 
 .cal-legend li { display: inline-flex; align-items: center; gap: 6px; }
 
-.cal-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.cal-grid { display: grid; grid-template-columns: repeat(var(--cal-days, 6), minmax(0, 1fr)); gap: 6px; }
 
 /* Weekday header: one bar in the table header style (dark green, white,
    uppercase), rounded at the top like the day cells. Same columns and gap
@@ -430,7 +430,7 @@ button.strip-thumb:focus-visible { border-color: #e8a317; box-shadow: 0 0 0 3px 
 .cal-weekdays {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--cal-days, 6), minmax(0, 1fr));
     gap: inherit;
     border-radius: 10px 10px 0 0;
     background: #14390f;
@@ -638,3 +638,60 @@ button.cal-cell:focus-visible { border-color: #e8a317; box-shadow: 0 0 0 3px rgb
 }
 
 /* RESPONSIVE: page layout is in app-shell.css, shared screen-size rules in responsive.css. */
+
+/* ================= SCHEDULE CHANGES ON THE MONTHLY CALENDAR =================
+   A marker of its own (never a status count) and a section in the day's modal. */
+.cal-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+    padding: 2px 7px;
+    border: 1px dashed #6a1b9a;
+    border-radius: 999px;
+    background: #f5ecfa;
+    color: #6a1b9a;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.cal-change .cal-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cal-cell.is-future.has-change { cursor: pointer; }
+
+.cal-legend .cal-legend-change { color: #6a1b9a; }
+
+.cal-changes { display: grid; gap: 10px; margin-bottom: 14px; }
+
+.cal-change-detail {
+    padding: 12px 14px;
+    border-left: 4px solid #6a1b9a;
+    border-radius: 10px;
+    background: #f9f3fc;
+}
+
+.cal-change-detail h4 { margin: 0 0 8px; font-size: 15px; color: #4a1270; }
+
+.cal-change-detail dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px 14px; margin: 0; }
+
+.cal-change-detail dt { font-size: 11px; font-weight: 700; color: #8a7d5c; text-transform: uppercase; letter-spacing: 0.4px; }
+
+.cal-change-detail dd { margin: 2px 0 0; font-size: 14px; color: #1a1a1a; overflow-wrap: anywhere; }
+
+.cal-change-workers { margin-top: 8px; font-size: 13px; }
+
+.cal-change-workers ul { margin: 6px 0 0; padding-left: 18px; }
+
+.calendar-daily-link[hidden] { display: none; }
+
+@media (max-width: 640px) {
+    .cal-change { padding: 2px 4px; }
+    .cal-change .cal-text { display: none; }
+}
+
+/* Days the dashboard's Holidays / Schedule Changes link points at (?highlight=). */
+.cal-cell.is-highlighted { border: 2px solid #6a1b9a; background: #f5ecfa; box-shadow: 0 0 0 3px rgba(106, 27, 154, 0.18); }
+
+.cal-legend .cal-legend-highlight { color: #6a1b9a; font-weight: 700; }
+
+.dot-highlight { background: #6a1b9a; }

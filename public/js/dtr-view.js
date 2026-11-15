@@ -25,19 +25,12 @@ async function printIndividualReport(teacher) {
     }
 
     // =====================================================
-    // GET SELECTED MONTH (moved up — adjustments need this)
+    // THE DTR'S MONTH (moved up — adjustments need this)
+    // The month this person's records were loaded for (their card's own
+    // month picker), never another card's picker.
     // =====================================================
 
-    let selected = document.querySelector(".monthPicker")?.value;
-    let now = new Date();
-    let year = now.getFullYear();
-    let month = now.getMonth();
-
-    if (selected) {
-        let parts = selected.split("-");
-        year = parseInt(parts[0]);
-        month = parseInt(parts[1]) - 1;
-    }
+    const [year, month] = dtrYearMonth(teacher.monthStart || document.getElementById("reportMonth")?.value);
 
     const monthStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
     const lastDay = new Date(year, month + 1, 0).getDate();
@@ -199,6 +192,17 @@ function dtrEscapeHtmlAttr(value) {
 
 function dtrJsonForAttr(value) {
     return dtrEscapeHtmlAttr(JSON.stringify(value));
+}
+
+/* "2026-10" or "2026-10-01" -> [2026, 9] (month 0-based); the current
+   month when missing or malformed. */
+function dtrYearMonth(value) {
+    const match = /^(\d{4})-(\d{2})/.exec(String(value || ""));
+    const now = new Date();
+
+    return match
+        ? [parseInt(match[1], 10), parseInt(match[2], 10) - 1]
+        : [now.getFullYear(), now.getMonth()];
 }
 
 
@@ -1897,17 +1901,13 @@ function printDTRWithRemarks(
        GET SELECTED MONTH
        ===================================================== */
 
-    let now = new Date();
-    let year = overrideYear !== null ? overrideYear : now.getFullYear();
-    let month = overrideMonth !== null ? overrideMonth : now.getMonth();
+    // The month the person's records were loaded for (their own card's
+    // month picker), never the first card's picker on the page.
+    let [year, month] = dtrYearMonth(teacher.monthStart || document.getElementById("reportMonth")?.value);
 
-    if (overrideYear === null) {
-        let selected = document.querySelector(".monthPicker")?.value;
-        if (selected) {
-            const parts = selected.split("-");
-            year = parseInt(parts[0]);
-            month = parseInt(parts[1]) - 1;
-        }
+    if (overrideYear !== null) {
+        year = overrideYear;
+        month = overrideMonth;
     }
 
     /* =====================================================
@@ -2569,10 +2569,32 @@ function printDTRWithRemarks(
 
         if (onLeave) {
 
-            let leaveText = (onLeave.leave_type || "ON LEAVE").toUpperCase();
+            let leaveText = escapeHtml((onLeave.leave_type || "ON LEAVE").toUpperCase());
 
             if (onLeave.reason) {
-                leaveText += `<br><small>${onLeave.reason}</small>`;
+                leaveText += `<br><small>${escapeHtml(onLeave.reason)}</small>`;
+            }
+
+            // A scan on a leave day (kept, and flagged for review) is shown,
+            // never hidden behind the leave remark: the real times (with any
+            // adjustment fields laid over them) and the remark in the hours
+            // cells. A leave day adds no hours, as in the Monthly Summary.
+            const leaveScans = rulesEffective(teacher.records.find(x => x.date === dateString) || {}, adjustmentMap[dateString] || null);
+
+            if (leaveScans.am_arrival || leaveScans.am_departure || leaveScans.pm_arrival || leaveScans.pm_departure) {
+
+                rows += `
+                    <tr class="leave-scan-row" title="${escapeHtml((onLeave.leave_type || "On Leave") + (onLeave.reason ? " - " + onLeave.reason : ""))}">
+                        <td>${day}</td>
+                        <td>${cellHTML(leaveScans.am_arrival, false)}</td>
+                        <td>${cellHTML(leaveScans.am_departure, false)}</td>
+                        <td>${cellHTML(leaveScans.pm_arrival, false)}</td>
+                        <td>${cellHTML(leaveScans.pm_departure, false)}</td>
+                        <td colspan="2"><span style="color:#a3720f; font-size:7px; font-weight:600;">${leaveText}</span></td>
+                    </tr>
+                `;
+
+                continue;
             }
 
             rows += `
@@ -2603,10 +2625,10 @@ function printDTRWithRemarks(
             // No times at all (e.g. Official Business) — show as a label row
             if (!hasAdjustedTimes) {
 
-                let adjText = (adjustment.adjustment_type || "ADJUSTED").toUpperCase();
+                let adjText = escapeHtml((adjustment.adjustment_type || "ADJUSTED").toUpperCase());
 
                 if (adjustment.remarks) {
-                    adjText += `<br><small>${adjustment.remarks}</small>`;
+                    adjText += `<br><small>${escapeHtml(adjustment.remarks)}</small>`;
                 }
 
                 rows += `
@@ -2637,7 +2659,7 @@ function printDTRWithRemarks(
                 const adjTime = splitHoursMinutes(adjDaily);
 
                 rows += `
-                    <tr title="${(adjustment.adjustment_type || "Adjusted") + (adjustment.remarks ? " - " + adjustment.remarks : "")}">
+                    <tr title="${escapeHtml((adjustment.adjustment_type || "Adjusted") + (adjustment.remarks ? " - " + adjustment.remarks : ""))}">
                         <td>${day}</td>
                         <td>${adjCells.amIn}</td>
                         <td>${adjCells.amOut}</td>
@@ -2661,7 +2683,7 @@ function printDTRWithRemarks(
                 const shiftTime = splitHoursMinutes(shiftDaily);
 
                 rows += `
-                    <tr title="${(adjustment.adjustment_type || "Adjusted") + (adjustment.remarks ? " - " + adjustment.remarks : "")}">
+                    <tr title="${escapeHtml((adjustment.adjustment_type || "Adjusted") + (adjustment.remarks ? " - " + adjustment.remarks : ""))}">
                         <td>${day}</td>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
@@ -2728,7 +2750,7 @@ function printDTRWithRemarks(
                 (adjustment.remarks ? " - " + adjustment.remarks : "");
 
             rows += `
-                <tr title="${tooltip}">
+                <tr title="${escapeHtml(tooltip)}">
                     <td>${day}</td>
                     <td>${cellHTML(adjAmIn, adjAmInAuto)}</td>
                     <td>${cellHTML(adjAmOut, adjAmOutAuto)}</td>
@@ -2982,7 +3004,7 @@ function printDTRWithRemarks(
             rows += `
                 <tr class="special-day-row">
                     <td>${day}</td>
-                    <td colspan="6"><span>${displayRemark.toUpperCase()}</span></td>
+                    <td colspan="6"><span>${escapeHtml(displayRemark.toUpperCase())}</span></td>
                 </tr>
             `;
 
@@ -3024,10 +3046,10 @@ function printDTRWithRemarks(
 
         if (matchedEvent && matchedEvent.duration !== "Half Day") {
 
-            let eventText = (matchedEvent.event_name || matchedEvent.event_type).toUpperCase();
+            let eventText = escapeHtml((matchedEvent.event_name || matchedEvent.event_type).toUpperCase());
 
             if (matchedEvent.remark) {
-                eventText += `<br><small>${matchedEvent.remark}</small>`;
+                eventText += `<br><small>${escapeHtml(matchedEvent.remark)}</small>`;
             }
 
             // Included = Yes: credit this teacher's own scheduled day.
@@ -3078,8 +3100,8 @@ function printDTRWithRemarks(
             // AM is the one with no classes; a start_time at/after noon
             // falls in the afternoon session, so PM has no classes.
             halfDayNoClassesSession = (matchedEvent.start_time < "12:00:00") ? "AM" : "PM";
-            halfDayNoClassesLabel = matchedEvent.remark
-                || ((matchedEvent.event_name || matchedEvent.event_type).toUpperCase() + " - NO CLASSES");
+            halfDayNoClassesLabel = escapeHtml(matchedEvent.remark
+                || ((matchedEvent.event_name || matchedEvent.event_type).toUpperCase() + " - NO CLASSES"));
         }
 
         // Renders either the normal cell content, or the "No Classes"
@@ -3093,13 +3115,13 @@ function printDTRWithRemarks(
         }
 
         /* =================================================
-           5. WEEKENDS — Sunday always off; Saturday only
-           shows as off if THIS teacher has no Saturday
-           schedule. If they do, it falls through and gets
-           treated like any other working day below.
+           5. WEEKENDS — Sunday / Saturday only show as off if
+           THIS teacher has no schedule that day. If they do,
+           it falls through and gets treated like any other
+           working day below (App\Domain\Attendance\WorkingDays).
            ================================================= */
 
-        if (dayName === 0) {
+        if (dayName === 0 && !teacherSchedule[dayKey]) {
 
             rows += `
                 <tr>
@@ -3127,7 +3149,10 @@ function printDTRWithRemarks(
            6. CONFIRMED ABSENT
            ================================================= */
 
-        if (confirmedAbsenceSet.has(dateString)) {
+        // Only a scheduled day without a scan in (a person who scanned in was there).
+        const absentRecord = teacher.records.find(x => x.date === dateString) || {};
+
+        if (confirmedAbsenceSet.has(dateString) && teacherSchedule[dayKey] && !absentRecord.am_arrival && !absentRecord.pm_arrival) {
 
             rows += `
                 <tr class="special-day-row">
@@ -3540,27 +3565,64 @@ function printDTRWithRemarks(
    without changing any remarks).
    ========================================================= */
 
-async function printAllDTR(teacherReports, monthStart, monthEnd, printJob = null) {
+/* Generate All DTR: one request for every person's data of the month
+   (/data/dtr-bundle, URL on the button), then the same per-person DTR as
+   printAllDTR() below, printed together. */
+async function printAllDTRFromServer(button) {
+
+    button.disabled = true;
+
+    try {
+        const response = await fetch(button.dataset.url, { headers: { "Accept": "application/json" } });
+        const bundle = response.ok ? await response.json() : null;
+
+        if (!bundle || !bundle.success) {
+            throw new Error(bundle ? bundle.message : "HTTP " + response.status);
+        }
+
+        await printAllDTR(bundle.teachers, bundle.month_start, bundle.month_end, JSON.parse(button.dataset.print || "null"), bundle);
+    } catch (error) {
+        console.error("Generate All DTR error:", error);
+        showMessageModal("Unable to generate the DTRs. Please try again.", { title: "Something Went Wrong", type: "error" });
+    } finally {
+        button.disabled = false;
+    }
+}
+
+/* shared: the /data/dtr-bundle response. With it, each teacher already
+   carries leaves / adjustments / absences / schedule / remarks and nothing
+   more is fetched; without it, each person's data is fetched as before. */
+async function printAllDTR(teacherReports, monthStart, monthEnd, printJob = null, shared = null) {
 
     if (!teacherReports || teacherReports.length === 0) {
         showMessageModal("No personnel found for this month.", { title: "Nothing to Print" });
         return;
     }
 
-    const selected = document.querySelector(".monthPicker")?.value;
-    const now = new Date();
-    let year = now.getFullYear();
-    let month = now.getMonth();
-
-    if (selected) {
-        const parts = selected.split("-");
-        year = parseInt(parts[0]);
-        month = parseInt(parts[1]) - 1;
-    }
+    const [year, month] = dtrYearMonth(monthStart);
 
     let allContainers = "";
 
     for (const teacher of teacherReports) {
+
+        if (shared) {
+            allContainers += `<div class="dtr-page-break">${printDTRWithRemarks(
+                teacher.id,
+                teacher.remarks || [],
+                teacher.leaves || [],
+                teacher.adjustments || [],
+                shared.events || [],
+                teacher.absences || [],
+                teacher.schedule || {},
+                shared.lunch || { lunch_out: null, lunch_in: null, schedule_breaks: [] },
+                teacher,
+                year,
+                month,
+                true
+            )}</div>`;
+
+            continue;
+        }
 
         try {
 

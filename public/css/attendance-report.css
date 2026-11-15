@@ -258,31 +258,7 @@ input[type="month"]:focus {
 
 .generate-report-btn:hover { background: #f2c94c; }
 
-/* PAGINATION */
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 22px 0 4px;
-}
-
-.pagination a,
-.pagination span {
-    padding: 8px 13px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 13px;
-    transition: 0.15s ease;
-}
-
-.pagination a { background: #14390f; color: #fff; }
-.pagination a:hover { background: #e8a317; color: #14390f; transform: translateY(-1px); }
-.pagination .active { background: #e8a317; color: #14390f; }
-.pagination .disabled { background: #e6dcc4; color: #a89a6e; cursor: not-allowed; }
+/* PAGINATION: one style for every list, in app-shell.css. */
 
 /* MODAL */
 

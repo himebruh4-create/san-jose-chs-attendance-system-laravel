@@ -428,6 +428,86 @@ a.dept-tab-btn { display: inline-flex; align-items: center; text-decoration: non
     z-index: 2;
 }
 
+/* A list that scrolls up and down inside its card once it is taller than
+   the screen allows (the Attendance Adjustments style); with
+   sticky-table-wrapper its header row stays in view. A card list uses
+   .scroll-panel-head for its sticky header. Printouts never scroll. */
+.scroll-panel {
+    max-height: min(65vh, 620px);
+    overflow-y: auto;
+    overflow-x: auto;
+    position: relative;
+    overscroll-behavior: contain;
+}
+
+.scroll-panel:focus-visible { outline: 2px solid #e8a317; outline-offset: -2px; }
+
+.scroll-panel-head {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding: 9px 12px;
+    background: #14390f;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    border-radius: 8px;
+}
+
+@media print {
+    .scroll-panel { max-height: none; overflow: visible; }
+}
+
+/* ==============================
+   PAGINATION (every paginated list; partials/pagination.blade.php and
+   renderPagination() in app-shell.js): page numbers only, equal-size
+   buttons on one aligned row, the current page highlighted.
+============================== */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 22px 0 4px;
+}
+
+.pagination a,
+.pagination button,
+.pagination span {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pagination a,
+.pagination button { background: #14390f; color: #fff; cursor: pointer; }
+
+.pagination a:hover,
+.pagination a:focus-visible,
+.pagination button:hover,
+.pagination button:focus-visible { background: #e8a317; color: #14390f; }
+
+.pagination .active { background: #e8a317; color: #14390f; cursor: default; box-shadow: inset 0 0 0 2px #14390f; }
+
+.pagination .page-gap { min-width: 24px; padding: 0; background: none; color: #8a7d5c; }
+
+.pagination button:disabled { opacity: 0.6; cursor: wait; }
+
 /* ==============================
    BUTTON SPACING (shared utility)
    Any two buttons sitting next to each other get a small, consistent
@@ -576,3 +656,11 @@ a.dept-tab-btn { display: inline-flex; align-items: center; text-decoration: non
     .session-guard-actions { flex-direction: column-reverse; }
     .session-guard-actions button { width: 100%; padding: 12px 16px; }
 }
+
+/* The text box of a dropdown's "Other" choice (data-other-input): hidden
+   wins over any page's display rule. */
+[data-other-wrap][hidden],
+input[hidden],
+textarea[hidden] { display: none !important; }
+
+.other-choice-input { margin-top: 8px; }

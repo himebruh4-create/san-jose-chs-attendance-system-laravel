@@ -320,3 +320,31 @@ tbody tr:hover { background: #fbf8f0; }
 .scan-photo { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11.5px; color: #5c5238; }
 .scan-photo img, .scan-photo-missing { width: 96px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid #e6dcc4; background: #fffdf8; }
 .scan-photo-missing { display: flex; align-items: center; justify-content: center; color: #a89a6e; }
+
+/* Attendance Adjustments list: scrolls inside the card once it is taller
+   than the screen allows; the header row stays in view (sticky-table-wrapper). */
+.adjustments-scroll { max-height: min(65vh, 620px); }
+
+.adjustments-scroll:focus-visible { outline: 2px solid #e8a317; outline-offset: -2px; }
+
+.adjustments-list-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 15px;
+    font-size: 13px;
+    color: #8a7d5c;
+}
+
+.adjustments-list-footer [hidden] { display: none; }
+
+/* The leave covering the day, in the Add Adjustment form. */
+.leave-day-note {
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border-left: 3px solid #a3720f;
+    border-radius: 6px;
+    background: #fff6e0;
+    color: #6b4a07;
+}
