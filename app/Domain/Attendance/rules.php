@@ -39,8 +39,8 @@ use DateTime;
 
 const DTR_RULES_EFFECTIVE_DATE = '2026-09-27';
 const DTR_EARLY_DEPARTURE_SECONDS = 1800;    // 30 minutes
-const DTR_DUPLICATE_SCAN_SECONDS  = 1;       // scan-debounce window
-const DTR_REPEAT_GUARD_SECONDS    = 300;     // accidental-repeat guard: a scan less than 5 minutes after the last accepted scan of open attendance is a repeat
+const DTR_DUPLICATE_SCAN_SECONDS = 1;       // scan-debounce window
+const DTR_REPEAT_GUARD_SECONDS = 300;     // accidental-repeat guard: a scan less than 5 minutes after the last accepted scan of open attendance is a repeat
 
 // OVERTIME TOLERANCE (explicit business setting). Overtime is flagged when the
 // real OUT is MORE THAN this many seconds after the scheduled end. 0 = strict:
@@ -55,24 +55,29 @@ const DTR_OVERTIME_TOLERANCE_SECONDS = 0;
 const DTR_LUNCH_SCAN_EARLY_SECONDS = 900;
 const DTR_OVERNIGHT_WINDOW_SECONDS = 21600;  // scans up to 6h after an overnight shift's end still belong to it
 
-function dtrRulesApply($date) {
+function dtrRulesApply($date)
+{
     return $date >= DTR_RULES_EFFECTIVE_DATE;
 }
 
 // ---------- small time helpers ----------
 
-function dtrClockOrEmpty($value) {
-    if (!is_string($value) || !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $value)) {
+function dtrClockOrEmpty($value)
+{
+    if (! is_string($value) || ! preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $value)) {
         return '';
     }
-    return strlen($value) === 5 ? $value . ':00' : substr($value, 0, 8);
+
+    return strlen($value) === 5 ? $value.':00' : substr($value, 0, 8);
 }
 
-function dtrSecs($value) {
+function dtrSecs($value)
+{
     $v = dtrClockOrEmpty($value);
     if ($v === '') {
         return null;
     }
+
     return ((int) substr($v, 0, 2)) * 3600 + ((int) substr($v, 3, 2)) * 60 + (int) substr($v, 6, 2);
 }
 
@@ -84,7 +89,8 @@ function dtrSecs($value) {
 // schedule with its own specific entry here is a shift/guard break (paid,
 // handled internally, never shown); the shared default School Lunch Break
 // is the regular-teacher lunch (see dtrBreakForSchedule / dtrIsShiftPersonnel).
-function dtrDefaultBreakEntries() {
+function dtrDefaultBreakEntries()
+{
     return [
         ['time_in' => '06:00:00', 'time_out' => '14:00:00', 'break_start' => '11:00:00', 'break_end' => '12:00:00'],
         ['time_in' => '14:00:00', 'time_out' => '22:00:00', 'break_start' => '17:00:00', 'break_end' => '18:00:00'],
@@ -92,14 +98,14 @@ function dtrDefaultBreakEntries() {
     ];
 }
 
-
 // The paid break that applies to a person's assigned schedule for a day.
 // Exact schedule match first; otherwise an ordinary day schedule falls
 // back to the shared School Lunch Break (shown as Auto on the DTR);
 // an unmatched afternoon/overnight shift has no configured break.
-function dtrBreakForSchedule($cfg, $schedule) {
+function dtrBreakForSchedule($cfg, $schedule)
+{
 
-    if (!$schedule || empty($schedule['time_in']) || empty($schedule['time_out'])) {
+    if (! $schedule || empty($schedule['time_in']) || empty($schedule['time_out'])) {
         return null;
     }
 
@@ -112,7 +118,7 @@ function dtrBreakForSchedule($cfg, $schedule) {
         }
     }
 
-    if (dtrScheduleShape($schedule) === 'day' && !empty($cfg['lunch_out']) && !empty($cfg['lunch_in'])) {
+    if (dtrScheduleShape($schedule) === 'day' && ! empty($cfg['lunch_out']) && ! empty($cfg['lunch_in'])) {
         return ['start' => dtrClockOrEmpty($cfg['lunch_out']), 'end' => dtrClockOrEmpty($cfg['lunch_in']), 'source' => 'default'];
     }
 
@@ -124,9 +130,10 @@ function dtrBreakForSchedule($cfg, $schedule) {
 // PM) rather than the shared School Lunch Break default. Decided entirely by
 // schedule/break configuration (never names or IDs). JS twin:
 // rulesIsShiftPersonnel in dtr/dtr-view.php.
-function dtrIsShiftPersonnel($cfg, $schedule) {
+function dtrIsShiftPersonnel($cfg, $schedule)
+{
 
-    if (!$schedule) {
+    if (! $schedule) {
         return false;
     }
 
@@ -140,12 +147,17 @@ function dtrIsShiftPersonnel($cfg, $schedule) {
 }
 
 // DTR columns that hold a shift's actual IN / OUT (display mapping only).
-function dtrShiftColumns($schedule) {
+function dtrShiftColumns($schedule)
+{
 
     $shape = dtrScheduleShape($schedule);
 
-    if ($shape === 'day')       return ['in' => 'am_arrival', 'out' => 'am_departure'];
-    if ($shape === 'overnight') return ['in' => 'pm_arrival', 'out' => 'am_departure'];
+    if ($shape === 'day') {
+        return ['in' => 'am_arrival', 'out' => 'am_departure'];
+    }
+    if ($shape === 'overnight') {
+        return ['in' => 'pm_arrival', 'out' => 'am_departure'];
+    }
 
     return ['in' => 'pm_arrival', 'out' => 'pm_departure'];
 }
@@ -154,7 +166,8 @@ function dtrShiftColumns($schedule) {
 
 // Real scans + non-empty adjustment fields overriding the matching
 // real fields. Nothing is ever filled from the schedule.
-function dtrEffectiveRecord($real, $adj) {
+function dtrEffectiveRecord($real, $adj)
+{
 
     $eff = [];
 
@@ -170,9 +183,10 @@ function dtrEffectiveRecord($real, $adj) {
 // First IN / final OUT of an (effective) record. IN = earliest arrival;
 // OUT = PM departure, or the AM departure when the person never came
 // back (nothing after it). Intermediate break columns are ignored.
-function dtrInOutOf($rec, $adj = null) {
+function dtrInOutOf($rec, $adj = null)
+{
 
-    $ins = array_values(array_filter([$rec['am_arrival'] ?? '', $rec['pm_arrival'] ?? ''], fn($v) => $v !== ''));
+    $ins = array_values(array_filter([$rec['am_arrival'] ?? '', $rec['pm_arrival'] ?? ''], fn ($v) => $v !== ''));
     sort($ins);
     $in = $ins ? $ins[0] : '';
 
@@ -187,15 +201,21 @@ function dtrInOutOf($rec, $adj = null) {
 }
 
 // True when the OUT comes from an adjustment (the adjustment IS the approval).
-function dtrOutFromAdjustment($real, $adj) {
+function dtrOutFromAdjustment($real, $adj)
+{
 
-    if (!$adj) return false;
+    if (! $adj) {
+        return false;
+    }
 
     $adjPmOut = dtrClockOrEmpty($adj['pm_departure'] ?? '');
-    if ($adjPmOut !== '') return true;
+    if ($adjPmOut !== '') {
+        return true;
+    }
 
     $eff = dtrEffectiveRecord($real, $adj);
     [, $out] = dtrInOutOf($eff, $adj);
+
     return $out !== '' && dtrClockOrEmpty($adj['am_departure'] ?? '') === $out && ($eff['pm_departure'] ?? '') === '';
 }
 
@@ -208,14 +228,15 @@ function dtrOutFromAdjustment($real, $adj) {
 //
 // Returns in, out, late, early_departure, overtime, overtime_approved,
 // missing_out, complete, hours (credited), plus the raw out/in seconds.
-function dtrDayCalc($schedule, $real, $adj, $opts = []) {
+function dtrDayCalc($schedule, $real, $adj, $opts = [])
+{
 
     $eff = dtrEffectiveRecord($real, $adj);
     [$in, $out] = dtrInOutOf($eff, $adj);
 
-    $half     = $opts['half_session'] ?? null;
-    $shape    = $schedule ? dtrScheduleShape($schedule) : 'day';
-    $schedIn  = $schedule ? dtrSecs($schedule['time_in'] ?? '') : null;
+    $half = $opts['half_session'] ?? null;
+    $shape = $schedule ? dtrScheduleShape($schedule) : 'day';
+    $schedIn = $schedule ? dtrSecs($schedule['time_in'] ?? '') : null;
     $schedOut = $schedule ? dtrSecs($schedule['time_out'] ?? '') : null;
 
     if ($schedOut !== null && $shape === 'overnight') {
@@ -237,8 +258,12 @@ function dtrDayCalc($schedule, $real, $adj, $opts = []) {
     if ($inS !== null && $schedIn !== null) {
         if ($shape === 'day' && $half === 'AM') {
             $ref = dtrSecs($opts['half_end'] ?? '');
-            if ($ref === null) $ref = dtrSecs($opts['break_end'] ?? '');
-            if ($ref === null) $ref = dtrSecs($opts['cutoff_pm'] ?? '13:00:00');
+            if ($ref === null) {
+                $ref = dtrSecs($opts['break_end'] ?? '');
+            }
+            if ($ref === null) {
+                $ref = dtrSecs($opts['cutoff_pm'] ?? '13:00:00');
+            }
             $r['late'] = $inS > $ref;
         } elseif ($shape !== 'day' && $half === 'PM') {
             $r['late'] = false;
@@ -253,6 +278,7 @@ function dtrDayCalc($schedule, $real, $adj, $opts = []) {
 
     if ($outS === null) {
         $r['missing_out'] = true;        // real IN without a real/approved OUT
+
         return $r;
     }
 
@@ -262,6 +288,7 @@ function dtrDayCalc($schedule, $real, $adj, $opts = []) {
             $outS += 86400;
         } else {
             $r['complete'] = true;       // nonsensical order: complete, but no credit
+
             return $r;
         }
     }
@@ -273,8 +300,12 @@ function dtrDayCalc($schedule, $real, $adj, $opts = []) {
     $expectedOut = $schedOut;
     if ($half === 'PM' && $shape === 'day') {
         $he = dtrSecs($opts['half_start'] ?? '');
-        if ($he === null) $he = dtrSecs($opts['break_start'] ?? '');
-        if ($he !== null) $expectedOut = $he;
+        if ($he === null) {
+            $he = dtrSecs($opts['break_start'] ?? '');
+        }
+        if ($he !== null) {
+            $expectedOut = $he;
+        }
     }
 
     $creditOutS = $outS;
@@ -286,11 +317,11 @@ function dtrDayCalc($schedule, $real, $adj, $opts = []) {
             $r['overtime'] = true;
             $r['overtime_approved'] = $approved;
             // (no_cap = historical shift correction: legacy shift hours were never capped)
-            if (!$approved && empty($opts['no_cap'])) {
+            if (! $approved && empty($opts['no_cap'])) {
                 $creditOutS = $schedOut;
             }
         }
-        if ($expectedOut !== null && !$r['overtime'] && ($expectedOut - $outS) >= DTR_EARLY_DEPARTURE_SECONDS) {
+        if ($expectedOut !== null && ! $r['overtime'] && ($expectedOut - $outS) >= DTR_EARLY_DEPARTURE_SECONDS) {
             $r['early_departure'] = true;
         }
     }
@@ -303,15 +334,22 @@ function dtrDayCalc($schedule, $real, $adj, $opts = []) {
     if ($half) {
 
         if ($shape !== 'day') {
-            if ($half === 'PM') $hours = 0.0;      // a PM/whole change covers the entire continuous shift
+            if ($half === 'PM') {
+                $hours = 0.0;
+            }      // a PM/whole change covers the entire continuous shift
         } else {
             $bs = dtrSecs($opts['break_start'] ?? '');
             $mid = $bs !== null ? $bs : 43200;
             $ws = dtrSecs($opts['half_start'] ?? '');
             $we = dtrSecs($opts['half_end'] ?? '');
             if ($ws === null || $we === null) {
-                if ($half === 'AM') { $ws = $schedIn ?? 0; $we = $mid; }
-                else                { $ws = $mid; $we = $schedOut ?? 86400; }
+                if ($half === 'AM') {
+                    $ws = $schedIn ?? 0;
+                    $we = $mid;
+                } else {
+                    $ws = $mid;
+                    $we = $schedOut ?? 86400;
+                }
             }
             $overlap = max(0, min($creditOutS, $we) - max($inS, $ws));
             $hours = max(0, $hours - $overlap / 3600);
@@ -333,7 +371,8 @@ function dtrDayCalc($schedule, $real, $adj, $opts = []) {
 // Returns one of
 //   ['action'=>'store','date','column','kind'=>'IN'|'OUT','insert'=>bool,'title']
 //   ['action'=>'reject','reason'=>'DUPLICATE_SCAN'|'ATTENDANCE_COMPLETE','date','existing_out','detail']
-function dtrRouteScan($ctx) {
+function dtrRouteScan($ctx)
+{
 
     $date = $ctx['date'];
     $time = dtrClockOrEmpty($ctx['time']);
@@ -341,8 +380,8 @@ function dtrRouteScan($ctx) {
     $prevSched = $ctx['prevSchedule'] ?? null;
     $row = $ctx['row'] ?? null;
     $prevRow = $ctx['prevRow'] ?? null;
-    $prevDate = date('Y-m-d', strtotime($date . ' -1 day'));
-    $nowTs = strtotime($date . ' ' . $time);
+    $prevDate = date('Y-m-d', strtotime($date.' -1 day'));
+    $nowTs = strtotime($date.' '.$time);
 
     // ---- accidental-repeat guard: runs before any state routing, so a repeat
     // can never become the next attendance action. Rejected scans are never
@@ -357,24 +396,26 @@ function dtrRouteScan($ctx) {
 
         [$pIn, $pOut] = dtrInOutOf(dtrEffectiveRecord($prevRow, null));
         $hasOwnIn = $row && (dtrClockOrEmpty($row['am_arrival'] ?? '') !== '' || dtrClockOrEmpty($row['pm_arrival'] ?? '') !== '');
-        $windowEnd = strtotime($date . ' ' . dtrClockOrEmpty($prevSched['time_out'])) + DTR_OVERNIGHT_WINDOW_SECONDS;
+        $windowEnd = strtotime($date.' '.dtrClockOrEmpty($prevSched['time_out'])) + DTR_OVERNIGHT_WINDOW_SECONDS;
 
-        if ($pIn !== '' && !$hasOwnIn && $nowTs <= $windowEnd) {
+        if ($pIn !== '' && ! $hasOwnIn && $nowTs <= $windowEnd) {
 
             $lastTs = dtrLastScanTs($prevRow, $prevDate, true);
 
             if ($pOut === '') {
                 if ($lastTs !== null && $nowTs - $lastTs <= DTR_DUPLICATE_SCAN_SECONDS && $nowTs >= $lastTs) {
-                    return dtrReject('DUPLICATE_SCAN', $prevDate, '', 'Scan repeated within ' . DTR_DUPLICATE_SCAN_SECONDS . ' second');
+                    return dtrReject('DUPLICATE_SCAN', $prevDate, '', 'Scan repeated within '.DTR_DUPLICATE_SCAN_SECONDS.' second');
                 }
+
                 return ['action' => 'store', 'date' => $prevDate, 'column' => 'pm_departure', 'kind' => 'OUT', 'insert' => false, 'title' => 'PM Departure', 'overnight' => true];
             }
 
             // Closed overnight shift: a further scan is not tomorrow's arrival
             // unless the person's own schedule for today is about to start.
-            $todayStart = ($sched && !empty($sched['time_in'])) ? strtotime($date . ' ' . dtrClockOrEmpty($sched['time_in'])) : null;
+            $todayStart = ($sched && ! empty($sched['time_in'])) ? strtotime($date.' '.dtrClockOrEmpty($sched['time_in'])) : null;
             if ($todayStart === null || $nowTs < $todayStart - 7200) {
                 $reason = ($lastTs !== null && $nowTs - $lastTs <= DTR_DUPLICATE_SCAN_SECONDS && $nowTs >= $lastTs) ? 'DUPLICATE_SCAN' : 'ATTENDANCE_COMPLETE';
+
                 return dtrReject($reason, $prevDate, $pOut, 'Overnight shift already completed');
             }
         }
@@ -382,7 +423,8 @@ function dtrRouteScan($ctx) {
 
     // ---- today's shift
     $shape = $sched ? dtrScheduleShape($sched) : 'day';
-    $rowIn = ''; $rowOut = '';
+    $rowIn = '';
+    $rowOut = '';
     if ($row) {
         [$rowIn, $rowOut] = dtrInOutOf(dtrEffectiveRecord($row, null));
     }
@@ -392,11 +434,11 @@ function dtrRouteScan($ctx) {
         $withinDebounce = $lastTs !== null && $nowTs >= $lastTs && ($nowTs - $lastTs) <= DTR_DUPLICATE_SCAN_SECONDS;
 
         if ($rowIn !== '' && $rowOut !== '') {
-            return dtrReject($withinDebounce ? 'DUPLICATE_SCAN' : 'ATTENDANCE_COMPLETE', $date, $rowOut, $withinDebounce ? 'Scan repeated within ' . DTR_DUPLICATE_SCAN_SECONDS . ' second' : 'Attendance already complete for this shift');
+            return dtrReject($withinDebounce ? 'DUPLICATE_SCAN' : 'ATTENDANCE_COMPLETE', $date, $rowOut, $withinDebounce ? 'Scan repeated within '.DTR_DUPLICATE_SCAN_SECONDS.' second' : 'Attendance already complete for this shift');
         }
 
         if ($withinDebounce) {
-            return dtrReject('DUPLICATE_SCAN', $date, '', 'Scan repeated within ' . DTR_DUPLICATE_SCAN_SECONDS . ' second');
+            return dtrReject('DUPLICATE_SCAN', $date, '', 'Scan repeated within '.DTR_DUPLICATE_SCAN_SECONDS.' second');
         }
 
         if ($rowIn !== '') {
@@ -442,11 +484,12 @@ function dtrRouteScan($ctx) {
 
     return [
         'action' => 'store', 'date' => $date, 'column' => $column, 'kind' => 'IN',
-        'insert' => !$row, 'title' => $column === 'am_arrival' ? 'AM Arrival' : 'PM Arrival',
+        'insert' => ! $row, 'title' => $column === 'am_arrival' ? 'AM Arrival' : 'PM Arrival',
     ];
 }
 
-function dtrReject($reason, $date, $existingOut, $detail) {
+function dtrReject($reason, $date, $existingOut, $detail)
+{
     return ['action' => 'reject', 'reason' => $reason, 'date' => $date, 'existing_out' => $existingOut, 'detail' => $detail];
 }
 
@@ -454,7 +497,8 @@ function dtrReject($reason, $date, $existingOut, $detail) {
 // shift) yesterday's row. Only open attendance (no final OUT yet) is guarded;
 // closed attendance keeps its existing routing and reasons. Strict "<": exactly
 // DTR_REPEAT_GUARD_SECONDS after the last accepted scan is allowed.
-function dtrRepeatGuard($date, $nowTs, $sched, $row, $prevRow, $prevDate) {
+function dtrRepeatGuard($date, $nowTs, $sched, $row, $prevRow, $prevDate)
+{
 
     $shape = $sched ? dtrScheduleShape($sched) : 'day';
     $lastTs = null;
@@ -487,12 +531,13 @@ function dtrRepeatGuard($date, $nowTs, $sched, $row, $prevRow, $prevDate) {
         return null;
     }
 
-    return dtrReject('DUPLICATE_SCAN', $basisDate, '', 'Repeat scan within ' . DTR_REPEAT_GUARD_SECONDS . ' seconds of the last recorded scan');
+    return dtrReject('DUPLICATE_SCAN', $basisDate, '', 'Repeat scan within '.DTR_REPEAT_GUARD_SECONDS.' seconds of the last recorded scan');
 }
 
 // Timestamp of the latest real scan stored on a row (an overnight
 // shift's OUT time-of-day belongs to the following calendar day).
-function dtrLastScanTs($row, $date, $overnight) {
+function dtrLastScanTs($row, $date, $overnight)
+{
 
     $last = null;
     $in = null;
@@ -500,7 +545,7 @@ function dtrLastScanTs($row, $date, $overnight) {
     foreach (['am_arrival', 'pm_arrival'] as $c) {
         $v = dtrClockOrEmpty($row[$c] ?? '');
         if ($v !== '') {
-            $ts = strtotime($date . ' ' . $v);
+            $ts = strtotime($date.' '.$v);
             $last = ($last === null || $ts > $last) ? $ts : $last;
             $in = ($in === null || $ts < $in) ? $ts : $in;
         }
@@ -509,7 +554,7 @@ function dtrLastScanTs($row, $date, $overnight) {
     foreach (['am_departure', 'pm_departure'] as $c) {
         $v = dtrClockOrEmpty($row[$c] ?? '');
         if ($v !== '') {
-            $ts = strtotime($date . ' ' . $v);
+            $ts = strtotime($date.' '.$v);
             if ($overnight && $in !== null && $ts < $in) {
                 $ts += 86400;
             }
@@ -519,7 +564,6 @@ function dtrLastScanTs($row, $date, $overnight) {
 
     return $last;
 }
-
 
 // ==================== from dtr/dtr-core.php ====================
 
@@ -538,13 +582,14 @@ function dtrLastScanTs($row, $date, $overnight) {
 // 'day'       normal daytime schedule (starts before noon, ends same day)
 // 'afternoon' starts at/after noon and ends the same day (e.g. 14:00-22:00)
 // 'overnight' ends before it starts, i.e. crosses midnight (e.g. 22:00-06:00)
-function dtrScheduleShape($schedule) {
+function dtrScheduleShape($schedule)
+{
 
-    if (!$schedule || empty($schedule['time_in']) || empty($schedule['time_out'])) {
+    if (! $schedule || empty($schedule['time_in']) || empty($schedule['time_out'])) {
         return 'day';
     }
 
-    $in  = substr($schedule['time_in'], 0, 8);
+    $in = substr($schedule['time_in'], 0, 8);
     $out = substr($schedule['time_out'], 0, 8);
 
     if ($out < $in) {
@@ -554,27 +599,30 @@ function dtrScheduleShape($schedule) {
     return ($in >= '12:00:00') ? 'afternoon' : 'day';
 }
 
-function dtrIsShiftSchedule($schedule) {
+function dtrIsShiftSchedule($schedule)
+{
     return dtrScheduleShape($schedule) !== 'day';
 }
 
-function dtrIsClockTime($value) {
+function dtrIsClockTime($value)
+{
     return is_string($value) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $value) === 1;
 }
 
 // Earliest real arrival scan of the day (a shift can be filed in
 // either arrival column depending on the clock time it was scanned).
-function dtrShiftArrival($record) {
+function dtrShiftArrival($record)
+{
 
     $candidates = [];
 
     foreach (['am_arrival', 'pm_arrival'] as $column) {
-        if (!empty($record[$column]) && dtrIsClockTime($record[$column])) {
+        if (! empty($record[$column]) && dtrIsClockTime($record[$column])) {
             $candidates[] = $record[$column];
         }
     }
 
-    if (!$candidates) {
+    if (! $candidates) {
         return '';
     }
 
@@ -584,10 +632,11 @@ function dtrShiftArrival($record) {
 }
 
 // Departure scan of the day — "AUTO" placeholders are not real scans.
-function dtrShiftDeparture($record) {
+function dtrShiftDeparture($record)
+{
 
     foreach (['pm_departure', 'am_departure'] as $column) {
-        if (!empty($record[$column]) && dtrIsClockTime($record[$column])) {
+        if (! empty($record[$column]) && dtrIsClockTime($record[$column])) {
             return $record[$column];
         }
     }
@@ -598,7 +647,8 @@ function dtrShiftDeparture($record) {
 // A shift person is late only when the first arrival is after THEIR
 // scheduled time in (minute precision) — never against the fixed
 // 8:00 / 1:00 PM day cutoffs.
-function dtrShiftIsLate($schedule, $record) {
+function dtrShiftIsLate($schedule, $record)
+{
 
     $arrival = dtrShiftArrival($record);
 
@@ -612,20 +662,21 @@ function dtrShiftIsLate($schedule, $record) {
 // Hours of one continuous shift: scanned arrival/departure, otherwise
 // the scheduled time in/out. No lunch deduction. A departure earlier
 // than the arrival means the shift crossed midnight.
-function dtrShiftHours($schedule, $record) {
+function dtrShiftHours($schedule, $record)
+{
 
-    if (!$schedule) {
+    if (! $schedule) {
         return 0.0;
     }
 
-    $in  = dtrShiftArrival($record) ?: ($schedule['time_in'] ?? '');
+    $in = dtrShiftArrival($record) ?: ($schedule['time_in'] ?? '');
     $out = dtrShiftDeparture($record) ?: ($schedule['time_out'] ?? '');
 
-    if (!$in || !$out) {
+    if (! $in || ! $out) {
         return 0.0;
     }
 
-    $hours = (strtotime('1970-01-01 ' . $out) - strtotime('1970-01-01 ' . $in)) / 3600;
+    $hours = (strtotime('1970-01-01 '.$out) - strtotime('1970-01-01 '.$in)) / 3600;
 
     return ($hours < 0) ? $hours + 24 : $hours;
 }
@@ -633,7 +684,8 @@ function dtrShiftHours($schedule, $record) {
 // Which AM/PM sessions a schedule occupies. A continuous shift has no
 // AM session; its "session" is PM, so a Half Day AM change affects
 // nothing of it and a Half Day PM change affects the whole shift.
-function dtrSessionAffectsShift($sessions) {
+function dtrSessionAffectsShift($sessions)
+{
     return in_array('PM', $sessions, true);
 }
 
@@ -642,15 +694,15 @@ function dtrSessionAffectsShift($sessions) {
 // covered by that change (it is treated as a normal working day).
 // Someone listed but with no schedule that day is unaffected by this —
 // nothing is invented for them.
-function dtrEventExemptsTeacher($event, $teacherId, $scheduleForDay) {
+function dtrEventExemptsTeacher($event, $teacherId, $scheduleForDay)
+{
 
-    if ($teacherId === null || !$scheduleForDay || empty($event['worker_ids'])) {
+    if ($teacherId === null || ! $scheduleForDay || empty($event['worker_ids'])) {
         return false;
     }
 
     return in_array((int) $teacherId, array_map('intval', $event['worker_ids']), true);
 }
-
 
 // ==========================================================
 // REVIEW PERIODS — first Sunday of each month
@@ -661,19 +713,21 @@ function dtrEventExemptsTeacher($event, $teacherId, $scheduleForDay) {
 // nothing is stored and unresolved items are never reassigned or lost.
 // ==========================================================
 
-function dtrFirstSunday($year, $month) {
+function dtrFirstSunday($year, $month)
+{
 
     $d = new DateTime(sprintf('%04d-%02d-01', $year, $month));
     $dayOfWeek = (int) $d->format('w');   // 0 = Sunday
 
     if ($dayOfWeek !== 0) {
-        $d->modify('+' . (7 - $dayOfWeek) . ' days');
+        $d->modify('+'.(7 - $dayOfWeek).' days');
     }
 
     return $d->format('Y-m-d');
 }
 
-function dtrReviewPeriodStart($date) {
+function dtrReviewPeriodStart($date)
+{
 
     $d = new DateTime($date);
     $start = dtrFirstSunday((int) $d->format('Y'), (int) $d->format('n'));
@@ -687,7 +741,8 @@ function dtrReviewPeriodStart($date) {
     return dtrFirstSunday((int) $previous->format('Y'), (int) $previous->format('n'));
 }
 
-function dtrReviewPeriodEnd($periodStart) {
+function dtrReviewPeriodEnd($periodStart)
+{
 
     $next = (new DateTime($periodStart))->modify('first day of next month');
     $nextStart = dtrFirstSunday((int) $next->format('Y'), (int) $next->format('n'));
@@ -695,21 +750,24 @@ function dtrReviewPeriodEnd($periodStart) {
     return (new DateTime($nextStart))->modify('-1 day')->format('Y-m-d');
 }
 
-function dtrReviewPeriodLabel($periodStart) {
+function dtrReviewPeriodLabel($periodStart)
+{
 
     $start = new DateTime($periodStart);
     $end = new DateTime(dtrReviewPeriodEnd($periodStart));
 
     $startFormat = ($start->format('Y') === $end->format('Y')) ? 'M j' : 'M j, Y';
 
-    return $start->format($startFormat) . ' – ' . $end->format('M j, Y');
+    return $start->format($startFormat).' – '.$end->format('M j, Y');
 }
 
 // ==========================================================
 // GET TEACHER DAY STATUS
-// Priority: Leave -> Adjustment -> School Event -> Confirmed Absent
-//           -> Not Scheduled -> Pending Review (past, unscheduled gap)
-//           -> Present/Late
+// Priority: Leave -> Adjustment -> School Event -> Present/Late (scans)
+//           -> Not Scheduled (by this person's own schedule, any
+//           weekday) -> Confirmed Absent -> Pending Review / Not Yet
+//           Recorded. So Absent is only ever a scheduled day with no
+//           scan, leave, adjustment or school event.
 // ==========================================================
 
 function getTeacherDayStatus(
@@ -749,7 +807,7 @@ function getTeacherDayStatus(
         if (
             ($event['status'] ?? '') === 'Active'
             && ($event['duration'] ?? '') === 'Half Day'
-            && !empty($event['start_time'])
+            && ! empty($event['start_time'])
             && $date >= $event['date_from'] && $date <= $event['date_to']
         ) {
             // Scheduled to work through this change: it doesn't apply.
@@ -769,9 +827,9 @@ function getTeacherDayStatus(
     $newRules = dtrRulesApply($date);
     $statusOpts = [
         'half_session' => $halfDaySession,
-        'half_start'   => $halfEvent['start_time'] ?? '',
-        'half_end'     => $halfEvent['end_time'] ?? '',
-        'cutoff_pm'    => $cutoffPM,
+        'half_start' => $halfEvent['start_time'] ?? '',
+        'half_end' => $halfEvent['end_time'] ?? '',
+        'cutoff_pm' => $cutoffPM,
     ];
 
     /* =====================================================
@@ -788,7 +846,7 @@ function getTeacherDayStatus(
 
             return [
                 'status' => 'On Leave',
-                'detail' => $leave['leave_type'] ?? 'On Leave'
+                'detail' => $leave['leave_type'] ?? 'On Leave',
             ];
         }
     }
@@ -833,13 +891,13 @@ function getTeacherDayStatus(
 
             return [
                 'status' => $isLate ? 'Late' : 'Present',
-                'detail' => $adj['adjustment_type'] ?? 'Adjusted'
+                'detail' => $adj['adjustment_type'] ?? 'Adjusted',
             ];
         }
 
         return [
             'status' => 'Adjusted',
-            'detail' => $adj['adjustment_type'] ?? 'Adjusted'
+            'detail' => $adj['adjustment_type'] ?? 'Adjusted',
         ];
     }
 
@@ -876,40 +934,30 @@ function getTeacherDayStatus(
             // return shape (still just status + a detail string).
             if (
                 isset($event['duration']) && $event['duration'] === 'Half Day'
-                && !empty($event['start_time']) && !empty($event['end_time'])
+                && ! empty($event['start_time']) && ! empty($event['end_time'])
             ) {
                 $detail .= ' (Half Day: '
-                    . date('g:i A', strtotime($event['start_time']))
-                    . ' - '
-                    . date('g:i A', strtotime($event['end_time']))
-                    . ')';
+                    .date('g:i A', strtotime($event['start_time']))
+                    .' - '
+                    .date('g:i A', strtotime($event['end_time']))
+                    .')';
             }
 
-            if (!empty($event['remark'])) {
-                $detail .= ' - ' . $event['remark'];
+            if (! empty($event['remark'])) {
+                $detail .= ' - '.$event['remark'];
             }
 
             return [
                 'status' => 'School Event',
-                'detail' => $detail
+                'detail' => $detail,
             ];
         }
     }
 
     /* =====================================================
-       4. CONFIRMED ABSENT
-       ===================================================== */
-
-    if (isset($confirmedAbsences[$date])) {
-
-        return [
-            'status' => 'Absent',
-            'detail' => 'Confirmed'
-        ];
-    }
-
-    /* =====================================================
-       5. RAW ATTENDANCE (has a scan)
+       4. RAW ATTENDANCE (has a scan) — a person who scanned
+          in was there, so a confirmed absence never makes
+          that day Absent.
        ===================================================== */
 
     if ($attendanceRow) {
@@ -947,27 +995,41 @@ function getTeacherDayStatus(
 
             return [
                 'status' => $isLate ? 'Late' : 'Present',
-                'detail' => ''
+                'detail' => '',
             ];
         }
     }
 
     /* =====================================================
        6. NOT SCHEDULED THIS DAY —
-          no leave/adjustment/event/confirmed-absence/scan,
-          and the teacher simply has no schedule entry for
-          this specific day of the week (a Part-Time
-          teacher's off-day, or an unscheduled Saturday).
-          Never Pending Review, never counted as Absent.
+          no leave/adjustment/event/scan, and the teacher
+          has no schedule entry for this day of the week (a
+          Part-Time teacher's off-day, an unscheduled Saturday
+          or Sunday). Never Pending Review, never counted as
+          Absent, even with a confirmed absence on it.
        ===================================================== */
 
     $dayKey = strtolower(date('l', strtotime($date)));
 
-    if (!isset($schedules[$dayKey])) {
+    if (! isset($schedules[$dayKey])) {
 
         return [
             'status' => 'Not Scheduled',
-            'detail' => ''
+            'detail' => '',
+        ];
+    }
+
+    /* =====================================================
+       6b. CONFIRMED ABSENT — only on a day this person was
+           scheduled to work, with no scan and no leave,
+           adjustment or school event (all checked above).
+       ===================================================== */
+
+    if (isset($confirmedAbsences[$date])) {
+
+        return [
+            'status' => 'Absent',
+            'detail' => 'Confirmed',
         ];
     }
 
@@ -981,7 +1043,7 @@ function getTeacherDayStatus(
 
         return [
             'status' => 'Pending Review',
-            'detail' => ''
+            'detail' => '',
         ];
     }
 
@@ -989,10 +1051,9 @@ function getTeacherDayStatus(
     // Just hasn't happened yet.
     return [
         'status' => 'Not Yet Recorded',
-        'detail' => ''
+        'detail' => '',
     ];
 }
-
 
 // ==========================================================
 // DAILY HOURS — PHP COUNTERPART OF THE DTR'S PER-DAY RULES
@@ -1005,17 +1066,18 @@ function getTeacherDayStatus(
 //
 // Same precedence as the DTR:
 //   1 Leave  2 Attendance adjustment  3 Individual DTR remark
-//   4 School schedule change  5 Sunday / unscheduled Saturday
+//   4 School schedule change  5 Saturday / Sunday the person is not scheduled on
 //   6 Confirmed absent  7 Attendance scans (gaps auto-filled)
 // ==========================================================
 
-function dtrSpanHours($from, $to, $clampNegative = false) {
+function dtrSpanHours($from, $to, $clampNegative = false)
+{
 
-    if (!$from || !$to) {
+    if (! $from || ! $to) {
         return 0.0;
     }
 
-    $hours = (strtotime('1970-01-01 ' . $to) - strtotime('1970-01-01 ' . $from)) / 3600;
+    $hours = (strtotime('1970-01-01 '.$to) - strtotime('1970-01-01 '.$from)) / 3600;
 
     return ($clampNegative && $hours < 0) ? 0.0 : $hours;
 }
@@ -1024,9 +1086,10 @@ function dtrSpanHours($from, $to, $clampNegative = false) {
 // hours for the given session(s) — the scan when there is one, otherwise
 // the schedule / lunch-break value (never a fixed number of hours).
 // Same as creditedEventHours() in dtr-view.php.
-function dtrCreditedHours($schedule, $record, $sessions, $lunchOut, $lunchIn) {
+function dtrCreditedHours($schedule, $record, $sessions, $lunchOut, $lunchIn)
+{
 
-    if (!$schedule) {
+    if (! $schedule) {
         return 0.0;
     }
 
@@ -1041,16 +1104,16 @@ function dtrCreditedHours($schedule, $record, $sessions, $lunchOut, $lunchIn) {
 
     if (in_array('AM', $sessions, true)) {
         $credited += dtrSpanHours(
-            !empty($record['am_arrival']) ? $record['am_arrival'] : ($schedule['time_in'] ?? null),
-            !empty($record['am_departure']) ? $record['am_departure'] : $lunchOut,
+            ! empty($record['am_arrival']) ? $record['am_arrival'] : ($schedule['time_in'] ?? null),
+            ! empty($record['am_departure']) ? $record['am_departure'] : $lunchOut,
             true
         );
     }
 
     if (in_array('PM', $sessions, true)) {
         $credited += dtrSpanHours(
-            !empty($record['pm_arrival']) ? $record['pm_arrival'] : $lunchIn,
-            !empty($record['pm_departure']) ? $record['pm_departure'] : ($schedule['time_out'] ?? null),
+            ! empty($record['pm_arrival']) ? $record['pm_arrival'] : $lunchIn,
+            ! empty($record['pm_departure']) ? $record['pm_departure'] : ($schedule['time_out'] ?? null),
             true
         );
     }
@@ -1060,32 +1123,34 @@ function dtrCreditedHours($schedule, $record, $sessions, $lunchOut, $lunchIn) {
 
 // Rule options for dtrDayCalc: the configured paid break of the person's
 // assigned schedule plus the Half Day window (if any).
-function dtrRuleOpts($schedule, $breakCfg, $session, $included, $event, $cutoffPm = '13:00:00', $noCap = false) {
+function dtrRuleOpts($schedule, $breakCfg, $session, $included, $event, $cutoffPm = '13:00:00', $noCap = false)
+{
 
     $b = dtrBreakForSchedule($breakCfg, $schedule);
 
     return [
-        'no_cap'        => $noCap,
-        'half_session'  => $session,
+        'no_cap' => $noCap,
+        'half_session' => $session,
         'half_included' => $included,
-        'half_start'    => $event['start_time'] ?? '',
-        'half_end'      => $event['end_time'] ?? '',
-        'break_start'   => $b['start'] ?? '',
-        'break_end'     => $b['end'] ?? '',
-        'cutoff_pm'     => $cutoffPm,
+        'half_start' => $event['start_time'] ?? '',
+        'half_end' => $event['end_time'] ?? '',
+        'break_start' => $b['start'] ?? '',
+        'break_end' => $b['end'] ?? '',
+        'cutoff_pm' => $cutoffPm,
     ];
 }
 
 // Scheduled span of the given session(s), used for the "Included in Total
 // Hours = Yes" credit. Paid breaks are part of the span (never deducted).
 // An AM window ends / a PM window starts at the configured break start.
-function dtrWindowSpanHours($schedule, $sessions, $opts) {
+function dtrWindowSpanHours($schedule, $sessions, $opts)
+{
 
-    if (!$schedule) {
+    if (! $schedule) {
         return 0.0;
     }
 
-    $in  = dtrSecs($schedule['time_in'] ?? '');
+    $in = dtrSecs($schedule['time_in'] ?? '');
     $out = dtrSecs($schedule['time_out'] ?? '');
 
     if ($in === null || $out === null) {
@@ -1093,9 +1158,10 @@ function dtrWindowSpanHours($schedule, $sessions, $opts) {
     }
 
     if (dtrScheduleShape($schedule) !== 'day') {
-        if (!dtrSessionAffectsShift($sessions)) {
+        if (! dtrSessionAffectsShift($sessions)) {
             return 0.0;
         }
+
         return ($out < $in ? $out + 86400 - $in : $out - $in) / 3600;
     }
 
@@ -1107,9 +1173,11 @@ function dtrWindowSpanHours($schedule, $sessions, $opts) {
     }
 
     $mid = dtrSecs($opts['break_start'] ?? '');
-    if ($mid === null) $mid = 43200;
+    if ($mid === null) {
+        $mid = 43200;
+    }
 
-    $ws = $hasAM ? $in  : $mid;
+    $ws = $hasAM ? $in : $mid;
     $we = $hasAM ? $mid : $out;
 
     $es = dtrSecs($opts['half_start'] ?? '');
@@ -1137,17 +1205,17 @@ function getTeacherDayHours(
     $breakConfig = null
 ) {
 
-    $dayKey   = strtolower(date('l', strtotime($date)));
-    $dayNo    = (int) date('w', strtotime($date));   // 0 = Sunday
+    $dayKey = strtolower(date('l', strtotime($date)));
+    $dayNo = (int) date('w', strtotime($date));   // 0 = Sunday
     $schedule = $schedules[$dayKey] ?? null;
-    $record   = $attendanceRow ?: [];
+    $record = $attendanceRow ?: [];
 
     // Attendance rules effective 2026-09-27 (earlier dates keep the legacy math below).
     $newRules = dtrRulesApply($date);
     $breakCfg = [
         'lunch_out' => $lunchOut,
-        'lunch_in'  => $lunchIn,
-        'entries'   => $breakConfig['entries'] ?? dtrDefaultBreakEntries(),
+        'lunch_in' => $lunchIn,
+        'entries' => $breakConfig['entries'] ?? dtrDefaultBreakEntries(),
     ];
 
     // NARROW historical correction (dates before the effective date): shift / guard
@@ -1155,7 +1223,7 @@ function getTeacherDayHours(
     // real IN/OUT (plus adjustment fields) drive the hours; a real IN without a real
     // OUT is unresolved (0 hours, "Missing OUT"). Legacy uncapped out-in math is kept.
     // Regular teachers keep every legacy rule below.
-    $shiftLegacy = !$newRules && dtrIsShiftPersonnel($breakCfg, $schedule);
+    $shiftLegacy = ! $newRules && dtrIsShiftPersonnel($breakCfg, $schedule);
     $useEngine = $newRules || $shiftLegacy;
 
     /* 1. LEAVE — highest priority, no hours */
@@ -1177,12 +1245,12 @@ function getTeacherDayHours(
 
     if ($adj) {
 
-        $adjAmIn  = $adj['am_arrival'] ?? '';
+        $adjAmIn = $adj['am_arrival'] ?? '';
         $adjAmOut = $adj['am_departure'] ?? '';
-        $adjPmIn  = $adj['pm_arrival'] ?? '';
+        $adjPmIn = $adj['pm_arrival'] ?? '';
         $adjPmOut = $adj['pm_departure'] ?? '';
 
-        if (!$adjAmIn && !$adjAmOut && !$adjPmIn && !$adjPmOut) {
+        if (! $adjAmIn && ! $adjAmOut && ! $adjPmIn && ! $adjPmOut) {
             return 0.0;   // label-only adjustment (e.g. no times)
         }
 
@@ -1197,10 +1265,18 @@ function getTeacherDayHours(
             return dtrShiftHours($schedule, $adj);
         }
 
-        if (!$adjAmIn && $schedule && !empty($schedule['time_in']))   $adjAmIn  = $schedule['time_in'];
-        if (!$adjPmOut && $schedule && !empty($schedule['time_out'])) $adjPmOut = $schedule['time_out'];
-        if (!$adjAmOut && $lunchOut) $adjAmOut = $lunchOut;
-        if (!$adjPmIn && $lunchIn)   $adjPmIn  = $lunchIn;
+        if (! $adjAmIn && $schedule && ! empty($schedule['time_in'])) {
+            $adjAmIn = $schedule['time_in'];
+        }
+        if (! $adjPmOut && $schedule && ! empty($schedule['time_out'])) {
+            $adjPmOut = $schedule['time_out'];
+        }
+        if (! $adjAmOut && $lunchOut) {
+            $adjAmOut = $lunchOut;
+        }
+        if (! $adjPmIn && $lunchIn) {
+            $adjPmIn = $lunchIn;
+        }
 
         return dtrSpanHours($adjAmIn, $adjAmOut) + dtrSpanHours($adjPmIn, $adjPmOut);
     }
@@ -1215,7 +1291,7 @@ function getTeacherDayHours(
         }
 
         // Official Business — not scheduled that day: nothing to credit.
-        if (!$schedule) {
+        if (! $schedule) {
             return 0.0;
         }
 
@@ -1226,8 +1302,8 @@ function getTeacherDayHours(
             && in_array($remark['half_day_session'] ?? '', ['AM', 'PM'], true)
         ) ? [$remark['half_day_session']] : ['AM', 'PM'];
 
-        $hasAnyScan = !empty($record['am_arrival']) || !empty($record['am_departure'])
-                   || !empty($record['pm_arrival']) || !empty($record['pm_departure']);
+        $hasAnyScan = ! empty($record['am_arrival']) || ! empty($record['am_departure'])
+                   || ! empty($record['pm_arrival']) || ! empty($record['pm_departure']);
 
         if ($newRules) {
 
@@ -1273,14 +1349,14 @@ function getTeacherDayHours(
             }
 
             // Other session of a Half Day: a normal day (same gap fill).
-            if (!$hasAnyScan) {
+            if (! $hasAnyScan) {
                 continue;
             }
 
-            $isAM   = ($session === 'AM');
-            $rawIn  = ($isAM ? ($record['am_arrival'] ?? '') : ($record['pm_arrival'] ?? ''));
+            $isAM = ($session === 'AM');
+            $rawIn = ($isAM ? ($record['am_arrival'] ?? '') : ($record['pm_arrival'] ?? ''));
             $rawOut = ($isAM ? ($record['am_departure'] ?? '') : ($record['pm_departure'] ?? ''));
-            $fillIn  = $isAM ? ($schedule['time_in'] ?? null) : $lunchIn;
+            $fillIn = $isAM ? ($schedule['time_in'] ?? null) : $lunchIn;
             $fillOut = $isAM ? $lunchOut : ($schedule['time_out'] ?? null);
 
             $total += dtrSpanHours($rawIn ?: $fillIn, $rawOut ?: $fillOut, true);
@@ -1331,32 +1407,31 @@ function getTeacherDayHours(
         }
 
         // Half Day: session from the event's start time (before noon = AM).
-        if (!empty($matchedEvent['start_time'])) {
+        if (! empty($matchedEvent['start_time'])) {
             $halfSession = ($matchedEvent['start_time'] < '12:00:00') ? 'AM' : 'PM';
         }
     }
 
-    /* 5. WEEKENDS */
+    /* 5. WEEKENDS: off only for a person not scheduled that day (WorkingDays) */
 
-    if ($dayNo === 0) {
+    if (($dayNo === 0 || $dayNo === 6) && ! $schedule) {
         return 0.0;
     }
 
-    if ($dayNo === 6 && !$schedule) {
-        return 0.0;
-    }
+    /* 6. CONFIRMED ABSENT: a scheduled day without a scan in */
 
-    /* 6. CONFIRMED ABSENT */
-
-    if (isset($confirmedAbsences[$date])) {
+    if (
+        isset($confirmedAbsences[$date]) && $schedule
+        && dtrClockOrEmpty($record['am_arrival'] ?? '') === '' && dtrClockOrEmpty($record['pm_arrival'] ?? '') === ''
+    ) {
         return 0.0;
     }
 
     /* 7. ATTENDANCE SCANS */
 
-    $rawAmIn  = $record['am_arrival'] ?? '';
+    $rawAmIn = $record['am_arrival'] ?? '';
     $rawAmOut = $record['am_departure'] ?? '';
-    $rawPmIn  = $record['pm_arrival'] ?? '';
+    $rawPmIn = $record['pm_arrival'] ?? '';
     $rawPmOut = $record['pm_departure'] ?? '';
 
     $hasAnyScan = $rawAmIn || $rawAmOut || $rawPmIn || $rawPmOut;
@@ -1364,7 +1439,7 @@ function getTeacherDayHours(
     if ($useEngine) {
 
         $evOpts = dtrRuleOpts($schedule, $breakCfg, $halfSession, $eventIncluded, $matchedEvent, $lunchIn, $shiftLegacy);
-        $hours  = dtrDayCalc($schedule, $record, null, $evOpts)['hours'];
+        $hours = dtrDayCalc($schedule, $record, null, $evOpts)['hours'];
 
         if ($halfSession && $eventIncluded && $schedule) {
             $hours += dtrWindowSpanHours($schedule, [$halfSession], $evOpts);
@@ -1373,9 +1448,9 @@ function getTeacherDayHours(
         return $hours;
     }
 
-    if (!$hasAnyScan) {
+    if (! $hasAnyScan) {
 
-        if (!$schedule) {
+        if (! $schedule) {
             return 0.0;
         }
 
@@ -1392,29 +1467,41 @@ function getTeacherDayHours(
     // An affected Half Day PM change excludes it unless Included = Yes.
     if (dtrIsShiftSchedule($schedule)) {
 
-        if ($halfSession === 'PM' && !$eventIncluded) {
+        if ($halfSession === 'PM' && ! $eventIncluded) {
             return 0.0;
         }
 
         return dtrShiftHours($schedule, $record);
     }
 
-    $amIn  = $rawAmIn;
+    $amIn = $rawAmIn;
     $amOut = $rawAmOut;
-    $pmIn  = $rawPmIn;
+    $pmIn = $rawPmIn;
     $pmOut = $rawPmOut;
 
-    if (!$amIn && $schedule && !empty($schedule['time_in']))   $amIn  = $schedule['time_in'];
-    if (!$pmOut && $schedule && !empty($schedule['time_out'])) $pmOut = $schedule['time_out'];
-    if (!$amOut && $lunchOut) $amOut = $lunchOut;
-    if (!$pmIn && $lunchIn)   $pmIn  = $lunchIn;
+    if (! $amIn && $schedule && ! empty($schedule['time_in'])) {
+        $amIn = $schedule['time_in'];
+    }
+    if (! $pmOut && $schedule && ! empty($schedule['time_out'])) {
+        $pmOut = $schedule['time_out'];
+    }
+    if (! $amOut && $lunchOut) {
+        $amOut = $lunchOut;
+    }
+    if (! $pmIn && $lunchIn) {
+        $pmIn = $lunchIn;
+    }
 
     $amHours = dtrSpanHours($amIn, $amOut);
     $pmHours = dtrSpanHours($pmIn, $pmOut);
 
     // Affected Half Day session is excluded unless Included = Yes.
-    if ($halfSession === 'AM' && !$eventIncluded) $amHours = 0.0;
-    if ($halfSession === 'PM' && !$eventIncluded) $pmHours = 0.0;
+    if ($halfSession === 'AM' && ! $eventIncluded) {
+        $amHours = 0.0;
+    }
+    if ($halfSession === 'PM' && ! $eventIncluded) {
+        $pmHours = 0.0;
+    }
 
     return $amHours + $pmHours;
 }

@@ -47,11 +47,21 @@
             </form>
 
             @if ($account->role !== 'superadmin')
+                @php $requestSent = session('success') === \App\Support\PasswordResetRequests::SENT; @endphp
                 <p class="forgot-password-link">
-                    <a href="#" onclick="document.getElementById('forgotPasswordNotice').style.display='block'; return false;">Forgot Password?</a>
+                    <a href="#" aria-controls="forgotPasswordNotice" onclick="document.getElementById('forgotPasswordNotice').style.display='block'; return false;">Forgot Password?</a>
                 </p>
-                <div id="forgotPasswordNotice" class="forgot-password-notice">
-                    Forgot your password? Please contact the Super Admin to reset your account password.
+                {{-- Files a request the Super Admin approves; the password is not changed here. --}}
+                <div id="forgotPasswordNotice" class="forgot-password-notice" @if ($requestSent) style="display:block;" @endif>
+                    @if ($requestSent)
+                        <p class="forgot-password-sent" role="status"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> {{ \App\Support\PasswordResetRequests::SENT }}</p>
+                    @else
+                        <p>The Super Admin will set a new password for you. Your current password keeps working until then.</p>
+                        <form method="POST" action="{{ route('account.password-reset-request') }}">
+                            @csrf
+                            <button type="submit" class="save-btn request-password-btn">Request new password</button>
+                        </form>
+                    @endif
                 </div>
             @endif
         </div>

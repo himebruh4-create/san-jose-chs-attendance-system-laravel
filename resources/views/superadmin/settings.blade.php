@@ -280,6 +280,8 @@
         </table>
         </div>
 
+        <nav id="recycleBinPagination" class="pagination" aria-label="Recycle Bin pages" hidden></nav>
+
     </div>
 
     <!-- ===== DATABASE BACKUP (Super Admin only — this page is Super Admin only,
@@ -346,7 +348,7 @@
             </p>
 
             <label style="display:block; font-weight:600; margin-bottom:6px; color:#5c5238; font-size: 13px;">Name</label>
-            <input type="text" id="addOptionNameInput" placeholder="e.g. Teacher I" data-capitalize="words">
+            <input type="text" id="addOptionNameInput" placeholder="e.g. Teacher I, Administrator" data-capitalize="words">
 
             <div style="margin-top:12px;">
                 <label style="display:block; font-weight:600; margin-bottom:6px; color:#5c5238; font-size: 13px;">Personnel Type</label>
@@ -674,7 +676,7 @@
         <div class="dept-card-header">
             <div>
                 <h2>Audit Log</h2>
-                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>The latest 200 changes: logins, attendance corrections, personnel, accounts and settings.</span></p>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Every change, newest first: logins, attendance corrections, personnel, accounts and settings.</span></p>
             </div>
             <button type="button" class="add-option-btn" onclick="loadAuditLog()">
                 <i class="fa-solid fa-rotate"></i> Refresh
@@ -697,6 +699,8 @@
             </tbody>
         </table>
         </div>
+
+        <nav id="auditLogPagination" class="pagination" aria-label="Audit Log pages" hidden></nav>
 
     </div>
 

@@ -43,18 +43,29 @@ abstract class ReportsController extends Controller
         $reports = new ReportsAnalytics($today);
         $withPhotos = fn (array $rows) => $showPhotos ? ScanPhotoStrip::attach($rows) : $rows;
 
-        ['rows' => $daily, 'not_yet_recorded' => $dailyNotYetRecorded] = $reports->dailyReport($date, $person?->id);
+        // Only the open tab is built; another tab is built when it is
+        // opened (reports-analytics.js switchTab loads ?tab=...).
+        [$daily, $dailyNotYetRecorded, $calendar] = [[], 0, ['weeks' => [], 'days' => []]];
 
-        if ($person) {
-            $personWeek = $reports->personDays($person->id, $weekStart, $weekEnd, false);
-            $personMonth = $reports->personMonth($person->id, $monthStart, $monthEnd);
-            $personMonthSummary = collect(MonthlySummary::build($monthStart, $monthEnd))->firstWhere('id', $person->id);
+        if ($tab === 'daily') {
+            ['rows' => $daily, 'not_yet_recorded' => $dailyNotYetRecorded] = $reports->dailyReport($date, $person?->id);
+            $dailyDayLabel = $reports->dayLabel($date, $person?->id);
+        } elseif ($tab === 'weekly') {
+            if ($person) {
+                $personWeek = $reports->personDays($person->id, $weekStart, $weekEnd, false);
+            } else {
+                $weekly = $reports->weekly($weekStart);
+            }
         } else {
-            $weekly = $reports->weekly($weekStart);
-            $monthly = $reports->monthly($monthStart, $monthEnd);
-        }
+            if ($person) {
+                $personMonth = $reports->personMonth($person->id, $monthStart, $monthEnd);
+                $personMonthSummary = collect(MonthlySummary::build($monthStart, $monthEnd, $person->id))->first();
+            } else {
+                $monthly = $reports->monthly($monthStart, $monthEnd);
+            }
 
-        $calendar = $reports->monthCalendar($monthStart, $monthEnd, $person?->id);
+            $calendar = $reports->monthCalendar($monthStart, $monthEnd, $person?->id);
+        }
 
         // Previous / next school week; never a week that has not started.
         $previousWeek = date('Y-m-d', strtotime($weekStart.' -7 days'));
@@ -73,6 +84,8 @@ abstract class ReportsController extends Controller
 
         return view('reports', [
             'dailyNotYetRecorded' => $dailyNotYetRecorded,
+            // The day's holiday label, or "No work" (WorkingDays), as on its calendar cell.
+            'dailyDayLabel' => $dailyDayLabel ?? ['label' => null, 'labelTitle' => null],
             'printUrls' => [
                 'daily' => $printUrl('daily', $date),
                 'weekly' => $printUrl('weekly', $weekStart),
@@ -87,6 +100,9 @@ abstract class ReportsController extends Controller
                 'monthly' => $absenceUrl('monthly', $monthStart, $monthEnd),
             ],
             'role' => $this->role(),
+            // ?highlight=holidays|changes (the dashboard's Holidays / Schedule
+            // Changes): the calendar marks the days with that kind of change.
+            'calendarHighlight' => in_array($request->query('highlight'), ['holidays', 'changes'], true) ? $request->query('highlight') : null,
             'activeTab' => $tab,
             'showPhotos' => $showPhotos,
             'personnelOptions' => Teacher::query()->active()->orderBy('fullname')->get(['id', 'fullname', 'id_number']),

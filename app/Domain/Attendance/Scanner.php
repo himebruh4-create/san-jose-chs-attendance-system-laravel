@@ -28,6 +28,8 @@ class Scanner
 
     public const DUPLICATE_RAPID = 'This scan was already recorded a moment ago. No need to scan again.';
 
+    public const SCAN_ON_LEAVE_DAY = 'You are on leave for this day. This scan was recorded and sent to the Super Admin for review.';
+
     public const UNKNOWN_BARCODE = 'This barcode is not registered in the system. Please check your ID or contact the Administrative Aide.';
 
     public function scan(string $barcode, ?string $now = null): array
@@ -165,6 +167,9 @@ class Scanner
             ];
         }
 
+        // ---- A scan on a leave day: kept, and flagged for Super Admin review.
+        $onLeave = $this->flagLeaveConflict($teacherId, $targetDate, $now);
+
         // ---- Kiosk message.
         $status = null;
 
@@ -195,9 +200,14 @@ class Scanner
             }
         }
 
+        if ($onLeave) {
+            $message .= ' '.self::SCAN_ON_LEAVE_DAY;
+        }
+
         return $base + [
             'success' => true,
             'outcome' => 'accepted',
+            'leave_conflict' => $onLeave,
             'kind' => $route['kind'],
             'badge' => in_array($route['kind'], ['OUT', 'BREAK_OUT'], true) ? 'time_out' : 'time_in',
             'status' => $status,
@@ -227,6 +237,36 @@ class Scanner
             && dtrClockOrEmpty($row['pm_arrival'] ?? '') === '';
 
         return $isOutForLunch ? self::DUPLICATE_AFTER_LUNCH_OUT : self::DUPLICATE_AFTER_TIME_IN;
+    }
+
+    /**
+     * When an approved leave covers $date, records (once per person and
+     * day) that a scan was stored on it, for Pending Review. The leave and
+     * the scan are left exactly as they are. Never fails the scan.
+     */
+    private function flagLeaveConflict(int $teacherId, string $date, string $scannedAt): bool
+    {
+        try {
+            $leave = AttendanceData::leaveOn($teacherId, $date);
+
+            if (! $leave) {
+                return false;
+            }
+
+            DB::table('attendance_leave_conflicts')->insertOrIgnore([
+                'teacher_id' => $teacherId,
+                'attendance_date' => $date,
+                'teacher_leave_id' => $leave['id'],
+                'leave_type' => mb_substr((string) $leave['leave_type'], 0, 100),
+                'first_scanned_at' => $scannedAt,
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('Could not flag a scan on a leave day: '.$e->getMessage());
+
+            return false;
+        }
     }
 
     private function row(int $teacherId, string $date): ?array

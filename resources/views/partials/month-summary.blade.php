@@ -21,6 +21,17 @@
                 @endif
             </li>
         @endforeach
+
+        {{-- Days of this month with a holiday / another School Schedule
+             Change (DashboardStats::thisMonthScheduleChangeDays()), each day
+             once. They open the monthly calendar with those days highlighted. --}}
+        @foreach (['Holidays' => 'holidays', 'Schedule Changes' => 'changes'] as $kind => $highlight)
+            <li class="ms-{{ $highlight }}">
+                <span>{{ $kind }}</span>
+                <a href="{{ route($role.'.reports', ['tab' => 'monthly', 'monthPicker' => date('Y-m'), 'highlight' => $highlight]) }}"
+                    title="Show these days on the monthly calendar">{{ $monthChangeDays[$kind] ?? 0 }}</a>
+            </li>
+        @endforeach
     </ul>
 
     <a class="month-summary-link" href="{{ route($role.'.reports', ['tab' => 'monthly', 'monthPicker' => date('Y-m')]) }}">View calendar &rarr;</a>

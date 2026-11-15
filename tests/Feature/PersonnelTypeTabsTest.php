@@ -52,8 +52,8 @@ class PersonnelTypeTabsTest extends TestCase
             ->get(route('admin.attendance-report', ['academic_status' => $tab, 'monthPicker' => '2026-10']));
 
         $expected = $tab === 'Academic' ? ['Ana Cruz'] : ['Ben Reyes'];
-        $response->assertViewHas('allTeachersForDTR', fn (array $people) => $this->names($people) === $expected)
-            ->assertViewHas('allDtrPrint', fn (array $print) => $print['title'] === "DTR - {$label} - 2026-10 - {$position}" && $print['personnel_type'] === $tab)
+        $this->assertSame($expected, $this->names($this->getJson($response->viewData('allDtrUrl'))->json('teachers')));
+        $response->assertViewHas('allDtrPrint', fn (array $print) => $print['title'] === "DTR - {$label} - 2026-10 - {$position}" && $print['personnel_type'] === $tab)
             ->assertSee("Generate All DTR ({$label})")
             ->assertSee('<input type="hidden" name="academic_status" value="'.$tab.'">', false);
     }
@@ -75,8 +75,8 @@ class PersonnelTypeTabsTest extends TestCase
         $response = $this->actingAs($this->account('admin'))
             ->get(route('admin.attendance-report', ['academic_status' => 'Academic', 'search' => 'Ana', 'monthPicker' => '2026-10']));
 
-        $response->assertViewHas('teacherReports', fn (array $people) => $this->names($people) === ['Ana Cruz'])
-            ->assertViewHas('allTeachersForDTR', fn (array $people) => $this->names($people) === ['Ana Cruz']);
+        $response->assertViewHas('teacherReports', fn (array $people) => $this->names($people) === ['Ana Cruz']);
+        $this->assertSame(['Ana Cruz'], $this->names($this->getJson($response->viewData('allDtrUrl'))->json('teachers')));
     }
 
     public function test_pages_and_the_other_tabs_keep_the_tab_search_and_month(): void

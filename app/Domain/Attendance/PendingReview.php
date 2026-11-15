@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\DB;
  */
 class PendingReview
 {
+    /** The Pending Review reason of a scan recorded on a leave day. */
+    public const LEAVE_CONFLICT = 'Scan on Leave Day';
+
     /**
      * System-managed lower boundary of the queue: set once, to the start of
      * the review period in progress the first time this runs, so days from
@@ -50,8 +53,12 @@ class PendingReview
         return preg_match('/^\d{4}-\d{2}-\d{2}$/', $created) ? $created : null;
     }
 
-    /** Unresolved Pending Review items for ONE person between two dates. */
-    public static function forTeacher(array $teacher, string $startDate, string $endDate, array $allEvents): array
+    /**
+     * Unresolved Pending Review items for ONE person between two dates.
+     * $preloaded: that person's AttendanceData::preload() data covering the
+     * range (compute() reads everyone's at once); read here when omitted.
+     */
+    public static function forTeacher(array $teacher, string $startDate, string $endDate, array $allEvents, ?array $preloaded = null): array
     {
         $items = [];
 
@@ -66,7 +73,7 @@ class PendingReview
         }
 
         [$leaves, $adjustments, $attendance, $confirmedAbsences, $schedules] =
-            AttendanceData::preload((int) $teacher['id'], $startDate, $endDate);
+            $preloaded ?? AttendanceData::preload((int) $teacher['id'], $startDate, $endDate);
 
         $cursor = strtotime($startDate);
         $end = strtotime($endDate);
@@ -79,6 +86,7 @@ class PendingReview
             // Only days this person was actually scheduled to work.
             if (! isset($schedules[$dayName])) {
                 $cursor = strtotime('+1 day', $cursor);
+
                 continue;
             }
 
@@ -190,7 +198,8 @@ class PendingReview
     }
 
     /**
-     * All unresolved items from the boundary up to yesterday.
+     * All unresolved items from the boundary up to yesterday, plus every
+     * unreviewed scan on a leave day (leaveConflicts(), up to today).
      * Options: teacher_id (one person), today / start / end (overrides, for tests).
      */
     public static function compute(array $opts = []): array
@@ -200,30 +209,89 @@ class PendingReview
         $endDate = $opts['end'] ?? date('Y-m-d', strtotime($today.' -1 day'));
         $teacherId = (int) ($opts['teacher_id'] ?? 0);
 
-        if ($startDate > $endDate) {
-            return [];
-        }
+        $items = self::leaveConflicts($teacherId);
 
-        $query = DB::table('teachers')->select('id', 'fullname', 'id_number', 'department', 'created_at');
+        if ($startDate <= $endDate) {
+            $query = DB::table('teachers')->select('id', 'fullname', 'id_number', 'department', 'created_at');
 
-        $teachers = ($teacherId > 0
-            ? $query->where('id', $teacherId)
-            : $query->where('is_deleted', 0)->orderBy('fullname'))
-            ->get()
-            ->map(fn ($row) => (array) $row)
-            ->all();
+            $teachers = ($teacherId > 0
+                ? $query->where('id', $teacherId)
+                : $query->where('is_deleted', 0)->orderBy('fullname'))
+                ->get()
+                ->map(fn ($row) => (array) $row)
+                ->all();
 
-        $allEvents = AttendanceData::activeEvents();
+            $allEvents = AttendanceData::activeEvents();
+            $preloaded = AttendanceData::preloadMany(array_column($teachers, 'id'), $startDate, $endDate);
 
-        $items = [];
-
-        foreach ($teachers as $teacher) {
-            $items = array_merge($items, self::forTeacher($teacher, $startDate, $endDate, $allEvents));
+            foreach ($teachers as $teacher) {
+                $items = array_merge($items, self::forTeacher($teacher, $startDate, $endDate, $allEvents, $preloaded[(int) $teacher['id']]));
+            }
         }
 
         usort($items, fn ($a, $b) => strcmp($b['date'], $a['date']) ?: strcmp($a['fullname'], $b['fullname']));
 
         return $items;
+    }
+
+    /**
+     * Kiosk scans recorded on a leave day that the Super Admin has not
+     * reviewed yet (attendance_leave_conflicts, written by the Scanner). The
+     * scan and the leave both stand; the item only asks for a look. Marking
+     * it reviewed, or adding an adjustment for the day, resolves it.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function leaveConflicts(int $teacherId = 0): array
+    {
+        $rows = DB::table('attendance_leave_conflicts as c')
+            ->join('teachers as t', 't.id', '=', 'c.teacher_id')
+            ->leftJoin('attendance as a', fn ($join) => $join->on('a.teacher_id', '=', 'c.teacher_id')->on('a.date', '=', 'c.attendance_date'))
+            ->whereNull('c.reviewed_at')
+            ->where('t.is_deleted', 0)
+            ->when($teacherId > 0, fn ($query) => $query->where('c.teacher_id', $teacherId))
+            ->whereNotExists(fn ($query) => $query->from('attendance_adjustments as aa')
+                ->whereColumn('aa.teacher_id', 'c.teacher_id')
+                ->whereColumn('aa.adjustment_date', 'c.attendance_date')
+                ->where('aa.is_deleted', 0))
+            ->get(['c.id', 'c.teacher_id', 'c.attendance_date', 'c.leave_type', 't.fullname', 't.id_number', 't.department',
+                'a.am_arrival', 'a.am_departure', 'a.pm_arrival', 'a.pm_departure']);
+
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        $schedules = [];
+        DB::table('teacher_schedules')
+            ->whereIn('teacher_id', $rows->pluck('teacher_id')->unique()->all())
+            ->get(['teacher_id', 'day', 'time_in', 'time_out'])
+            ->each(function ($row) use (&$schedules) {
+                $schedules[(int) $row->teacher_id][strtolower($row->day)] = ['time_in' => $row->time_in, 'time_out' => $row->time_out];
+            });
+
+        return $rows->map(function ($row) use ($schedules) {
+            $schedule = $schedules[(int) $row->teacher_id][strtolower(date('l', strtotime($row->attendance_date)))] ?? null;
+            $scans = ['am_arrival' => $row->am_arrival, 'am_departure' => $row->am_departure, 'pm_arrival' => $row->pm_arrival, 'pm_departure' => $row->pm_departure];
+            [$in, $out] = dtrInOutOf(dtrEffectiveRecord($scans, null));
+
+            return [
+                'teacher_id' => (int) $row->teacher_id,
+                'fullname' => $row->fullname,
+                'id_number' => $row->id_number,
+                'department' => $row->department,
+                'date' => $row->attendance_date,
+                'scheduled_in' => $schedule['time_in'] ?? null,
+                'scheduled_out' => $schedule['time_out'] ?? null,
+                'shape' => $schedule ? dtrScheduleShape($schedule) : null,
+                'scheduled_to_work_event' => null,
+                'reason' => self::LEAVE_CONFLICT,
+                'issue' => self::LEAVE_CONFLICT,
+                'real_in' => $in,
+                'real_out' => $out,
+                'leave_conflict_id' => (int) $row->id,
+                'leave_type' => $row->leave_type,
+            ];
+        })->all();
     }
 
     /** Items grouped into the current review period and previous ones (newest first). */

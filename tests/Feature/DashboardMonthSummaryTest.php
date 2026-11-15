@@ -71,6 +71,65 @@ class DashboardMonthSummaryTest extends TestCase
         $this->assertSame([(int) ($first <= date('Y-m-d')), (int) ($second <= date('Y-m-d'))], [$reportTotals['Absent'], $reportTotals['On Leave']]);
     }
 
+    /**
+     * This month's changes: a holiday from a Saturday to the Monday after
+     * (its Sunday is a calendar day only when someone works Sundays), a second holiday on that Monday,
+     * an asynchronous day on that Monday too, and an inactive change.
+     *
+     * @return array{saturday: string, monday: string}
+     */
+    private function thisMonthsChanges(): array
+    {
+        for ($day = strtotime(date('Y-m-01')); date('N', $day) != 6 || date('m', strtotime('+2 days', $day)) !== date('m'); $day = strtotime('+1 day', $day)) {
+        }
+        $saturday = date('Y-m-d', $day);
+        $monday = date('Y-m-d', strtotime('+2 days', $day));
+
+        DB::table('school_events')->insert([
+            ['event_name' => 'Long Weekend', 'event_type' => 'Holiday', 'date_from' => $saturday, 'date_to' => $monday, 'status' => 'Active'],
+            ['event_name' => 'Town Fiesta', 'event_type' => 'Holiday', 'date_from' => $monday, 'date_to' => $monday, 'status' => 'Active'],
+            ['event_name' => 'Online Classes', 'event_type' => 'Asynchronous', 'date_from' => $monday, 'date_to' => $monday, 'status' => 'Active'],
+            ['event_name' => 'Cancelled Meet', 'event_type' => 'Other: Meet', 'date_from' => $saturday, 'date_to' => $saturday, 'status' => 'Inactive'],
+        ]);
+
+        return ['saturday' => $saturday, 'monday' => $monday];
+    }
+
+    #[TestWith(['superadmin'])]
+    #[TestWith(['admin'])]
+    #[TestWith(['principal'])]
+    public function test_this_month_counts_the_days_with_holidays_and_with_schedule_changes_once_each(string $role): void
+    {
+        $this->thisMonthsRecords();
+        $this->thisMonthsChanges();
+        $this->actingAs($this->account($role));
+
+        $dashboard = $this->get(route("{$role}.dashboard"));
+        $reportTotals = $this->get(route("{$role}.reports", ['tab' => 'monthly', 'monthPicker' => date('Y-m')]))->viewData('monthly')['totals'];
+
+        // Ana and Ben work every day, Sundays too, so the holiday covers 3 calendar days;
+        // two people and two holidays on the Monday still count each day once.
+        $dashboard->assertViewHas('monthChangeDays', ['Holidays' => 3, 'Schedule Changes' => 1])
+            ->assertSeeInOrder(['Pending Review', 'Holidays', 'Schedule Changes', 'View calendar'])
+            ->assertViewHas('monthTotals', fn (array $totals) => array_intersect_key($totals, array_flip(['Present', 'Late', 'Absent', 'On Leave']))
+                === array_intersect_key($reportTotals, array_flip(['Present', 'Late', 'Absent', 'On Leave'])));
+    }
+
+    #[TestWith(['holidays', 2])]
+    #[TestWith(['changes', 1])]
+    public function test_holidays_and_schedule_changes_open_the_calendar_with_their_days_highlighted(string $highlight, int $highlightedDays): void
+    {
+        $days = $this->thisMonthsChanges();
+        $this->actingAs($this->account('admin'));
+        $calendarUrl = route('admin.reports', ['tab' => 'monthly', 'monthPicker' => date('Y-m'), 'highlight' => $highlight]);
+
+        $this->get(route('admin.dashboard'))->assertSee('href="'.e($calendarUrl).'"', false);
+
+        $html = $this->get($calendarUrl)->getContent();
+        $this->assertSame($highlightedDays, substr_count($html, ' is-highlighted"'));
+        $this->assertMatchesRegularExpression('#class="cal-cell[^"]* is-highlighted" data-date="'.$days['monday'].'"#', $html);
+    }
+
     #[TestWith(['superadmin', true])]
     #[TestWith(['admin', false])]
     #[TestWith(['principal', false])]

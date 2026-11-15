@@ -17,7 +17,12 @@
     $columns = ($byPerson ? 2 : 1) + 5;
 @endphp
 
-<div class="table-scroll">
+@if ($scrollable ?? false)
+    {{-- Scrolls up and down when the rows do not fit; the header stays in view. --}}
+    <div class="table-scroll scroll-panel sticky-table-wrapper" tabindex="0" aria-label="Attendance list">
+@else
+    <div class="table-scroll">
+@endif
     <table class="report-table">
         <thead>
             <tr>

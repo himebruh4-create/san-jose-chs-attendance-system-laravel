@@ -1,4 +1,5 @@
-{{-- Monthly calendar (Mon–Sat). All Personnel: each day's status counts;
+{{-- Monthly calendar (Mon–Sat, and Sun when anyone works Sundays:
+     AppDomainAttendanceWorkingDays). All Personnel: each day's status counts;
      one person ($person): that person's status. A past or current day
      opens the day's names and times (reports-analytics.js). Days and
      statuses are the ones the monthly lists count. Not printed, and never
@@ -8,13 +9,16 @@
     $personLabel = fn (?string $status, array $day) => match ($status) {
         'School Event' => $day['label'] ?? 'School Event',
         'Adjusted' => 'Adjusted',
-        'Not Scheduled' => 'Not scheduled',
+        'Not Scheduled' => $day['label'] ?? 'No work',
         'Not Yet Recorded' => 'Not yet recorded',
         null => $day['label'],
         default => null,
     };
-    // 1 (Mon) to 6 (Sat) when today is in this month; Sundays are not shown.
-    $todaysWeekday = substr($today, 0, 7) === substr($monthStart, 0, 7) && date('N', strtotime($today)) < 7
+    // The week's columns: Mon–Sat, plus Sun when anyone is scheduled on Sundays.
+    $daysPerWeek = $calendar['daysPerWeek'] ?? 6;
+    $weekdayHeaders = array_slice(['Mon' => 'M', 'Tue' => 'T', 'Wed' => 'W', 'Thu' => 'T', 'Fri' => 'F', 'Sat' => 'S', 'Sun' => 'S'], 0, $daysPerWeek);
+    // 1 (Mon) to 7 (Sun) when today is in this month and its weekday is shown.
+    $todaysWeekday = substr($today, 0, 7) === substr($monthStart, 0, 7) && (int) date('N', strtotime($today)) <= $daysPerWeek
         ? (int) date('N', strtotime($today))
         : null;
 @endphp
@@ -25,13 +29,17 @@
             <li><span class="cal-dot dot-{{ $class }}"></span>{{ $status }}</li>
         @endforeach
         <li class="cal-legend-off"><span class="cal-dot dot-off"></span>Holiday / no work</li>
+        <li class="cal-legend-change"><i class="fa-solid fa-calendar-xmark" aria-hidden="true"></i>Schedule change (not counted)</li>
+        @if ($calendarHighlight ?? null)
+            <li class="cal-legend-highlight"><span class="cal-dot dot-highlight"></span>Highlighted: {{ $calendarHighlight === 'holidays' ? 'holidays' : 'other schedule changes' }}</li>
+        @endif
     </ul>
 
-    <div class="cal-grid">
+    <div class="cal-grid" style="--cal-days: {{ $daysPerWeek }};">
         {{-- One header bar in the table header style; today's weekday is
              marked when this is the current month. Phones show M T W T F S. --}}
         <div class="cal-weekdays">
-            @foreach (['Mon' => 'M', 'Tue' => 'T', 'Wed' => 'W', 'Thu' => 'T', 'Fri' => 'F', 'Sat' => 'S'] as $weekday => $initial)
+            @foreach ($weekdayHeaders as $weekday => $initial)
                 @php $isTodaysWeekday = $todaysWeekday === $loop->iteration; @endphp
                 <div @class(['cal-weekday', 'is-today' => $isTodaysWeekday]) @if ($isTodaysWeekday) title="Today" @endif>
                     <span class="cal-weekday-full">{{ $weekday }}</span><span class="cal-weekday-short" aria-hidden="true">{{ $initial }}</span>
@@ -48,26 +56,42 @@
 
                 @php
                     $day = $calendar['days'][$cellDate];
-                    $cellClass = 'cal-cell'.($cellDate === $today ? ' is-today' : '').($day['future'] ? ' is-future' : '');
+                    $changes = $day['changes'] ?? [];
+                    // ?highlight= from the dashboard: holidays, or the other changes.
+                    $isHighlighted = match ($calendarHighlight ?? null) {
+                        'holidays' => collect($changes)->contains('is_holiday', true),
+                        'changes' => collect($changes)->contains('is_holiday', false),
+                        default => false,
+                    };
+                    $cellClass = 'cal-cell'.($cellDate === $today ? ' is-today' : '').($day['future'] ? ' is-future' : '').($changes ? ' has-change' : '').($isHighlighted ? ' is-highlighted' : '');
+                    $changeTitle = collect($changes)->map(fn ($change) => $change['name'].' ('.$change['type'].')')->implode('; ');
                 @endphp
 
-                @if ($day['future'])
-                    <div class="{{ $cellClass }}"><span class="cal-date">{{ (int) substr($cellDate, 8) }}</span></div>
+                {{-- A future day opens only when it has a schedule change (to read it). --}}
+                @if ($day['future'] && ! $changes)
+                    <div class="{{ $cellClass }}"><span class="cal-date">{{ (int) substr($cellDate, 8) }}</span>@if ($day['label'])<span class="cal-label" title="{{ $day['labelTitle'] ?? $day['label'] }}">{{ $day['label'] }}</span>@endif</div>
                 @else
                     <button type="button" class="{{ $cellClass }}" data-date="{{ $cellDate }}" onclick="openCalendarDay(this.dataset.date)"
-                        aria-label="{{ date('l, F j', strtotime($cellDate)) }}{{ $cellDate === $today ? ' (today)' : '' }}">
+                        aria-label="{{ date('l, F j', strtotime($cellDate)) }}{{ $cellDate === $today ? ' (today)' : '' }}{{ $changes ? ', schedule change: '.$changeTitle : '' }}">
                         <span class="cal-date" @if ($cellDate === $today) aria-current="date" @endif>{{ (int) substr($cellDate, 8) }}</span>
+
+                        {{-- Schedule change marker: its own label, apart from the status counts. --}}
+                        @if ($changes)
+                            <span class="cal-change" title="{{ $changeTitle }}">
+                                <i class="fa-solid fa-calendar-xmark" aria-hidden="true"></i><span class="cal-text">{{ $changes[0]['marker'] }}{{ count($changes) > 1 ? ' +'.(count($changes) - 1) : '' }}</span>
+                            </span>
+                        @endif
 
                         @if ($person)
                             @if (isset($calendarStatuses[$day['status'] ?? '']))
                                 <span class="cal-status status-{{ $calendarStatuses[$day['status']] }}" title="{{ $day['status'] }}">
                                     <span class="cal-dot dot-{{ $calendarStatuses[$day['status']] }}"></span><span class="cal-text">{{ $day['status'] }}</span>
                                 </span>
-                            @elseif ($label = $personLabel($day['status'], $day))
+                            @elseif (! ($changes && ($day['status'] ?? null) === 'School Event') && ($label = $personLabel($day['status'] ?? null, $day)))
                                 <span class="cal-label" title="{{ $day['labelTitle'] ?? $label }}">{{ $label }}</span>
                             @endif
                         @else
-                            @if ($day['label'])
+                            @if ($day['label'] && ! $changes)
                                 <span class="cal-label" title="{{ $day['labelTitle'] ?? $day['label'] }}">{{ $day['label'] }}</span>
                             @endif
                             @if ($day['counts'])

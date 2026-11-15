@@ -2,6 +2,8 @@
 
 namespace App\Domain\Attendance;
 
+use App\Support\OtherChoice;
+
 /**
  * Read-only School Schedule Changes list shown on the Admin / Principal
  * dashboards and the Super Admin personnel page. Ported from
@@ -32,6 +34,28 @@ class ScheduleChanges
         usort($rows, fn ($a, $b) => strcmp($a['date_from'], $b['date_from']) ?: ((int) $a['id'] <=> (int) $b['id']));
 
         return $rows;
+    }
+
+    /**
+     * The calendar's short label: the type ("Holiday", "Asynchronous"), or
+     * for "Other" the kind typed for it ("Other: Division Meet" -> "Division
+     * Meet"), else the change's name.
+     */
+    public static function shortLabel(array $event): string
+    {
+        $type = (string) ($event['event_type'] ?? '');
+
+        if (! OtherChoice::isOtherValue($type)) {
+            return $type;
+        }
+
+        return OtherChoice::text($type) ?: (string) $event['event_name'];
+    }
+
+    /** True for a holiday; every other type is a "schedule change" on the dashboard. */
+    public static function isHoliday(array $event): bool
+    {
+        return ($event['event_type'] ?? '') === 'Holiday';
     }
 
     public static function dateLabel(array $event): string

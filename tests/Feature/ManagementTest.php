@@ -100,11 +100,11 @@ class ManagementTest extends TestCase
         $this->assertDatabaseHas('attendance_adjustments', ['id' => $id, 'approved_by' => 'boss@test.local', 'am_arrival' => '07:00:00']);
 
         $this->postJson('/data/adjustments', [
-            'teacher_id' => $t->id, 'adjustment_date' => '2026-10-05', 'adjustment_type' => 'Other', 'remarks' => 'again',
+            'teacher_id' => $t->id, 'adjustment_date' => '2026-10-05', 'adjustment_type' => 'Other', 'adjustment_type_other' => 'Retry', 'remarks' => 'again',
         ])->assertJson(['success' => false, 'message' => 'An attendance adjustment already exists for this teacher on this date.']);
 
         $this->postJson('/data/adjustments', [
-            'teacher_id' => $t->id, 'adjustment_date' => '2026-10-06', 'adjustment_type' => 'Other', 'remarks' => 'x', 'am_arrival' => '7am',
+            'teacher_id' => $t->id, 'adjustment_date' => '2026-10-06', 'adjustment_type' => 'Other', 'adjustment_type_other' => 'Retry', 'remarks' => 'x', 'am_arrival' => '7am',
         ])->assertJson(['success' => false, 'message' => 'Please enter valid times.']);
 
         $this->postJson('/data/adjustments/delete', ['id' => $id])->assertJson(['success' => true]);
@@ -139,7 +139,7 @@ class ManagementTest extends TestCase
         $b = $this->teacher();
 
         $id = $this->superAdmin()->postJson('/data/school-events', [
-            'event_name' => 'Division Meet II', 'event_type' => 'Other', 'date_from' => '2026-10-20', 'date_to' => '2026-10-20',
+            'event_name' => 'Division Meet II', 'event_type' => 'Other', 'event_type_other' => 'Division Meet', 'date_from' => '2026-10-20', 'date_to' => '2026-10-20',
             'duration' => 'Half Day', 'start_time' => '13:00', 'end_time' => '17:00', 'included_in_total_hours' => '1',
             'personnel_ids' => [$a->id],
         ])->assertJson(['success' => true])->json('id');

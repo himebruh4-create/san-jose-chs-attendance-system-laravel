@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Data;
 
 use App\Domain\Attendance\AttendanceData;
 use App\Domain\Attendance\BreakConfig;
+use App\Domain\Attendance\DtrPersonnel;
+use App\Domain\PersonnelDirectory;
 use App\Http\Controllers\Controller;
 use App\Support\Audit;
+use App\Support\OtherChoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -31,6 +34,66 @@ class DtrDataController extends Controller
             'lunch_in' => $row->lunch_in ?? '13:00:00',
             'schedule_breaks' => BreakConfig::load()['entries'],
         ]);
+    }
+
+    /**
+     * One person's Generate DTR payload for ?month=YYYY-MM: what a card's
+     * own month picker loads, so changing it changes only that card.
+     */
+    public function personnelMonth(Request $request)
+    {
+        $monthStart = $this->monthStart($request->query('month'));
+        $teacher = DB::table('teachers')->where('is_deleted', 0)->where('id', (int) $request->query('teacher_id'))
+            ->first(DtrPersonnel::columns());
+
+        if (! $monthStart || ! $teacher) {
+            return $this->fail('Personnel and a valid month are required.');
+        }
+
+        return $this->ok(['teacher' => DtrPersonnel::payloads([$teacher], $monthStart, $request->user())[0]]);
+    }
+
+    /**
+     * Generate All DTR: every person of the Attendance Report's tab and
+     * search for ?month=YYYY-MM, each with all their DTR data, and the
+     * events and break settings once. One request and a fixed number of
+     * queries, in place of seven requests per person.
+     */
+    public function bundle(Request $request)
+    {
+        $monthStart = $this->monthStart($request->query('month'));
+
+        if (! $monthStart) {
+            return $this->fail('A valid month is required.');
+        }
+
+        $monthEnd = date('Y-m-t', strtotime($monthStart));
+        $teachers = DtrPersonnel::query(trim((string) $request->query('search')), PersonnelDirectory::typeTab($request->query('academic_status')))
+            ->get(DtrPersonnel::columns());
+        $monthData = DtrPersonnel::monthData($teachers->pluck('id')->map(fn ($id) => (int) $id)->all(), $monthStart, $monthEnd);
+
+        $settings = $this->recordingStatus()->getData(true);
+
+        return $this->ok([
+            'month_start' => $monthStart,
+            'month_end' => $monthEnd,
+            'events' => AttendanceData::activeEvents(),
+            'lunch' => ['lunch_out' => $settings['lunch_out'], 'lunch_in' => $settings['lunch_in'], 'schedule_breaks' => $settings['schedule_breaks']],
+            'teachers' => array_map(
+                fn (array $teacher) => $teacher + $monthData[$teacher['id']],
+                DtrPersonnel::payloads($teachers, $monthStart, $request->user())
+            ),
+        ]);
+    }
+
+    /** "YYYY-MM" -> "YYYY-MM-01", or null. */
+    private function monthStart(mixed $value): ?string
+    {
+        if (! is_string($value) || ! preg_match('/^(\d{4})-(\d{2})$/', $value, $m) || (int) $m[2] < 1 || (int) $m[2] > 12 || (int) $m[1] < 2000 || (int) $m[1] > 2100) {
+            return null;
+        }
+
+        return $value.'-01';
     }
 
     public function schoolEvents()
@@ -182,6 +245,11 @@ class DtrDataController extends Controller
 
                     if ($type === '') {
                         continue;
+                    }
+
+                    // "Other" needs the typed remark (its text box is required on the DTR).
+                    if (OtherChoice::isOther($type) && $text === '') {
+                        throw new \DomainException('Please type the remark for Other.');
                     }
 
                     // Duration / session / included only apply to Official

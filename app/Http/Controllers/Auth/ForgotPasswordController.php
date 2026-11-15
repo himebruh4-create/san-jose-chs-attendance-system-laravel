@@ -6,10 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Support\AccountRecovery;
 use App\Support\Audit;
+use App\Support\PasswordResetRequests;
 use App\Support\RecoveryCodes;
 use App\Support\SecurityQuestions;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
@@ -73,13 +73,7 @@ class ForgotPasswordController extends Controller
         }
 
         if ($account) {
-            $alreadyPending = DB::table('password_reset_requests')
-                ->where('account_id', $account->id)->where('status', 'pending')->exists();
-
-            if (! $alreadyPending) {
-                DB::table('password_reset_requests')->insert(['account_id' => $account->id, 'status' => 'pending']);
-                Audit::log('password_reset.requested', 'account', $account->id, actor: $email);
-            }
+            PasswordResetRequests::file($account, 'forgot_password', $email);
         }
 
         // Same reply whether or not an Admin / Principal account exists.

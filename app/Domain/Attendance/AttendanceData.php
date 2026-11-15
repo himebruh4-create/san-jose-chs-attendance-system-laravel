@@ -125,6 +125,99 @@ class AttendanceData
         return [$leaves, $adjustments, $attendance, $confirmedAbsences, self::schedules($teacherId)];
     }
 
+    /**
+     * preload() for many people at once: five queries in all instead of
+     * five per person (the reports, Pending Review and the Monthly Summary
+     * loop over every active person). Each value has exactly preload()'s
+     * shape; leaves are limited to those touching the range, which is all
+     * the day rules look at.
+     *
+     * @param  list<int>  $teacherIds
+     * @return array<int, array{0: list<array<string, mixed>>, 1: array<string, array<string, mixed>>, 2: array<string, array<string, mixed>>, 3: array<string, true>, 4: array<string, array<string, mixed>>}>
+     */
+    public static function preloadMany(array $teacherIds, string $startDate, string $endDate): array
+    {
+        $teacherIds = array_values(array_unique(array_map('intval', $teacherIds)));
+        $data = array_fill_keys($teacherIds, [[], [], [], [], []]);
+
+        if ($teacherIds === []) {
+            return $data;
+        }
+
+        DB::table('teacher_leaves')
+            ->select('teacher_id', 'leave_from', 'leave_until', 'leave_type', 'status')
+            ->whereIn('teacher_id', $teacherIds)
+            ->where('status', 'Approved')
+            ->where('leave_from', '<=', $endDate)
+            ->where('leave_until', '>=', $startDate)
+            ->get()
+            ->each(function ($row) use (&$data) {
+                $data[(int) $row->teacher_id][0][] = ['leave_from' => $row->leave_from, 'leave_until' => $row->leave_until, 'leave_type' => $row->leave_type, 'status' => $row->status];
+            });
+
+        DB::table('attendance_adjustments')
+            ->select('teacher_id', 'adjustment_date', 'am_arrival', 'am_departure', 'pm_arrival', 'pm_departure', 'adjustment_type')
+            ->whereIn('teacher_id', $teacherIds)
+            ->whereBetween('adjustment_date', [$startDate, $endDate])
+            ->where('is_deleted', 0)
+            ->get()
+            ->each(function ($row) use (&$data) {
+                $row = (array) $row;
+                $teacherId = (int) array_shift($row);
+                $data[$teacherId][1][$row['adjustment_date']] = $row;
+            });
+
+        DB::table('attendance')
+            ->select('teacher_id', 'date', 'am_arrival', 'am_departure', 'pm_arrival', 'pm_departure')
+            ->whereIn('teacher_id', $teacherIds)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->get()
+            ->each(function ($row) use (&$data) {
+                $row = (array) $row;
+                $teacherId = (int) array_shift($row);
+                $data[$teacherId][2][$row['date']] = $row;
+            });
+
+        DB::table('confirmed_absences')
+            ->select('teacher_id', 'absence_date')
+            ->whereIn('teacher_id', $teacherIds)
+            ->whereBetween('absence_date', [$startDate, $endDate])
+            ->get()
+            ->each(function ($row) use (&$data) {
+                $data[(int) $row->teacher_id][3][$row->absence_date] = true;
+            });
+
+        DB::table('teacher_schedules')
+            ->select('teacher_id', 'day', 'time_in', 'time_out')
+            ->whereIn('teacher_id', $teacherIds)
+            ->orderBy('id')
+            ->get()
+            ->each(function ($row) use (&$data) {
+                $data[(int) $row->teacher_id][4][strtolower($row->day)] = ['day' => $row->day, 'time_in' => $row->time_in, 'time_out' => $row->time_out];
+            });
+
+        return $data;
+    }
+
+    /**
+     * The approved leave covering $date for one person, or null.
+     *
+     * @return ?array{id: int, leave_type: string, leave_from: string, leave_until: string, reason: ?string}
+     */
+    public static function leaveOn(int $teacherId, string $date): ?array
+    {
+        $leave = DB::table('teacher_leaves')
+            ->select('id', 'leave_type', 'leave_from', 'leave_until', 'reason')
+            ->where('teacher_id', $teacherId)
+            ->where('status', 'Approved')
+            ->where('leave_from', '<=', $date)
+            ->where('leave_until', '>=', $date)
+            ->orderByDesc('id')
+            ->first();
+
+        return $leave ? ['id' => (int) $leave->id] + (array) $leave : null;
+    }
+
     /** One person's weekly schedule, keyed by lower-case weekday name. */
     public static function schedules(int $teacherId): array
     {
@@ -166,6 +259,34 @@ class AttendanceData
             ->get()
             ->each(function ($row) use (&$remarks) {
                 $remarks[$row->date] = (array) $row;
+            });
+
+        return $remarks;
+    }
+
+    /**
+     * remarksByDate() for many people in one query.
+     *
+     * @param  list<int>  $teacherIds
+     * @return array<int, array<string, array<string, mixed>>>
+     */
+    public static function remarksByDateMany(array $teacherIds, string $startDate, string $endDate): array
+    {
+        $remarks = [];
+
+        if ($teacherIds === []) {
+            return $remarks;
+        }
+
+        DB::table('dtr_remarks')
+            ->select('teacher_id', 'date', 'remark_type', 'duration', 'half_day_session', 'included_in_total_hours')
+            ->whereIn('teacher_id', $teacherIds)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->get()
+            ->each(function ($row) use (&$remarks) {
+                $row = (array) $row;
+                $teacherId = (int) array_shift($row);
+                $remarks[$teacherId][$row['date']] = $row;
             });
 
         return $remarks;

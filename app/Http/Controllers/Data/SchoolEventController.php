@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Data;
 
 use App\Http\Controllers\Controller;
 use App\Support\Audit;
+use App\Support\OtherChoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -84,6 +85,13 @@ class SchoolEventController extends Controller
 
         if (! in_array($eventType, ['Holiday', 'Asynchronous', 'Other'], true)) {
             $eventType = 'Holiday';
+        }
+
+        // "Other" saves the typed kind of change: "Other: Division Meet".
+        [$eventType, $otherError] = OtherChoice::resolve($eventType, $request->input('event_type_other'), 'schedule change type', 50);
+
+        if ($otherError) {
+            return $this->fail($otherError);
         }
 
         if (! in_array($status, ['Active', 'Inactive'], true)) {

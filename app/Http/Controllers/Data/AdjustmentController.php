@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Data;
 
+use App\Domain\Attendance\AttendanceData;
 use App\Http\Controllers\Controller;
 use App\Support\Audit;
+use App\Support\OtherChoice;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -17,15 +20,29 @@ use Illuminate\Support\Facades\DB;
  */
 class AdjustmentController extends Controller
 {
-    public function index()
+    public const FUTURE_DATE = 'Cannot add an adjustment for a future date.';
+
+    /** Rows per page of the Attendance Adjustments list. */
+    public const PER_PAGE = 25;
+
+    /** One ?page= of the list, newest first (a page past the end gives the last page). */
+    public function index(Request $request)
     {
         $fmt = fn ($t) => $t ? date('h:i A', strtotime($t)) : null;
 
-        $adjustments = DB::table('attendance_adjustments as aa')
+        $query = DB::table('attendance_adjustments as aa')
             ->join('teachers as t', 't.id', '=', 'aa.teacher_id')
-            ->where('aa.is_deleted', 0)
+            ->where('aa.is_deleted', 0);
+
+        $total = (clone $query)->count();
+        $pages = Pagination::page((int) $request->query('page', 1), $total, self::PER_PAGE);
+
+        $adjustments = $query
             ->orderByDesc('aa.adjustment_date')
             ->orderByDesc('aa.created_at')
+            ->orderByDesc('aa.id')
+            ->offset($pages['offset'])
+            ->limit(self::PER_PAGE)
             ->get(['aa.*', 't.fullname', 't.id_number'])
             ->map(fn ($row) => [
                 'id' => (int) $row->id,
@@ -47,7 +64,12 @@ class AdjustmentController extends Controller
                 'created_at' => $row->created_at,
             ]);
 
-        return $this->ok(['adjustments' => $adjustments]);
+        return $this->ok([
+            'adjustments' => $adjustments,
+            'total' => $total,
+            'page' => $pages['page'],
+            'last_page' => $pages['last_page'],
+        ]);
     }
 
     public function show(Request $request)
@@ -104,23 +126,30 @@ class AdjustmentController extends Controller
             return $this->fail('Adjustment date is required.');
         }
 
+        if ($adjustmentDate > date('Y-m-d')) {
+            return $this->fail(self::FUTURE_DATE);
+        }
+
         if ($adjustmentType === '') {
             return $this->fail('Attendance issue is required.');
         }
 
+        // "Other" saves the typed issue: "Other: Kiosk was offline".
+        [$adjustmentType, $otherError] = OtherChoice::resolve($adjustmentType, $request->input('adjustment_type_other'), 'attendance issue', 100);
+
+        if ($otherError) {
+            return $this->fail($otherError);
+        }
+
+        // The remarks are the reason for the adjustment (on a leave day too).
         if ($remarks === '') {
             return $this->fail('Remarks are required.');
         }
 
-        $times = [];
-        foreach (['am_arrival', 'am_departure', 'pm_arrival', 'pm_departure'] as $field) {
-            $value = trim((string) $request->input($field));
+        $times = $this->times($request);
 
-            if ($value !== '' && ! preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $value)) {
-                return $this->fail('Please enter valid times.');
-            }
-
-            $times[$field] = $value === '' ? null : (strlen($value) === 5 ? $value.':00' : $value);
+        if ($times === null) {
+            return $this->fail('Please enter valid times.');
         }
 
         $teacher = DB::table('teachers')->where('id', $teacherId)->first(['id', 'fullname']);
@@ -150,7 +179,13 @@ class AdjustmentController extends Controller
             'approved_by' => $request->user()->email,
         ] + $times);
 
-        Audit::log('adjustment.created', 'adjustment', $id, ['teacher_id' => $teacherId, 'date' => $adjustmentDate] + $times);
+        // Allowed on a leave day: the leave is left as it is, and the audit
+        // entry records which leave covered the day.
+        $leave = AttendanceData::leaveOn($teacherId, $adjustmentDate);
+
+        Audit::log('adjustment.created', 'adjustment', $id, ['teacher_id' => $teacherId, 'date' => $adjustmentDate] + $times + [
+            'reason' => $remarks,
+        ] + ($leave ? ['on_leave' => ['leave_id' => $leave['id'], 'type' => $leave['leave_type']]] : []));
 
         return $this->ok([
             'message' => 'Attendance adjustment saved successfully.',
@@ -160,6 +195,82 @@ class AdjustmentController extends Controller
             'adjustment_date' => $adjustmentDate,
             'adjustment_type' => $adjustmentType,
         ]);
+    }
+
+    /**
+     * Review -> Save Changes: an adjustment's four times and its remarks
+     * (the reason). The person, date and attendance issue stay as they are;
+     * a different person or day is a new adjustment. The same checks as
+     * store() apply, and the audit entry keeps the old and new values.
+     */
+    public function update(Request $request)
+    {
+        $id = (int) $request->input('id');
+        $remarks = trim((string) $request->input('remarks'));
+
+        $adjustment = $id > 0
+            ? DB::table('attendance_adjustments')->where('id', $id)->where('is_deleted', 0)
+                ->first(['id', 'teacher_id', 'adjustment_date', 'am_arrival', 'am_departure', 'pm_arrival', 'pm_departure', 'remarks'])
+            : null;
+
+        if (! $adjustment) {
+            return $this->fail('Attendance adjustment was not found.');
+        }
+
+        if ($adjustment->adjustment_date > date('Y-m-d')) {
+            return $this->fail(self::FUTURE_DATE);
+        }
+
+        if ($remarks === '') {
+            return $this->fail('Remarks are required.');
+        }
+
+        $times = $this->times($request);
+
+        if ($times === null) {
+            return $this->fail('Please enter valid times.');
+        }
+
+        $new = $times + ['remarks' => $remarks];
+        $changed = array_filter($new, fn ($value, $field) => $value !== $adjustment->{$field}, ARRAY_FILTER_USE_BOTH);
+
+        if ($changed === []) {
+            return $this->ok(['message' => 'No changes to save.', 'adjustment_id' => $id]);
+        }
+
+        DB::table('attendance_adjustments')->where('id', $id)->where('is_deleted', 0)->update($changed);
+
+        Audit::log('adjustment.updated', 'adjustment', $id, [
+            'teacher_id' => (int) $adjustment->teacher_id,
+            'date' => $adjustment->adjustment_date,
+            'before' => array_intersect_key((array) $adjustment, $changed),
+            'after' => $changed,
+        ]);
+
+        return $this->ok(['message' => 'Attendance adjustment updated.', 'adjustment_id' => $id]);
+    }
+
+    /**
+     * The four time fields as H:i:s (null when empty), or null when any is
+     * not a real clock time.
+     *
+     * @return ?array{am_arrival: ?string, am_departure: ?string, pm_arrival: ?string, pm_departure: ?string}
+     */
+    private function times(Request $request): ?array
+    {
+        $times = [];
+
+        foreach (['am_arrival', 'am_departure', 'pm_arrival', 'pm_departure'] as $field) {
+            $value = trim((string) $request->input($field));
+
+            if ($value !== '' && ! preg_match('/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/', $value)) {
+                return null;
+            }
+
+            $times[$field] = $value === '' ? null : (strlen($value) === 5 ? $value.':00' : $value);
+        }
+
+        return $times;
     }
 
     public function destroy(Request $request)

@@ -381,4 +381,42 @@ class ReportsPageTest extends TestCase
         $future->assertViewHas('date', date('Y-m-d'))->assertViewHas('person', null);
         $malformed->assertViewHas('date', date('Y-m-d'));
     }
+
+    public function test_only_the_open_tab_is_built_and_the_others_load_when_opened(): void
+    {
+        $this->person();
+
+        $response = $this->actingAs($this->account('admin'))->get(route('admin.reports', ['tab' => 'daily', 'monthPicker' => '2026-09']));
+
+        $response->assertViewHas('weekly', null)
+            ->assertViewHas('monthly', null)
+            ->assertViewHas('calendar', ['weeks' => [], 'days' => []])
+            ->assertSee('data-tab-url="'.e(route('admin.reports', ['tab' => 'monthly', 'monthPicker' => '2026-09'])).'"', false)
+            ->assertDontSee('id="dailyTab" class="tab-content active" data-tab-url', false);
+    }
+
+    #[TestWith(['daily'])]
+    #[TestWith(['weekly'])]
+    #[TestWith(['monthly'])]
+    public function test_a_reports_tab_runs_the_same_number_of_queries_however_many_personnel(string $tab): void
+    {
+        $admin = $this->account('admin');
+        $this->person(['fullname' => 'Ana Cruz']);
+        $queriesFor = function () use ($admin, $tab): int {
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $this->actingAs($admin)->get(route('admin.reports', ['tab' => $tab, 'date' => '2026-09-01', 'week' => '2026-09-01', 'monthPicker' => '2026-09']))->assertOk();
+            DB::disableQueryLog();
+
+            return count(DB::getQueryLog());
+        };
+
+        $queriesFor();   // the first request also registers the session (one device per account)
+        $withOne = $queriesFor();
+        foreach (range(1, 4) as $n) {
+            $this->person(['fullname' => "Teacher {$n}"]);
+        }
+
+        $this->assertSame($withOne, $queriesFor());
+    }
 }

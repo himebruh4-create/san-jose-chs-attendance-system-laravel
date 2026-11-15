@@ -55,9 +55,11 @@ class MonthlySummary
     /**
      * Rows for every active person who is part of [$startDate, $endDate]
      * (first and last day of one month). Status counts stop at today; hours
-     * cover the whole month, exactly as the DTR total does.
+     * cover the whole month, exactly as the DTR total does. With $teacherId,
+     * only that person's row is built. Every person's data is read in a
+     * fixed number of queries (AttendanceData::preloadMany()).
      */
-    public static function build(string $startDate, string $endDate): array
+    public static function build(string $startDate, string $endDate, ?int $teacherId = null): array
     {
         $today = date('Y-m-d');
         $effectiveEndDate = ($endDate > $today) ? $today : $endDate;
@@ -69,28 +71,30 @@ class MonthlySummary
         $lunchIn = $settings->lunch_in ?? null;
 
         $breakConfig = BreakConfig::load();
+        $schedulesRule = WorkingDays::load();
 
         $summaryReports = [];
 
         $teachers = DB::table('teachers')
             ->select('id', 'id_number', 'fullname', 'department', 'academic_status', 'employment_type', 'created_at')
             ->where('is_deleted', 0)
+            ->when($teacherId !== null, fn ($query) => $query->where('id', $teacherId))
             ->orderBy('fullname')
             ->get()
-            ->map(fn ($row) => (array) $row);
+            ->map(fn ($row) => (array) $row)
+            ->reject(fn (array $teacher) => self::createdAfter($teacher, $endDate));
+
+        $teacherIds = $teachers->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $preloaded = AttendanceData::preloadMany($teacherIds, $startDate, $endDate);
+        $remarks = AttendanceData::remarksByDateMany($teacherIds, $startDate, $endDate);
 
         foreach ($teachers as $teacher) {
 
-            if (self::createdAfter($teacher, $endDate)) {
-                continue;
-            }
-
             $teacherId = (int) $teacher['id'];
 
-            [$leaves, $adjustments, $attendance, $confirmedAbsences, $schedules] =
-                AttendanceData::preload($teacherId, $startDate, $endDate);
+            [$leaves, $adjustments, $attendance, $confirmedAbsences, $schedules] = $preloaded[$teacherId];
 
-            $remarksByDate = AttendanceData::remarksByDate($teacherId, $startDate, $endDate);
+            $remarksByDate = $remarks[$teacherId] ?? [];
 
             $onTime = $late = $absent = $onLeave = $workingDays = 0;
 
@@ -100,13 +104,14 @@ class MonthlySummary
             while ($cursor <= $endCursor) {
 
                 $date = date('Y-m-d', $cursor);
-                $dayOfWeek = date('N', $cursor);
-                $dayKey = strtolower(date('l', $cursor));
 
-                // Sunday is always off. Saturday only counts for people who
-                // actually have a Saturday schedule.
-                if ($dayOfWeek == 7 || ($dayOfWeek == 6 && ! isset($schedules[$dayKey]))) {
+                // The person's own schedule decides (WorkingDays): a day they
+                // are not scheduled on is "Not Scheduled" below and never
+                // counted. Sundays are left out unless anyone works Sundays,
+                // exactly as on the Monthly Report calendar.
+                if (! $schedulesRule->isShown($date)) {
                     $cursor = strtotime('+1 day', $cursor);
+
                     continue;
                 }
 
@@ -116,6 +121,7 @@ class MonthlySummary
 
                 if ($result === null) {
                     $cursor = strtotime('+1 day', $cursor);
+
                     continue;
                 }
 
@@ -123,6 +129,7 @@ class MonthlySummary
 
                 if ($status === 'School Event' || $status === 'Adjusted' || $status === 'Not Scheduled') {
                     $cursor = strtotime('+1 day', $cursor);
+
                     continue;
                 }
 

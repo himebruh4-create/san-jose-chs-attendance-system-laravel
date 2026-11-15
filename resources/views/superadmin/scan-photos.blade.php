@@ -101,21 +101,13 @@
             @endforeach
         </div>
 
-        @if ($photos->hasPages())
-            <nav class="scan-photos-pages">
-                @if ($photos->onFirstPage())
-                    <span class="page-btn disabled"><i class="fa-solid fa-chevron-left"></i> Newer</span>
-                @else
-                    <a class="page-btn" href="{{ $photos->previousPageUrl() }}"><i class="fa-solid fa-chevron-left"></i> Newer</a>
-                @endif
-                <span>Page {{ $photos->currentPage() }} of {{ $photos->lastPage() }}</span>
-                @if ($photos->hasMorePages())
-                    <a class="page-btn" href="{{ $photos->nextPageUrl() }}">Older <i class="fa-solid fa-chevron-right"></i></a>
-                @else
-                    <span class="page-btn disabled">Older <i class="fa-solid fa-chevron-right"></i></span>
-                @endif
-            </nav>
-        @endif
+        {{-- Newest first: page 1 is the latest photos. --}}
+        @include('partials.pagination', [
+            'page' => $photos->currentPage(),
+            'totalPages' => $photos->lastPage(),
+            'pageUrl' => fn (int $p) => $photos->url($p),
+            'label' => 'Scan photo pages',
+        ])
     @endif
 
 </main>

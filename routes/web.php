@@ -78,6 +78,8 @@ Route::middleware(['auth', 'single.session', 'security.questions'])->group(funct
     Route::get('/my-account', [AccountController::class, 'show'])->name('account');
     Route::post('/my-account/password', [AccountController::class, 'updatePassword'])->name('account.password');
     Route::post('/my-account/security-questions', [AccountController::class, 'updateSecurityQuestions'])->name('account.security-questions');
+    Route::post('/my-account/password-reset-request', [AccountController::class, 'requestPasswordReset'])
+        ->middleware('throttle:5,1')->name('account.password-reset-request');
 
     // Monthly Summary report (all three roles; was dtr/monthly-summary.php).
     Route::get('/reports/monthly-summary', MonthlySummaryController::class)
@@ -145,6 +147,8 @@ Route::middleware(['auth', 'single.session', 'security.questions'])->group(funct
         Route::middleware('role:superadmin,admin')->group(function () {
             Route::get('/recording-status', [Data\DtrDataController::class, 'recordingStatus']);
             Route::get('/school-events', [Data\DtrDataController::class, 'schoolEvents']);
+            Route::get('/dtr-month', [Data\DtrDataController::class, 'personnelMonth'])->name('data.dtr-month');
+            Route::get('/dtr-bundle', [Data\DtrDataController::class, 'bundle'])->name('data.dtr-bundle');
             Route::get('/teacher-schedule', [Data\DtrDataController::class, 'teacherSchedule']);
             Route::get('/teacher-leaves', [Data\DtrDataController::class, 'teacherLeaves']);
             Route::get('/teacher-adjustments', [Data\DtrDataController::class, 'teacherAdjustments']);
@@ -161,12 +165,14 @@ Route::middleware(['auth', 'single.session', 'security.questions'])->group(funct
             Route::get('/day-real-scans', [Data\ReviewController::class, 'dayRealScans']);
             Route::get('/rejected-scans', [Data\ReviewController::class, 'rejectedScans']);
             Route::post('/rejected-scans/review', [Data\ReviewController::class, 'reviewRejectedScan']);
+            Route::post('/leave-conflicts/review', [Data\ReviewController::class, 'reviewLeaveConflict']);
             Route::get('/scan-photos', [Data\ReviewController::class, 'scanPhotos']);
             Route::get('/scan-photos/{id}/image', [PhotoController::class, 'scan'])->whereNumber('id')->name('photos.scan');
 
             Route::get('/adjustments', [Data\AdjustmentController::class, 'index']);
             Route::get('/adjustments/one', [Data\AdjustmentController::class, 'show']);
             Route::post('/adjustments', [Data\AdjustmentController::class, 'store']);
+            Route::post('/adjustments/update', [Data\AdjustmentController::class, 'update']);
             Route::post('/adjustments/delete', [Data\AdjustmentController::class, 'destroy']);
 
             Route::post('/school-events', [Data\SchoolEventController::class, 'store']);

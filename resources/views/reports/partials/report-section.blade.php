@@ -7,6 +7,18 @@
     @include('reports.partials.personnel-header')
 @endif
 
+{{-- The day's own label (App\Domain\Attendance\WorkingDays), as on its
+     calendar cell: a holiday / schedule change, or "No work". --}}
+@if ($section === 'daily' && ! empty($dayLabel['label']))
+    <p class="help-note day-label-note" role="status"><i class="fa-solid fa-calendar-xmark" aria-hidden="true"></i><span>
+        @if ($dayLabel['label'] === \App\Domain\Attendance\WorkingDays::NO_WORK)
+            No work: {{ $person ? 'this personnel is' : 'no personnel are' }} scheduled to work on this day.
+        @else
+            {{ $dayLabel['labelTitle'] ?? $dayLabel['label'] }} ({{ $dayLabel['label'] }}): not counted as absent.
+        @endif
+    </span></p>
+@endif
+
 @if ($section === 'daily' && $notYetRecorded > 0)
     <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>{{ $notYetRecorded }} personnel not yet recorded today.</span></p>
 @endif
@@ -24,6 +36,8 @@
 
 @include('reports.partials.attendance-table', [
     'rows' => $rows,
+    // On screen only (the Daily tab): the list scrolls with its header in view.
+    'scrollable' => $scrollable ?? false,
     'byPerson' => $section === 'daily' && ! $person,
     'emptyText' => match ($section) {
         'weekly' => 'No records for this week (the person was not yet registered).',

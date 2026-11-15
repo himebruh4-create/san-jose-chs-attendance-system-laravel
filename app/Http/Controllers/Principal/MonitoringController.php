@@ -63,15 +63,18 @@ class MonitoringController extends Controller
                 ? array_filter($allTeachers, fn ($t) => (int) $t['id'] === $selectedTeacherId)
                 : $allTeachers;
 
+            $preloaded = AttendanceData::preloadMany(array_column($teachersToShow, 'id'), $dateFrom, $effectiveDateTo);
+
             foreach ($teachersToShow as $teacher) {
-                [$leaves, $adjustments, $attendance, $absences, $schedules] = AttendanceData::preload((int) $teacher['id'], $dateFrom, $effectiveDateTo);
+                [$leaves, $adjustments, $attendance, $absences, $schedules] = $preloaded[(int) $teacher['id']];
 
                 for ($c = strtotime($dateFrom); $c <= strtotime($effectiveDateTo); $c = strtotime('+1 day', $c)) {
                     $date = date('Y-m-d', $c);
-                    $dayOfWeek = date('N', $c);
 
-                    // Sunday is always off; Saturday only for people scheduled on it.
-                    if ($dayOfWeek == 7 || ($dayOfWeek == 6 && ! isset($schedules[strtolower(date('l', $c))]))) {
+                    // The person's own schedule decides (WorkingDays): a day
+                    // they are not scheduled on (any weekday, Saturday and
+                    // Sunday included) is left out unless they scanned.
+                    if (! isset($schedules[strtolower(date('l', $c))]) && empty($attendance[$date])) {
                         continue;
                     }
 

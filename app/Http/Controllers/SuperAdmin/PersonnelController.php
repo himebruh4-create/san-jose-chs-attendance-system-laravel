@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Data\SchoolEventController;
 use App\Models\Teacher;
 use App\Support\Audit;
+use App\Support\OtherChoice;
 use App\Support\PersonnelPhotos;
 use App\Support\Printout;
 use Illuminate\Http\Request;
@@ -117,6 +118,17 @@ class PersonnelController extends Controller
 
         if ($name === '' || $department === '' || $academic === '' || $employment === '') {
             $errors[] = 'Please fill in all required fields.';
+        }
+
+        // A Position named "Other": the typed position is saved as the
+        // position itself (it is printed on the ID badge as typed).
+        if ($department !== '') {
+            [$department, $otherError] = OtherChoice::resolve($department, $request->input('department_other'), 'position', 100, prefix: false);
+
+            if ($otherError) {
+                $errors[] = $otherError;
+                $department = '';
+            }
         }
 
         if (! in_array($academic, ['', 'Academic', 'Non-Academic'], true) || ! in_array($employment, ['', 'Regular', 'Part-Time', 'Contractual'], true)) {
@@ -285,6 +297,17 @@ class PersonnelController extends Controller
             $errors[] = "{$type} is not available for {$personnelType}. Please choose another leave type.";
         }
 
+        // "Other" saves the typed type: "Other: Bereavement Leave".
+        if ($type !== '' && ! $errors) {
+            [$resolved, $otherError] = OtherChoice::resolve($type, $request->input('leave_type_other'), 'leave type', 100);
+
+            if ($otherError) {
+                $errors[] = $otherError;
+            } else {
+                $type = $resolved;
+            }
+        }
+
         // An Approved leave already covering any part of the range.
         if ($teacherId > 0 && $from && $until && DB::table('teacher_leaves')
             ->where('teacher_id', $teacherId)->where('status', 'Approved')
@@ -302,10 +325,12 @@ class PersonnelController extends Controller
             'leave_until' => $until,
             'leave_type' => mb_substr($type, 0, 100),
             'reason' => $reason,
+            // Recorded by the Super Admin, in effect at once: no approval step.
             'status' => 'Approved',
+            'created_by' => $request->user()->email,
         ]);
 
-        Audit::log('leave.created', 'teacher', $teacherId, ['leave_id' => $leaveId, 'from' => $from, 'until' => $until, 'type' => $type]);
+        Audit::log('leave.created', 'teacher', $teacherId, ['leave_id' => $leaveId, 'from' => $from, 'until' => $until, 'type' => $type, 'reason' => $reason]);
 
         return $this->back($request, 'Personnel leave added successfully.');
     }

@@ -23,6 +23,11 @@ class ReportsAnalytics
     /** @var array<string, list<array{date: string, status: string, detail: string, scans: ?array}>> */
     private array $monthDaysCache = [];
 
+    /** @var array<string, array<int, array>> "from|to" => AttendanceData::preloadMany() of everyone */
+    private array $preloadCache = [];
+
+    private WorkingDays $workingDays;
+
     public function __construct(private string $today)
     {
         $this->events = AttendanceData::activeEvents();
@@ -33,25 +38,49 @@ class ReportsAnalytics
             ->get()
             ->map(fn ($row) => (array) $row)
             ->all();
+        $this->workingDays = WorkingDays::load();
     }
 
     /**
-     * Monday and Saturday of the week that contains $anyDay.
+     * Monday and the last day of the week that contains $anyDay: Saturday,
+     * or Sunday when anyone is scheduled on Sundays (WorkingDays).
      *
      * @return array{0: string, 1: string}
      */
     public static function weekRange(string $anyDay): array
     {
-        return [
-            date('Y-m-d', strtotime('monday this week', strtotime($anyDay))),
-            date('Y-m-d', strtotime('saturday this week', strtotime($anyDay))),
-        ];
+        return WorkingDays::load()->weekRange($anyDay);
     }
 
-    /** Mon–Sat of the week containing $anyDay (default: this week): chart data, name lists and the roster grid. */
+    public function workingDays(): WorkingDays
+    {
+        return $this->workingDays;
+    }
+
+    /**
+     * The label of one date (the Daily Report), the same as that day's
+     * calendar cell: its whole-day School Schedule Change, or "No work" when
+     * nobody (with $teacherId: not that person) is scheduled on it.
+     *
+     * @return array{label: ?string, labelTitle: ?string}
+     */
+    public function dayLabel(string $date, ?int $teacherId = null): array
+    {
+        $event = $this->wholeDayEvent($date);
+
+        if ($event === null && $teacherId !== null) {
+            $schedules = $this->preloaded($teacherId, $date, $date)[4];
+
+            return ['label' => isset($schedules[strtolower(date('l', strtotime($date)))]) ? null : WorkingDays::NO_WORK, 'labelTitle' => null];
+        }
+
+        return ['label' => $this->workingDays->label($date, $event), 'labelTitle' => $event['event_name'] ?? null];
+    }
+
+    /** The week containing $anyDay (default: this week): chart data, name lists and the roster grid. */
     public function weekly(?string $anyDay = null): array
     {
-        [$weekStart, $weekEnd] = self::weekRange($anyDay ?? $this->today);
+        [$weekStart, $weekEnd] = $this->workingDays->weekRange($anyDay ?? $this->today);
 
         $dates = [];
         $labels = [];
@@ -65,7 +94,7 @@ class ReportsAnalytics
         $roster = [];
 
         foreach ($this->teachers as $teacher) {
-            [$leaves, $adjustments, $attendance, $absences, $schedules] = AttendanceData::preload((int) $teacher['id'], $weekStart, $weekEnd);
+            [$leaves, $adjustments, $attendance, $absences, $schedules] = $this->preloaded((int) $teacher['id'], $weekStart, $weekEnd);
 
             $roster[$teacher['id']] = [
                 'fullname' => $teacher['fullname'],
@@ -145,31 +174,43 @@ class ReportsAnalytics
     }
 
     /**
-     * The Monthly tab's calendar: Mon–Sat weeks, and for each day up to
-     * today either the status counts and names (All Personnel) or one
-     * person's status and scans. The days and statuses are exactly the
-     * ones monthly() counts, so the calendar adds up to its lists. No
-     * scan photos, for any role.
+     * The Monthly tab's calendar: weeks of Mon–Sat (and Sun when anyone
+     * works Sundays), and for each day up to today either the status counts
+     * and names (All Personnel) or one person's status and scans. The days
+     * and statuses are exactly the ones monthly() counts, so the calendar
+     * adds up to its lists. A day's label is its holiday / schedule change,
+     * or "No work" when nobody (or, for one person, not that person) is
+     * scheduled on it (WorkingDays). No scan photos, for any role.
      *
-     * @return array{weeks: list<list<?string>>, days: array<string, array{future: bool, label: ?string, labelTitle: ?string, counts?: array<string, int>, groups?: array<string, list<array{name: string, time: string, detail: string}>>, status?: ?string, detail?: string, scans?: array<string, string>}>}
+     * @return array{weeks: list<list<?string>>, days: array<string, array{future: bool, label: ?string, labelTitle: ?string, changes: list<array<string, mixed>>, counts?: array<string, int>, groups?: array<string, list<array{name: string, time: string, detail: string}>>, status?: ?string, detail?: string, scans?: array<string, string>}>}
      */
     public function monthCalendar(string $monthStart, string $monthEnd, ?int $teacherId = null): array
     {
         $days = [];
 
+        // One person: "No work" on the weekdays THEY are not scheduled.
+        $personSchedules = $teacherId !== null ? $this->preloaded($teacherId, $monthStart, $monthEnd)[4] : null;
+
         for ($c = strtotime($monthStart); $c <= strtotime($monthEnd); $c = strtotime('+1 day', $c)) {
             $date = date('Y-m-d', $c);
 
-            if (date('N', $c) == 7) {
+            if (! $this->workingDays->isShown($date)) {
                 continue;
             }
 
             $event = $this->wholeDayEvent($date);
+            $label = $personSchedules === null
+                ? $this->workingDays->label($date, $event)
+                : ($event ? ScheduleChanges::shortLabel($event) : (isset($personSchedules[strtolower(date('l', $c))]) ? null : WorkingDays::NO_WORK));
 
             $days[$date] = [
                 'future' => $date > $this->today,
-                'label' => $event ? ($event['event_type'] === 'Other' ? $event['event_name'] : $event['event_type']) : null,
+                'label' => $label,
                 'labelTitle' => $event['event_name'] ?? null,
+                // School Schedule Changes on this day (whole or half day): a
+                // marker of their own on the calendar, never part of the
+                // status counts; the day's modal lists them.
+                'changes' => $this->scheduleChangesOn($date, $teacherId),
             ] + ($teacherId === null
                 ? ['counts' => [], 'groups' => []]
                 : ['status' => null, 'detail' => '', 'scans' => []]);
@@ -183,6 +224,10 @@ class ReportsAnalytics
             foreach ($this->monthDays($teacher, $monthStart, $monthEnd) as $day) {
                 $date = $day['date'];
                 $scans = $day['scans'] ?? [];
+
+                if (! isset($days[$date])) {
+                    continue;
+                }
 
                 if ($teacherId !== null) {
                     $days[$date]['status'] = $day['status'];
@@ -208,22 +253,15 @@ class ReportsAnalytics
             }
         }
 
-        // A past Saturday nobody works on (or this person does not).
-        foreach ($days as $date => $day) {
-            $nobodyWorked = $teacherId === null ? $day['counts'] === [] : $day['status'] === null;
-
-            if (! $day['future'] && $day['label'] === null && $nobodyWorked && date('N', strtotime($date)) == 6) {
-                $days[$date]['label'] = 'No work';
-            }
-        }
-
-        return ['weeks' => self::calendarWeeks($monthStart, $monthEnd), 'days' => $days];
+        return ['weeks' => $this->calendarWeeks($monthStart, $monthEnd), 'days' => $days, 'daysPerWeek' => $this->workingDays->daysPerWeek()];
     }
 
     /**
      * One person's days of [$monthStart, $monthEnd] up to today, as the
-     * monthly report sees them: Sundays and unscheduled Saturdays are
-     * skipped, so are days before the person's record existed. Every
+     * monthly report sees them: days before the person's record existed are
+     * skipped, and so are the days the calendar does not show (Sundays,
+     * unless anyone works Sundays). A day the person is not scheduled on is
+     * "Not Scheduled" (getTeacherDayStatus), which is never counted. Every
      * status is returned; callers count only self::STATUSES. Remembered,
      * so the lists and the calendar of one page read the data once.
      *
@@ -238,16 +276,14 @@ class ReportsAnalytics
             return $this->monthDaysCache[$key];
         }
 
-        [$leaves, $adjustments, $attendance, $absences, $schedules] = AttendanceData::preload((int) $teacher['id'], $monthStart, $end);
+        [$leaves, $adjustments, $attendance, $absences, $schedules] = $this->preloaded((int) $teacher['id'], $monthStart, $end);
 
         $days = [];
 
         for ($c = strtotime($monthStart); $c <= strtotime($end); $c = strtotime('+1 day', $c)) {
             $date = date('Y-m-d', $c);
-            $dayOfWeek = date('N', $c);
 
-            // Sunday is always off; Saturday only for people scheduled on it.
-            if ($dayOfWeek == 7 || ($dayOfWeek == 6 && ! isset($schedules[strtolower(date('l', $c))]))) {
+            if (! $this->workingDays->isShown($date)) {
                 continue;
             }
 
@@ -268,6 +304,63 @@ class ReportsAnalytics
         return $this->monthDaysCache[$key] = $days;
     }
 
+    /**
+     * One person's AttendanceData::preload() data for [$from, $to]. The
+     * first request for a range reads it for every active person at once,
+     * so a page runs a fixed number of queries however many personnel
+     * there are.
+     */
+    private function preloaded(int $teacherId, string $from, string $to): array
+    {
+        $key = $from.'|'.$to;
+
+        $this->preloadCache[$key] ??= AttendanceData::preloadMany(array_column($this->teachers, 'id'), $from, $to);
+
+        return $this->preloadCache[$key][$teacherId] ?? AttendanceData::preload($teacherId, $from, $to);
+    }
+
+    /**
+     * The active School Schedule Changes covering $date, for the calendar's
+     * marker and modal. A change applies to everyone except the personnel
+     * listed as scheduled to work through it (school_event_personnel); with
+     * $teacherId, whether it applies to that person is said too.
+     *
+     * @return list<array{id: int, type: string, name: string, marker: string, dates: string, duration: string, description: string, affected: string, scheduled_to_work: list<string>, applies_to_person: ?bool}>
+     */
+    private function scheduleChangesOn(string $date, ?int $teacherId): array
+    {
+        $names = array_column($this->teachers, 'fullname', 'id');
+        $changes = [];
+
+        foreach ($this->events as $event) {
+            if ($date < $event['date_from'] || $date > $event['date_to']) {
+                continue;
+            }
+
+            $workers = array_values(array_filter(array_map(fn ($id) => $names[(int) $id] ?? null, $event['worker_ids'] ?? [])));
+            sort($workers);
+            $isHalfDay = ($event['duration'] ?? '') === 'Half Day';
+
+            $changes[] = [
+                'id' => (int) $event['id'],
+                'type' => $event['event_type'],
+                'is_holiday' => ScheduleChanges::isHoliday($event),
+                'name' => $event['event_name'],
+                'marker' => ($isHalfDay ? 'Half day: ' : '').ScheduleChanges::shortLabel($event),
+                'dates' => ScheduleChanges::dateLabel($event),
+                'duration' => ScheduleChanges::durationLabel($event),
+                'description' => (string) ($event['remark'] ?? ''),
+                'affected' => $workers === []
+                    ? 'Everyone'
+                    : 'Everyone except '.count($workers).' personnel scheduled to work',
+                'scheduled_to_work' => $workers,
+                'applies_to_person' => $teacherId === null ? null : ! in_array($teacherId, array_map('intval', $event['worker_ids'] ?? []), true),
+            ];
+        }
+
+        return $changes;
+    }
+
     /** The active whole-day school event on $date, if any (Half Day events never blank a day). */
     private function wholeDayEvent(string $date): ?array
     {
@@ -281,18 +374,20 @@ class ReportsAnalytics
     }
 
     /**
-     * Mon–Sat rows covering the month; days of other months are null.
+     * Week rows (Mon–Sat, or Mon–Sun when anyone works Sundays) covering
+     * the month; days of other months are null.
      *
      * @return list<list<?string>>
      */
-    private static function calendarWeeks(string $monthStart, string $monthEnd): array
+    private function calendarWeeks(string $monthStart, string $monthEnd): array
     {
         $weeks = [];
+        $daysPerWeek = $this->workingDays->daysPerWeek();
 
         for ($monday = strtotime('monday this week', strtotime($monthStart)); $monday <= strtotime($monthEnd); $monday = strtotime('+7 days', $monday)) {
             $week = [];
 
-            for ($i = 0; $i < 6; $i++) {
+            for ($i = 0; $i < $daysPerWeek; $i++) {
                 $date = date('Y-m-d', strtotime("+{$i} days", $monday));
                 $week[] = $date >= $monthStart && $date <= $monthEnd ? $date : null;
             }
@@ -383,8 +478,8 @@ class ReportsAnalytics
 
     /**
      * One person's scans and status for each day of [$from, $to]. With
-     * $workingDaysOnly, Sundays and unscheduled Saturdays are left out
-     * unless the person scanned that day (the monthly counts skip them too).
+     * $workingDaysOnly, the days the person is not scheduled on are left out
+     * unless the person scanned that day (the monthly counts do not count them either).
      *
      * @return list<array{teacher_id: int, fullname: string, id_number: string, department: string, date: string, am_arrival: ?string, am_departure: ?string, pm_arrival: ?string, pm_departure: ?string, status: string, detail: string}>
      */
@@ -401,8 +496,8 @@ class ReportsAnalytics
 
     /**
      * Confirmed absences ("Absent" days) in [$from, $to], up to today, for
-     * everyone or one person. Only working days count: Sundays and
-     * unscheduled Saturdays are skipped, and Pending Review, On Leave,
+     * everyone or one person. Only working days count: days the
+     * person is not scheduled on are skipped, and Pending Review, On Leave,
      * school events and Not Yet Recorded are not absences.
      *
      * @return list<array{id: int, fullname: string, id_number: string, department: string, academic_status: string, dates: list<string>}>
@@ -442,17 +537,17 @@ class ReportsAnalytics
             return [];
         }
 
-        [$leaves, $adjustments, $attendance, $absences, $schedules] = AttendanceData::preload((int) $teacher['id'], $from, $to);
+        [$leaves, $adjustments, $attendance, $absences, $schedules] = $this->preloaded((int) $teacher['id'], $from, $to);
 
         $rows = [];
 
         for ($c = strtotime($from); $c <= strtotime($to); $c = strtotime('+1 day', $c)) {
             $date = date('Y-m-d', $c);
             $scans = $attendance[$date] ?? null;
-            $dayOfWeek = date('N', $c);
 
-            if ($workingDaysOnly && $scans === null
-                && ($dayOfWeek == 7 || ($dayOfWeek == 6 && ! isset($schedules[strtolower(date('l', $c))])))) {
+            // A day this person is not scheduled on (any weekday, Saturday and
+            // Sunday included) is not one of their working days.
+            if ($workingDaysOnly && $scans === null && ! isset($schedules[strtolower(date('l', $c))])) {
                 continue;
             }
 

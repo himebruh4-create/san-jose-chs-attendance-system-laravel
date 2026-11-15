@@ -32,6 +32,8 @@ class LeaveTypesTest extends TestCase
 
         return $this->actingAs($this->superAdmin)->post('/superadmin/personnel/leave', [
             'leave_teacher_id' => $teacher->id, 'leave_type' => $type, 'leave_from' => $from, 'leave_until' => $until ?? $from,
+            // "Other" needs the typed type; any other choice ignores it.
+            'leave_type_other' => 'Bereavement Leave',
         ]);
     }
 
@@ -78,7 +80,8 @@ class LeaveTypesTest extends TestCase
             $this->addLeave($person, $type, $date)->assertSessionHas('message', 'Personnel leave added successfully.');
         }
 
-        $this->assertSame($types, DB::table('teacher_leaves')->orderBy('leave_from')->pluck('leave_type')->all());
+        $saved = array_map(fn (string $type) => $type === 'Other' ? 'Other: Bereavement Leave' : $type, $types);
+        $this->assertSame($saved, DB::table('teacher_leaves')->orderBy('leave_from')->pluck('leave_type')->all());
     }
 
     public function test_the_add_leave_form_offers_each_personnel_types_leave_types_in_order(): void

@@ -206,9 +206,11 @@
 
                 <div class="field-group">
                     <label id="addTeacherDeptLabel">Position</label>
-                    <select name="department" id="addTeacherDeptSelect" required>
+                    <select name="department" id="addTeacherDeptSelect" data-other-input="#addTeacherDeptOther" required>
                         <option value="">Select Personnel Type first</option>
                     </select>
+                    <input type="text" name="department_other" id="addTeacherDeptOther" class="other-choice-input" maxlength="100"
+                        placeholder="Type the position" aria-label="Other position" hidden>
                 </div>
 
                 <div class="field-group">
@@ -311,9 +313,11 @@
 
                 <div class="field-group">
                     <label id="modalTeacherDeptLabel">Position</label>
-                    <select name="department" id="modalTeacherDeptSelect" required>
+                    <select name="department" id="modalTeacherDeptSelect" data-other-input="#modalTeacherDeptOther" required>
                         <option value="">Select Personnel Type first</option>
                     </select>
+                    <input type="text" name="department_other" id="modalTeacherDeptOther" class="other-choice-input" maxlength="100"
+                        placeholder="Type the position" aria-label="Other position" hidden>
                 </div>
 
                 <div class="field-group">
@@ -453,9 +457,12 @@
                 {{-- Filled in for the selected personnel's type (App\Domain\LeaveTypes). --}}
                 <div class="field-group">
                     <label>Leave Type</label>
-                    <select name="leave_type" id="leaveTypeSelect" data-leave-types="{{ json_encode(\App\Domain\LeaveTypes::options()) }}" required disabled>
+                    <select name="leave_type" id="leaveTypeSelect" data-leave-types="{{ json_encode(\App\Domain\LeaveTypes::options()) }}" data-other-input="#leaveTypeOther" required disabled>
                         <option value="">Select Leave Type</option>
                     </select>
+                    {{-- Shown and required only with "Other" (app-shell.js data-other-input). --}}
+                    <input type="text" name="leave_type_other" id="leaveTypeOther" class="other-choice-input" maxlength="90"
+                        placeholder="Type the leave type" aria-label="Other leave type" hidden>
                 </div>
 
                 <div class="field-group">
@@ -495,11 +502,14 @@
 
             <div class="field-group">
                 <label>Type</label>
-                <select id="holidayTypeInput">
+                <select id="holidayTypeInput" data-other-input="#holidayTypeOtherInput">
                     <option value="Holiday">Holiday</option>
                     <option value="Asynchronous">Asynchronous Class</option>
                     <option value="Other">Other</option>
                 </select>
+                {{-- Shown and required only with "Other" (app-shell.js data-other-input). --}}
+                <input type="text" id="holidayTypeOtherInput" class="other-choice-input" maxlength="43"
+                    placeholder="Type the kind of schedule change" aria-label="Other schedule change type" hidden>
             </div>
 
             <div class="field-group">

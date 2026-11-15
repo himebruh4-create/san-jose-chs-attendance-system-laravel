@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Data;
 
 use App\Http\Controllers\Controller;
 use App\Support\Audit;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -100,83 +101,107 @@ class SettingsDataController extends Controller
     private const ON_LEAVE_SQL = "EXISTS (SELECT 1 FROM teacher_leaves tl WHERE tl.teacher_id = teachers.id
         AND tl.status = 'Approved' AND DATE(teachers.deleted_at) BETWEEN tl.leave_from AND tl.leave_until)";
 
+    /** Rows per page of each Recycle Bin category. */
+    public const RECYCLE_BIN_PER_PAGE = 20;
+
+    /** One ?page= of a category, newest first, with its total (for Delete All). */
     public function recycleBin(Request $request)
     {
         $fmt = fn ($d) => $d ? date('M j, Y', strtotime($d)) : '—';
+        $type = $request->query('type');
 
-        $rows = match ($request->query('type')) {
-            'teacher', 'personnel_on_leave' => DB::table('teachers')
-                ->where('is_deleted', 1)
-                ->when($request->query('type') === 'personnel_on_leave', fn ($q) => $q->whereRaw(self::ON_LEAVE_SQL))
-                ->orderByDesc('deleted_at')
-                ->get()
-                ->map(fn ($r) => [
+        [$query, $columns, $toRow] = match ($type) {
+            'teacher', 'personnel_on_leave' => [
+                DB::table('teachers')
+                    ->where('is_deleted', 1)
+                    ->when($type === 'personnel_on_leave', fn ($q) => $q->whereRaw(self::ON_LEAVE_SQL))
+                    ->orderByDesc('deleted_at')
+                    ->orderByDesc('id'),
+                ['id', 'fullname', 'id_number', 'department', 'deleted_at', 'deleted_by'],
+                fn ($r) => [
                     'id' => (int) $r->id,
                     'title' => $r->fullname,
                     'subtitle' => $r->id_number.' · '.$r->department,
                     'deleted_at' => $fmt($r->deleted_at),
                     'deleted_by' => $r->deleted_by ?: '—',
-                ]),
+                ],
+            ],
 
-            'attendance_adjustment' => DB::table('attendance_adjustments as aa')
-                ->join('teachers as t', 't.id', '=', 'aa.teacher_id')
-                ->where('aa.is_deleted', 1)
-                ->orderByDesc('aa.deleted_at')
-                ->get(['aa.id', 'aa.adjustment_date', 'aa.adjustment_type', 'aa.deleted_at', 'aa.deleted_by', 't.fullname', 't.id_number'])
-                ->map(fn ($r) => [
+            'attendance_adjustment' => [
+                DB::table('attendance_adjustments as aa')
+                    ->join('teachers as t', 't.id', '=', 'aa.teacher_id')
+                    ->where('aa.is_deleted', 1)
+                    ->orderByDesc('aa.deleted_at')
+                    ->orderByDesc('aa.id'),
+                ['aa.id', 'aa.adjustment_date', 'aa.adjustment_type', 'aa.deleted_at', 'aa.deleted_by', 't.fullname', 't.id_number'],
+                fn ($r) => [
                     'id' => (int) $r->id,
                     'title' => $r->fullname.' — '.date('M j, Y', strtotime($r->adjustment_date)),
                     'subtitle' => $r->id_number.' · '.$r->adjustment_type,
                     'deleted_at' => $fmt($r->deleted_at),
                     'deleted_by' => $r->deleted_by ?: '—',
-                ]),
+                ],
+            ],
 
-            'school_event' => DB::table('school_events')
-                ->where('status', 'Inactive')
-                ->orderByDesc('id')
-                ->get()
-                ->map(fn ($r) => [
+            'school_event' => [
+                DB::table('school_events')->where('status', 'Inactive')->orderByDesc('id'),
+                ['id', 'event_name', 'event_type', 'date_from', 'date_to'],
+                fn ($r) => [
                     'id' => (int) $r->id,
                     'title' => $r->event_name,
                     'subtitle' => $r->event_type.' · '.date('M j', strtotime($r->date_from)).' - '.date('M j, Y', strtotime($r->date_to)),
                     'deleted_at' => '—',
                     'deleted_by' => '—',
-                ]),
+                ],
+            ],
 
-            'subject', 'position' => DB::table('department_options')
-                ->where('option_type', $request->query('type') === 'subject' ? 'Subject' : 'Position')
-                ->where('status', 'Inactive')
-                ->orderByDesc('id')
-                ->get()
-                ->map(fn ($r) => [
+            'subject', 'position' => [
+                DB::table('department_options')
+                    ->where('option_type', $type === 'subject' ? 'Subject' : 'Position')
+                    ->where('status', 'Inactive')
+                    ->orderByDesc('id'),
+                ['id', 'option_name', 'option_type'],
+                fn ($r) => [
                     'id' => (int) $r->id,
                     'title' => $r->option_name,
                     'subtitle' => $r->option_type,
                     'deleted_at' => '—',
                     'deleted_by' => '—',
-                ]),
+                ],
+            ],
 
-            'account' => DB::table('accounts')
-                ->where('is_deleted', 1)
-                ->whereIn('role', ['admin', 'principal'])
-                ->orderByDesc('deleted_at')
-                ->get()
-                ->map(fn ($r) => [
+            'account' => [
+                DB::table('accounts')
+                    ->where('is_deleted', 1)
+                    ->whereIn('role', ['admin', 'principal'])
+                    ->orderByDesc('deleted_at')
+                    ->orderByDesc('id'),
+                ['id', 'full_name', 'email', 'role', 'deleted_at', 'deleted_by'],
+                fn ($r) => [
                     'id' => (int) $r->id,
                     'title' => $r->full_name,
                     'subtitle' => $r->email.' · '.ucfirst($r->role),
                     'deleted_at' => $fmt($r->deleted_at),
                     'deleted_by' => $r->deleted_by ?: '—',
-                ]),
+                ],
+            ],
 
-            default => null,
+            default => [null, [], null],
         };
 
-        if ($rows === null) {
+        if ($query === null) {
             return $this->fail('Invalid category.');
         }
 
-        return $this->ok(['rows' => $rows]);
+        $total = (clone $query)->count();
+        $pages = Pagination::page((int) $request->query('page', 1), $total, self::RECYCLE_BIN_PER_PAGE);
+
+        return $this->ok([
+            'rows' => $query->offset($pages['offset'])->limit(self::RECYCLE_BIN_PER_PAGE)->get($columns)->map($toRow)->values(),
+            'total' => $total,
+            'page' => $pages['page'],
+            'last_page' => $pages['last_page'],
+        ]);
     }
 
     public function recycleBinAction(Request $request)
@@ -301,13 +326,21 @@ class SettingsDataController extends Controller
     }
 
     /** Most recent audit entries (new). */
+    /** Rows per page of the Audit Log. */
+    public const AUDIT_LOG_PER_PAGE = 25;
+
+    /** One ?page= of the Audit Log, newest first. */
     public function auditLog(Request $request)
     {
+        $total = DB::table('audit_logs')->count();
+        $pages = Pagination::page((int) $request->query('page', 1), $total, self::AUDIT_LOG_PER_PAGE);
+
         $entries = DB::table('audit_logs')
             ->orderByDesc('id')
-            ->limit(min(500, max(1, (int) $request->query('limit', 200))))
+            ->offset($pages['offset'])
+            ->limit(self::AUDIT_LOG_PER_PAGE)
             ->get(['id', 'actor', 'action', 'subject_type', 'subject_id', 'details', 'ip_address', 'created_at']);
 
-        return $this->ok(['entries' => $entries]);
+        return $this->ok(['entries' => $entries, 'total' => $total, 'page' => $pages['page'], 'last_page' => $pages['last_page']]);
     }
 }

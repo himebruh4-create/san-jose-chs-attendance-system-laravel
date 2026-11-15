@@ -46,6 +46,7 @@ class AttendancePrintController extends Controller
 
         if ($period === 'daily') {
             ['rows' => $section['rows'], 'not_yet_recorded' => $section['notYetRecorded']] = $reports->dailyReport($date, $person?->id);
+            $section['dayLabel'] = $reports->dayLabel($date, $person?->id);
             $range = $date;
             $periodLabel = date('l, F j, Y', strtotime($date));
         } elseif ($period === 'weekly') {
@@ -57,7 +58,7 @@ class AttendancePrintController extends Controller
             $from = date('Y-m-01', strtotime($date));
             $to = date('Y-m-t', strtotime($date));
             $section['rows'] = $reports->personMonth($person->id, $from, $to);
-            $section['monthSummary'] = collect(MonthlySummary::build($from, $to))->firstWhere('id', $person->id);
+            $section['monthSummary'] = collect(MonthlySummary::build($from, $to, $person->id))->first();
             $range = Printout::month($date);
             $periodLabel = date('F Y', strtotime($date));
         }

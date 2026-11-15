@@ -53,6 +53,9 @@
 
             <div class="adjustments-table-wrapper">
 
+                {{-- Scrolls up and down when the rows do not fit; the header stays in view. --}}
+                <div class="pending-scroll-wrapper sticky-table-wrapper scroll-panel adjustments-scroll" id="adjustmentsScrollWrapper" tabindex="0" aria-label="Attendance adjustments list">
+
                 <table>
 
                     <thead>
@@ -105,7 +108,13 @@
 
                 </table>
 
+                </div>
 
+                <div class="adjustments-list-footer">
+                    <span id="adjustmentsCount" class="adjustments-count"></span>
+                </div>
+
+                <nav id="adjustmentsPagination" class="pagination" aria-label="Attendance adjustment pages" hidden></nav>
 
             </div>
 
@@ -256,6 +265,7 @@
                 <input
                     type="date"
                     id="adjustmentDate"
+                    max="{{ date('Y-m-d') }}"
                     onchange="loadRealScansPreview()"
                 >
 
@@ -276,6 +286,7 @@
 
                 <select
                     id="adjustmentType"
+                    data-other-input="#adjustmentTypeOther"
                 >
 
                     <option value="">
@@ -307,6 +318,10 @@
                     </option>
 
                 </select>
+
+                {{-- Shown and required only with "Other" (app-shell.js data-other-input). --}}
+                <input type="text" id="adjustmentTypeOther" class="other-choice-input" maxlength="90"
+                    placeholder="Type the attendance issue" aria-label="Other attendance issue" hidden>
 
             </div>
 
@@ -437,7 +452,9 @@
                     Review Attendance Adjustment
                 </h2>
 
-                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>View the details of this attendance adjustment.</span></p>
+                <input type="hidden" id="reviewAdjustmentId">
+
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Correct the times or the remarks here. The personnel, date and attendance issue stay as recorded.</span></p>
 
             </div>
 
@@ -534,7 +551,6 @@
                 <input
                     type="time"
                     id="reviewAMArrival"
-                    readonly
                 >
 
             </div>
@@ -551,7 +567,6 @@
                 <input
                     type="time"
                     id="reviewAMDeparture"
-                    readonly
                 >
 
             </div>
@@ -568,7 +583,6 @@
                 <input
                     type="time"
                     id="reviewPMArrival"
-                    readonly
                 >
 
             </div>
@@ -585,7 +599,6 @@
                 <input
                     type="time"
                     id="reviewPMDeparture"
-                    readonly
                 >
 
             </div>
@@ -602,7 +615,7 @@
                 <textarea
                     id="reviewRemarks"
                     rows="4"
-                    readonly
+                    maxlength="1000"
                 ></textarea>
 
             </div>
@@ -635,6 +648,15 @@
                 onclick="closeReviewAdjustmentModal()"
             >
                 Close
+            </button>
+
+            <button
+                type="button"
+                class="save-adjustment-btn"
+                id="saveReviewAdjustmentBtn"
+                onclick="saveReviewedAdjustment()"
+            >
+                Save Changes
             </button>
 
         </div>

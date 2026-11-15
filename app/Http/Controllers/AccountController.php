@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\Audit;
+use App\Support\PasswordResetRequests;
 use App\Support\SecurityQuestions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -59,6 +60,23 @@ class AccountController extends Controller
         Audit::log('password.changed', 'account', $account->id);
 
         return back()->with('success', 'Password changed successfully.');
+    }
+
+    /**
+     * My Account -> Forgot Password -> Request new password (Admin and
+     * Principal): files a request the Super Admin resolves. The password is
+     * not changed here, and the reply is the same whether a request was
+     * filed or one was already waiting.
+     */
+    public function requestPasswordReset(Request $request)
+    {
+        $account = $request->user();
+
+        abort_if($account->role === 'superadmin', 403);
+
+        PasswordResetRequests::file($account, 'my_account');
+
+        return back()->with('success', PasswordResetRequests::SENT);
     }
 
     /** The Super Admin's 3 security questions (all replaced together). */

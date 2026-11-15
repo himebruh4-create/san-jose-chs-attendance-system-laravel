@@ -69,13 +69,13 @@
             <span class="page-tag">Page {{ $page }} of {{ $totalPages }}</span>
         </div>
 
-        {{-- Every person in the selected tab matching the current search, for
-             Generate All DTR (the same per-person DTR as Generate DTR). Kept
-             inside this card so a live search replaces it together with the
-             list (and the tabs). --}}
-        <script type="application/json" id="allTeachersForDTR">@json($allTeachersForDTR)</script>
-
-        <button class="generate-report-btn" onclick="printAllDTR(JSON.parse(document.getElementById('allTeachersForDTR').textContent), {{ Js::from($monthStart) }}, {{ Js::from($monthEnd) }}, {{ Js::from($allDtrPrint) }})" style="margin-top: 10px;">
+        {{-- Every person in the selected tab matching the current search (the
+             same per-person DTR as Generate DTR), for the month beside the
+             search. Their data is read from the server only when this is
+             pressed. Kept inside this card so a live search replaces it
+             together with the list (and the tabs). --}}
+        <button class="generate-report-btn" data-url="{{ $allDtrUrl }}" data-print="{{ json_encode($allDtrPrint) }}"
+            onclick="printAllDTRFromServer(this)" style="margin-top: 10px;">
             <i class="fa-solid fa-file-export"></i> Generate All DTR ({{ $typeLabel }})
         </button>
 
@@ -88,7 +88,9 @@
                     <div class="teacher-header">
                         <strong>{{ $teacher['fullname'] }}</strong>
 
-                        <input type="month" class="monthPicker" value="{{ $monthValue }}" onchange="changeTeacherMonth(this.value)">
+                        {{-- This card's month only (the month beside the search changes everyone's). --}}
+                        <input type="month" class="monthPicker" value="{{ $monthValue }}" data-teacher-id="{{ $teacher['id'] }}"
+                            aria-label="DTR month for {{ $teacher['fullname'] }}" onchange="changeCardMonth(this)">
 
                         <button class="dtr-btn" data-teacher="{{ json_encode($teacher) }}"
                             onclick="printIndividualReport(JSON.parse(this.dataset.teacher))">
@@ -117,36 +119,49 @@
             @endforeach
         </div>
 
-        <div class="pagination">
-            @if ($page > 1)
-                <a href="{{ $pageUrl(1) }}">&laquo; First</a>
-                <a href="{{ $pageUrl($page - 1) }}">&lsaquo; Previous</a>
-            @endif
-
-            @for ($i = 1; $i <= $totalPages; $i++)
-                @if ($i == $page)
-                    <span class="active">{{ $i }}</span>
-                @else
-                    <a href="{{ $pageUrl($i) }}">{{ $i }}</a>
-                @endif
-            @endfor
-
-            @if ($page < $totalPages)
-                <a href="{{ $pageUrl($page + 1) }}">Next &rsaquo;</a>
-                <a href="{{ $pageUrl($totalPages) }}">Last &raquo;</a>
-            @endif
-        </div>
+        @include('partials.pagination', ['label' => 'Personnel pages'])
     </div>
 </div>
 @endsection
 
 @push('scripts')
 <script>
-    function changeTeacherMonth(monthValue) {
-        const url = new URL(window.location.href);
-        url.searchParams.set('monthPicker', monthValue);
-        url.searchParams.set('page', 1);
-        window.location.href = url.toString();
+    /* A card's own month picker: loads that person's records for the month
+       into their Generate DTR button. No other card and no other part of
+       the page changes. If the month cannot be loaded, the picker goes back
+       to the month the button still holds. */
+    async function changeCardMonth(input) {
+        const card = input.closest('.teacher-item');
+        const button = card.querySelector('.dtr-btn');
+        const current = JSON.parse(button.dataset.teacher);
+        const previousMonth = String(current.monthStart || '').slice(0, 7);
+
+        if (!/^\d{4}-\d{2}$/.test(input.value) || input.value === previousMonth) {
+            input.value = previousMonth;
+            return;
+        }
+
+        button.disabled = true;
+        card.setAttribute('aria-busy', 'true');
+
+        try {
+            const url = appUrl('data/dtr-month') + '?teacher_id=' + encodeURIComponent(input.dataset.teacherId) + '&month=' + encodeURIComponent(input.value);
+            const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            const result = response.ok ? await response.json() : null;
+
+            if (!result || !result.success) {
+                throw new Error(result ? result.message : 'HTTP ' + response.status);
+            }
+
+            button.dataset.teacher = JSON.stringify(result.teacher);
+        } catch (error) {
+            console.error('Could not load this month:', error);
+            input.value = previousMonth;
+            showMessageModal('Unable to load that month for this person. Please try again.', { title: 'Something Went Wrong', type: 'error' });
+        } finally {
+            button.disabled = false;
+            card.removeAttribute('aria-busy');
+        }
     }
 </script>
 <script src="{{ asset_v('js/dtr-view.js') }}"></script>

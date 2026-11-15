@@ -28,12 +28,22 @@
 
     <!-- ================= DAILY TAB ================= -->
 
-    <div id="dailyTab" class="tab-content {{ $activeTab === 'daily' ? 'active' : '' }}">
+    {{-- Only the open tab is built by the server; opening another loads it
+         (data-tab-url, switchTab in reports-analytics.js). --}}
+    @php
+        $tabUrl = fn (string $tab) => request()->fullUrlWithQuery(['tab' => $tab]);
+        $deferredTab = fn (string $tab) => $activeTab === $tab ? '' : 'data-tab-url="'.e($tabUrl($tab)).'"';
+    @endphp
+
+    <div id="dailyTab" class="tab-content {{ $activeTab === 'daily' ? 'active' : '' }}" {!! $deferredTab('daily') !!}>
 
         <div class="card">
             @include('reports.partials.filter', ['tab' => 'daily'] + $filterData)
         </div>
 
+        @if ($activeTab !== 'daily')
+            @include('reports.partials.deferred-tab', ['url' => $tabUrl('daily')])
+        @else
         <div class="card">
             <div class="card-header-row">
                 <h2>{{ $dailyLabel }}</h2>
@@ -46,21 +56,24 @@
             </div>
 
             <div id="dailyPrintArea" class="report-print-area">
-                @include('reports.partials.report-section', ['section' => 'daily', 'rows' => $daily, 'notYetRecorded' => $dailyNotYetRecorded])
+                @include('reports.partials.report-section', ['section' => 'daily', 'rows' => $daily, 'notYetRecorded' => $dailyNotYetRecorded, 'scrollable' => true, 'dayLabel' => $dailyDayLabel])
             </div>
         </div>
+        @endif
 
     </div>
 
     <!-- ================= WEEKLY TAB ================= -->
 
-    <div id="weeklyTab" class="tab-content {{ $activeTab === 'weekly' ? 'active' : '' }}">
+    <div id="weeklyTab" class="tab-content {{ $activeTab === 'weekly' ? 'active' : '' }}" {!! $deferredTab('weekly') !!}>
 
         <div class="card">
             @include('reports.partials.filter', ['tab' => 'weekly'] + $filterData)
         </div>
 
-        @if ($person)
+        @if ($activeTab !== 'weekly')
+            @include('reports.partials.deferred-tab', ['url' => $tabUrl('weekly')])
+        @elseif ($person)
             <div class="card">
                 <div class="card-header-row">
                     <h2>{{ $weekLabel }}</h2>
@@ -117,13 +130,15 @@
 
     <!-- ================= MONTHLY TAB ================= -->
 
-    <div id="monthlyTab" class="tab-content {{ $activeTab === 'monthly' ? 'active' : '' }}">
+    <div id="monthlyTab" class="tab-content {{ $activeTab === 'monthly' ? 'active' : '' }}" {!! $deferredTab('monthly') !!}>
 
         <div class="card">
             @include('reports.partials.filter', ['tab' => 'monthly'] + $filterData)
         </div>
 
-        @if ($person)
+        @if ($activeTab !== 'monthly')
+            @include('reports.partials.deferred-tab', ['url' => $tabUrl('monthly')])
+        @elseif ($person)
             <div class="card">
                 <div class="card-header-row">
                     <h2>{{ $monthLabel }}</h2>

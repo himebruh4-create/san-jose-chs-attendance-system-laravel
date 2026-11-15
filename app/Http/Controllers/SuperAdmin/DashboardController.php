@@ -29,6 +29,7 @@ class DashboardController extends Controller
             'employmentTypeCounts' => $stats->employmentTypeCounts(),
             'todayCounts' => $todayStats['counts'],
             'monthTotals' => $stats->thisMonth($today),
+            'monthChangeDays' => $stats->thisMonthScheduleChangeDays($today),
             'kioskAlerts' => KioskHealth::openAlerts(),
             'teachersOnLeaveToday' => $todayStats['on_leave'],
             'week' => $stats->week($today),

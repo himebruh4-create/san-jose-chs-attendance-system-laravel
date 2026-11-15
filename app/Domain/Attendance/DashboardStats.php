@@ -82,9 +82,10 @@ class DashboardStats
     {
         $counts = ['Present' => 0, 'Late' => 0, 'Absent' => 0, 'On Leave' => 0, 'Not Yet Recorded' => 0];
         $onLeave = [];
+        $preloaded = AttendanceData::preloadMany(array_column($this->teachers, 'id'), $today, $today);
 
         foreach ($this->teachers as $teacher) {
-            [$leaves, $adjustments, $attendance, $absences, $schedules] = AttendanceData::preload((int) $teacher['id'], $today, $today);
+            [$leaves, $adjustments, $attendance, $absences, $schedules] = $preloaded[(int) $teacher['id']];
 
             $result = getTeacherDayStatus(
                 $today, $leaves, $adjustments, $this->events, $attendance[$today] ?? null, $absences, $schedules,
@@ -125,15 +126,52 @@ class DashboardStats
     }
 
     /**
-     * Mon–Sat trend of the current week (dates after today are left at 0).
+     * The "This month" row's Holidays and Schedule Changes: how many days of
+     * this month (the days the monthly calendar shows: Mon–Sat, and Sun
+     * when anyone works Sundays) an active
+     * holiday, or any other School Schedule Change, falls on. Each day is
+     * counted once, however many personnel or changes it has. The whole
+     * month counts, so announced changes later in the month are included.
+     *
+     * @return array{Holidays: int, 'Schedule Changes': int}
+     */
+    public function thisMonthScheduleChangeDays(string $today): array
+    {
+        $monthStart = date('Y-m-01', strtotime($today));
+        $monthEnd = date('Y-m-t', strtotime($today));
+        $holidayDays = $changeDays = [];
+        $workingDays = WorkingDays::load();
+
+        foreach ($this->events as $event) {
+            $from = max($event['date_from'], $monthStart);
+            $to = min($event['date_to'], $monthEnd);
+
+            for ($c = strtotime($from); $from <= $to && $c <= strtotime($to); $c = strtotime('+1 day', $c)) {
+                if (! $workingDays->isShown(date('Y-m-d', $c))) {
+                    continue;
+                }
+
+                if (ScheduleChanges::isHoliday($event)) {
+                    $holidayDays[date('Y-m-d', $c)] = true;
+                } else {
+                    $changeDays[date('Y-m-d', $c)] = true;
+                }
+            }
+        }
+
+        return ['Holidays' => count($holidayDays), 'Schedule Changes' => count($changeDays)];
+    }
+
+    /**
+     * The current week's trend (Mon–Sat, and Sun when anyone works Sundays;
+     * dates after today are left at 0).
      * Dates before a person's record was created are not counted for them.
      *
      * @return array{labels: string[], data: array<string, int[]>, start: string, end: string}
      */
     public function week(string $today): array
     {
-        $weekStart = date('Y-m-d', strtotime('monday this week', strtotime($today)));
-        $weekEnd = date('Y-m-d', strtotime('saturday this week', strtotime($today)));
+        [$weekStart, $weekEnd] = WorkingDays::load()->weekRange($today);
 
         $dates = [];
         $labels = [];
@@ -144,8 +182,10 @@ class DashboardStats
 
         $data = array_fill_keys(['Present', 'Late', 'Pending Review', 'Absent', 'On Leave'], array_fill(0, count($dates), 0));
 
+        $preloaded = AttendanceData::preloadMany(array_column($this->teachers, 'id'), $weekStart, $weekEnd);
+
         foreach ($this->teachers as $teacher) {
-            [$leaves, $adjustments, $attendance, $absences, $schedules] = AttendanceData::preload((int) $teacher['id'], $weekStart, $weekEnd);
+            [$leaves, $adjustments, $attendance, $absences, $schedules] = $preloaded[(int) $teacher['id']];
 
             foreach ($dates as $i => $date) {
                 if ($date > $today) {
@@ -175,20 +215,18 @@ class DashboardStats
         $end = $monthEnd > $today ? $today : $monthEnd;
 
         $flagged = [];
+        $preloaded = AttendanceData::preloadMany(array_column($this->teachers, 'id'), $monthStart, $end);
 
         foreach ($this->teachers as $teacher) {
-            [$leaves, $adjustments, $attendance, $absences, $schedules] = AttendanceData::preload((int) $teacher['id'], $monthStart, $end);
+            [$leaves, $adjustments, $attendance, $absences, $schedules] = $preloaded[(int) $teacher['id']];
 
             $absentCount = 0;
 
             for ($c = strtotime($monthStart); $c <= strtotime($end); $c = strtotime('+1 day', $c)) {
                 $date = date('Y-m-d', $c);
-                $dayOfWeek = date('N', $c);
 
-                // Sunday is always off; Saturday only for people scheduled on it.
-                if ($dayOfWeek == 7 || ($dayOfWeek == 6 && ! isset($schedules[strtolower(date('l', $c))]))) {
-                    continue;
-                }
+                // Only the person's own scheduled days can be Absent: any
+                // other day is "Not Scheduled" (getTeacherDayStatus).
 
                 $result = getTeacherDayStatus($date, $leaves, $adjustments, $this->events, $attendance[$date] ?? null, $absences, $schedules, teacherId: (int) $teacher['id']);
 

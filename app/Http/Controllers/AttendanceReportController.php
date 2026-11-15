@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Attendance\AttendanceData;
+use App\Domain\Attendance\DtrPersonnel;
 use App\Domain\PersonnelDirectory;
 use App\Support\Printout;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Attendance Report: the list of personnel for a month, each with their
@@ -36,34 +35,14 @@ abstract class AttendanceReportController extends Controller
         $search = trim((string) $request->query('search'));
         $personnelType = PersonnelDirectory::typeTab($request->query('academic_status'));
 
-        $query = DB::table('teachers')
-            ->where('is_deleted', 0)
-            ->when($personnelType !== '', fn ($q) => $q->where('academic_status', $personnelType))
-            ->when($search !== '', fn ($q) => $q->where(fn ($q2) => $q2->where('fullname', 'like', "%{$search}%")->orWhere('id_number', 'like', "%{$search}%")))
-            ->orderBy('fullname');
+        $query = DtrPersonnel::query($search, $personnelType);
 
         $total = (clone $query)->count();
         $totalPages = max(1, (int) ceil($total / self::PER_PAGE));
         $page = min(max(1, (int) $request->query('page', 1)), $totalPages);
 
         $account = $request->user();
-        $printMonth = Printout::month($monthStart);
-
-        $withRecords = fn ($t) => [
-            'id' => (int) $t->id,
-            'id_number' => $t->id_number,
-            'fullname' => $t->fullname,
-            'department' => $t->department,
-            'academic_status' => $t->academic_status,
-            'employment_type' => $t->employment_type,
-            'schedule_session' => null,
-            'records' => AttendanceData::teacherRecords((int) $t->id, $monthStart, $monthEnd),
-            'monthStart' => $monthStart,
-            // "DTR - Ana Cruz - 2026-10 - Administrative Officer" (saved PDF name)
-            'print' => Printout::job($account, 'DTR', $printMonth, $t->fullname, (int) $t->id),
-        ];
-
-        $columns = ['id', 'id_number', 'fullname', 'department', 'academic_status', 'employment_type'];
+        $pageTeachers = (clone $query)->offset(($page - 1) * self::PER_PAGE)->limit(self::PER_PAGE)->get(DtrPersonnel::columns());
 
         return view('attendance-report', [
             'role' => $this->role(),
@@ -75,11 +54,16 @@ abstract class AttendanceReportController extends Controller
             'page' => $page,
             'totalPages' => $totalPages,
             'totalTeachers' => $total,
-            'teacherReports' => (clone $query)->offset(($page - 1) * self::PER_PAGE)->limit(self::PER_PAGE)->get($columns)->map($withRecords)->all(),
-            // Every matching person, for Generate All DTR.
-            'allTeachersForDTR' => $query->get($columns)->map($withRecords)->all(),
+            // This page's people only; each card's own month picker reloads
+            // just that card's data (/data/dtr-month).
+            'teacherReports' => DtrPersonnel::payloads($pageTeachers, $monthStart, $account),
+            // Generate All DTR reads every matching person's data from here,
+            // in one request, only when the button is pressed.
+            'allDtrUrl' => route('data.dtr-bundle', array_filter([
+                'month' => sprintf('%04d-%02d', $year, $month), 'search' => $search, 'academic_status' => $personnelType,
+            ], fn ($v) => $v !== '')),
             // "DTR - Teaching Staff - 2026-10 - Administrative Officer": the selected tab.
-            'allDtrPrint' => Printout::job($account, 'DTR', $printMonth, PersonnelDirectory::TYPE_TABS[$personnelType], personnelType: $personnelType ?: null),
+            'allDtrPrint' => Printout::job($account, 'DTR', Printout::month($monthStart), PersonnelDirectory::TYPE_TABS[$personnelType], personnelType: $personnelType ?: null),
             'personnelType' => $personnelType,
         ]);
     }

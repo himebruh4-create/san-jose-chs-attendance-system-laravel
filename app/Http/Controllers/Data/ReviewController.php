@@ -14,6 +14,7 @@ use function App\Domain\Attendance\dtrBreakForSchedule;
 use function App\Domain\Attendance\dtrDayCalc;
 use function App\Domain\Attendance\dtrReviewPeriodStart;
 use function App\Domain\Attendance\dtrRulesApply;
+use function App\Domain\Attendance\getTeacherDayStatus;
 
 /**
  * The Super Admin attendance-review workflow. Ported from
@@ -63,6 +64,24 @@ class ReviewController extends Controller
             return $this->fail('Personnel not found.');
         }
 
+        if ($date > date('Y-m-d')) {
+            return $this->fail('Cannot confirm an absence for a future date.');
+        }
+
+        // A holiday / school schedule change or a day the person is not
+        // scheduled to work is never an absence.
+        [$leaves, $adjustments, $attendance, $absences, $schedules] = AttendanceData::preload($teacherId, $date, $date);
+        $status = getTeacherDayStatus($date, $leaves, $adjustments, AttendanceData::activeEvents(), $attendance[$date] ?? null, [], $schedules, teacherId: $teacherId)['status'];
+
+        if ($status === 'School Event' || $status === 'Not Scheduled') {
+            return $this->fail('Cannot confirm an absence on a holiday or a no-work day.');
+        }
+
+        // Scanned in: the person was there.
+        if ($status === 'Present' || $status === 'Late') {
+            return $this->fail('Cannot confirm an absence: this personnel scanned in that day.');
+        }
+
         DB::table('confirmed_absences')->upsert(
             [['teacher_id' => $teacherId, 'absence_date' => $date, 'confirmed_by' => $request->user()->email, 'confirmed_at' => now()]],
             ['teacher_id', 'absence_date'],
@@ -102,8 +121,18 @@ class ReviewController extends Controller
                 'url' => $p->path ? route('photos.scan', $p->id) : null,
             ]);
 
+        $leave = AttendanceData::leaveOn($teacherId, $date);
+
         return $this->ok([
             'date' => $date,
+            // The leave remark the adjustment form shows; an adjustment on a
+            // leave day is allowed and leaves the leave as it is.
+            'leave' => $leave ? [
+                'leave_type' => $leave['leave_type'],
+                'leave_from' => $leave['leave_from'],
+                'leave_until' => $leave['leave_until'],
+                'reason' => $leave['reason'],
+            ] : null,
             'rules_apply' => dtrRulesApply($date),
             'real' => $real,
             'schedule' => $schedule,
@@ -187,6 +216,45 @@ class ReviewController extends Controller
         }
 
         Audit::log('rejected_scan.reviewed', 'rejected_scan', $id);
+
+        return $this->ok(['message' => 'Marked as reviewed.']);
+    }
+
+    /**
+     * Pending Review -> "Mark Reviewed" on a scan recorded on a leave day.
+     * The scan and the leave are both kept as they are.
+     */
+    public function reviewLeaveConflict(Request $request)
+    {
+        $id = (int) $request->input('id');
+        $remarks = trim((string) $request->input('remarks'));
+
+        if ($id <= 0) {
+            return $this->fail('Invalid entry.');
+        }
+
+        if (mb_strlen($remarks) > 255) {
+            return $this->fail('Remarks are too long (255 characters maximum).');
+        }
+
+        $conflict = DB::table('attendance_leave_conflicts')->where('id', $id)->first(['teacher_id', 'attendance_date']);
+
+        $changed = DB::table('attendance_leave_conflicts')
+            ->where('id', $id)
+            ->whereNull('reviewed_at')
+            ->update([
+                'reviewed_at' => now(),
+                'reviewed_by' => $request->user()->email,
+                'review_remarks' => $remarks === '' ? null : $remarks,
+            ]);
+
+        if ($changed < 1) {
+            return $this->fail('This entry was already reviewed or does not exist.');
+        }
+
+        Audit::log('leave_conflict.reviewed', 'teacher', (int) $conflict->teacher_id, [
+            'conflict_id' => $id, 'date' => $conflict->attendance_date, 'remarks' => $remarks === '' ? null : $remarks,
+        ]);
 
         return $this->ok(['message' => 'Marked as reviewed.']);
     }
