@@ -10,8 +10,10 @@ use Tests\TestCase;
 
 /**
  * Leave types by personnel type (App\Domain\LeaveTypes): Personnel -> Add
- * Leave offers and accepts only the types of the selected person's type,
- * and every type shows wherever leave appears.
+ * Leave offers and accepts only the types of the selected person's type
+ * (a person with no type: any active type), and every type shows wherever
+ * leave appears. The lists start as the defaults their migration adds;
+ * managing them is in DropdownListsTest.
  */
 class LeaveTypesTest extends TestCase
 {
@@ -60,13 +62,16 @@ class LeaveTypesTest extends TestCase
         $this->assertDatabaseCount('teacher_leaves', 0);
     }
 
-    public function test_personnel_without_a_type_get_only_the_common_leave_types(): void
+    public function test_personnel_without_a_type_can_be_given_any_active_leave_type_of_either_list(): void
     {
         $person = $this->teacher(['academic_status' => null]);
 
-        $this->addLeave($person, 'Wellness Leave')
-            ->assertSessionHas('message', 'Wellness Leave is not available for this personnel. Please choose another leave type.');
-        $this->addLeave($person, 'Sick Leave')->assertSessionHas('message_type', 'success');
+        $this->addLeave($person, 'Wellness Leave', '2026-10-05')->assertSessionHas('message', 'Personnel leave added successfully.');
+        $this->addLeave($person, 'Forced Leave', '2026-10-06')->assertSessionHas('message', 'Personnel leave added successfully.');
+        $this->addLeave($person, 'Study Leave', '2026-10-07')
+            ->assertSessionHas('message', 'Study Leave is not available for this personnel. Please choose another leave type.');
+
+        $this->assertSame(['Wellness Leave', 'Forced Leave'], DB::table('teacher_leaves')->orderBy('leave_from')->pluck('leave_type')->all());
     }
 
     #[TestWith(['Academic', self::TEACHING_TYPES])]
@@ -91,7 +96,10 @@ class LeaveTypesTest extends TestCase
         $options = e(json_encode([
             'Academic' => self::TEACHING_TYPES,
             'Non-Academic' => self::NON_TEACHING_TYPES,
-            '' => ['Sick Leave', 'Vacation Leave', 'Emergency Leave', 'Maternity Leave', 'Paternity Leave', 'Other'],
+            '' => [
+                'Sick Leave', 'Vacation Leave', 'Wellness Leave', 'Emergency Leave', 'Maternity Leave', 'Paternity Leave',
+                'Forced Leave', 'Special Privilege Leave', 'Other',
+            ],
         ]));
 
         $this->actingAs($this->account('superadmin'))->get('/superadmin/personnel')

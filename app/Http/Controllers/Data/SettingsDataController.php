@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Data;
 
+use App\Domain\LeaveTypes;
 use App\Http\Controllers\Controller;
 use App\Support\Audit;
 use App\Support\Pagination;
@@ -104,6 +105,12 @@ class SettingsDataController extends Controller
     /** Rows per page of each Recycle Bin category. */
     public const RECYCLE_BIN_PER_PAGE = 20;
 
+    /** Recycle Bin category => department_options.option_type. */
+    private const OPTION_TYPES = ['subject' => 'Subject', 'position' => 'Position', 'leave_type' => LeaveTypes::OPTION_TYPE];
+
+    /** A leave type no leave record uses (only those can be permanently deleted). */
+    private const LEAVE_TYPE_UNUSED_SQL = 'NOT EXISTS (SELECT 1 FROM teacher_leaves tl WHERE tl.leave_type = department_options.option_name)';
+
     /** One ?page= of a category, newest first, with its total (for Delete All). */
     public function recycleBin(Request $request)
     {
@@ -155,16 +162,16 @@ class SettingsDataController extends Controller
                 ],
             ],
 
-            'subject', 'position' => [
+            'subject', 'position', 'leave_type' => [
                 DB::table('department_options')
-                    ->where('option_type', $type === 'subject' ? 'Subject' : 'Position')
+                    ->where('option_type', self::OPTION_TYPES[$type])
                     ->where('status', 'Inactive')
                     ->orderByDesc('id'),
-                ['id', 'option_name', 'option_type'],
+                ['id', 'option_name', 'option_type', 'personnel_type'],
                 fn ($r) => [
                     'id' => (int) $r->id,
                     'title' => $r->option_name,
-                    'subtitle' => $r->option_type,
+                    'subtitle' => $r->option_type.($r->personnel_type ? ' · '.$r->personnel_type : ''),
                     'deleted_at' => '—',
                     'deleted_by' => '—',
                 ],
@@ -210,7 +217,7 @@ class SettingsDataController extends Controller
         $action = (string) $request->input('action');
         $id = (int) $request->input('id');
 
-        $validTypes = ['teacher', 'personnel_on_leave', 'attendance_adjustment', 'school_event', 'subject', 'position', 'account'];
+        $validTypes = ['teacher', 'personnel_on_leave', 'attendance_adjustment', 'school_event', 'subject', 'position', 'leave_type', 'account'];
         $validActions = ['restore', 'permanent_delete', 'delete_all'];
 
         if (! in_array($type, $validTypes, true) || ! in_array($action, $validActions, true)) {
@@ -219,6 +226,15 @@ class SettingsDataController extends Controller
 
         if ($action !== 'delete_all' && $id <= 0) {
             return $this->fail('Invalid request.');
+        }
+
+        // A leave type a leave record uses is never deleted (Delete All skips it).
+        if ($type === 'leave_type' && $action === 'permanent_delete') {
+            $name = DB::table('department_options')->where('id', $id)->where('option_type', LeaveTypes::OPTION_TYPE)->value('option_name');
+
+            if ($name !== null && LeaveTypes::isUsed($name)) {
+                return $this->fail(DepartmentOptionController::leaveTypeInUseMessage($name), 200, ['affected' => 0]);
+            }
         }
 
         try {
@@ -249,7 +265,7 @@ class SettingsDataController extends Controller
         // Tables using is_deleted / deleted_at / deleted_by.
         $softDelete = ['teacher' => 'teachers', 'personnel_on_leave' => 'teachers', 'attendance_adjustment' => 'attendance_adjustments', 'account' => 'accounts'];
         // Tables whose Inactive status is the soft delete.
-        $status = ['school_event' => 'school_events', 'subject' => 'department_options', 'position' => 'department_options'];
+        $status = ['school_event' => 'school_events', 'subject' => 'department_options', 'position' => 'department_options', 'leave_type' => 'department_options'];
 
         if (isset($softDelete[$type])) {
             $query = DB::table($softDelete[$type])->where('is_deleted', 1);
@@ -281,7 +297,11 @@ class SettingsDataController extends Controller
         $query = DB::table($status[$type])->where('status', 'Inactive');
 
         if ($status[$type] === 'department_options') {
-            $query->where('option_type', $type === 'subject' ? 'Subject' : 'Position');
+            $query->where('option_type', self::OPTION_TYPES[$type]);
+        }
+
+        if ($type === 'leave_type' && $action !== 'restore') {
+            $query->whereRaw(self::LEAVE_TYPE_UNUSED_SQL);
         }
 
         if ($action !== 'delete_all') {

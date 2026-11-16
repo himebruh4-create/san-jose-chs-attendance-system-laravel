@@ -144,8 +144,8 @@ function printAttendanceMonitoring() {
         <body>
 
             <div class="print-header">
-                <img src="${appUrl('img/logo.png')}" alt="School Logo" class="print-logo">
-                <div class="school-name">San Jose Community High School</div>
+                <img src="${escapeHtml(schoolInfo().logo_url)}" alt="School Logo" class="print-logo">
+                <div class="school-name">${escapeHtml(schoolInfo().name)}</div>
                 <div class="school-location">Gen. Mariano Alvarez, Cavite</div>
                 <h2>${reportHeading}</h2>
                 <div class="range-label">${dateFromLabel} &ndash; ${dateToLabel}</div>

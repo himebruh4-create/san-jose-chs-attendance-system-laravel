@@ -12,6 +12,18 @@ function appUrl(path) {
     return base + '/' + String(path || '').replace(/^\/+/, '');
 }
 
+/* The school's name and logo (Settings -> School Name & Logo), set by the
+   layout as window.SCHOOL. name: printouts and badges; short_name: the
+   sidebar and tab titles. */
+function schoolInfo() {
+    var school = window.SCHOOL || {};
+    return {
+        name: school.name || 'San Jose Community High School',
+        short_name: school.short_name || 'San Jose CHS',
+        logo_url: school.logo_url || appUrl('img/logo.png')
+    };
+}
+
 /* Every same-origin request carries the CSRF token and asks for JSON, so
    pages keep calling fetch() exactly as before and Laravel's CSRF
    protection still applies to every POST. */

@@ -63,11 +63,15 @@ class AttendanceData
             ->all();
     }
 
-    /** Audit row for a scan the kiosk refused. Was dtrLogRejectedScan(). */
-    public static function logRejectedScan(int $teacherId, string $attemptedAt, string $attendanceDate, string $reason, ?string $detail, ?string $existingOut): void
+    /**
+     * Audit row for a scan the kiosk refused. Was dtrLogRejectedScan(). An
+     * unknown barcode has no teacher: $barcode keeps what was scanned.
+     */
+    public static function logRejectedScan(?int $teacherId, string $attemptedAt, string $attendanceDate, string $reason, ?string $detail, ?string $existingOut, ?string $barcode = null): void
     {
         DB::table('attendance_rejected_scans')->insert([
             'teacher_id' => $teacherId,
+            'barcode' => $barcode === null ? null : mb_substr($barcode, 0, 100),
             'attempted_at' => $attemptedAt,
             'attendance_date' => $attendanceDate,
             'reason' => $reason,

@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\DB;
  *
  * Until scans carry their own verification flags, a scan is flagged when it
  * is a repeat (duplicate / already complete), an unknown barcode (not found /
- * invalid), has no photo, was a manual entry (barcode typed, not scanned),
+ * invalid), is an accepted Time In or Lunch In without a photo (the only
+ * scans that keep one), was a manual entry (barcode typed, not scanned),
  * was a rapid scan (see rapidScanCondition()), had its camera blocked (photo
  * too dark or one flat color) or had no face detected in its photo. A scan can
  * have more than one flag.
@@ -68,7 +69,9 @@ class ScanVerificationCounts
         $repeat = "p.outcome IN ('".implode("','", self::REPEAT)."')";
         $rapid = self::rapidScanCondition('p');
         $unknown = "p.outcome IN ('".implode("','", self::UNKNOWN)."')";
-        $noPhoto = 'p.path IS NULL';
+        // Only arrivals keep a photo (ScanPhotos::takesPhoto), so only a
+        // photo missing from one of them is a flag.
+        $noPhoto = "(p.path IS NULL AND p.outcome = 'accepted' AND p.scan_kind IN ('".implode("','", ScanPhotos::PHOTO_KINDS)."'))";
         $manual = "p.input_method = '".ScanPhotos::INPUT_TYPED."'";
         $blocked = 'p.camera_blocked = 1';
         $noFace = 'p.face_detected = 0';

@@ -70,8 +70,10 @@
                                     data-caption="{{ $photo['name'] }} · {{ $photo['time'] }}">
                                 <img src="{{ $photo['url'] }}" alt="Scan photo of {{ $photo['name'] }}" loading="lazy">
                             </button>
-                        @else
+                        @elseif ($photo['photo_expected'])
                             <div class="scan-card-photo missing"><i class="fa-solid fa-video-slash"></i><span>No photo</span></div>
+                        @else
+                            <div class="scan-card-photo missing" title="Photos are taken on Time In and Lunch In only"><i class="fa-solid fa-camera"></i><span>Not taken</span></div>
                         @endif
 
                         <div class="scan-card-registered" title="Registered photo">

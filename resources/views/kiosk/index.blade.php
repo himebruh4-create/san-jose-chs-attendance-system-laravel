@@ -5,10 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <meta name="app-base" content="{{ url('/') }}">
-<title>Personnel Attendance Dashboard</title>
-<link rel="icon" href="{{ asset('img/logo.png') }}">
+<title>Personnel Attendance Dashboard - {{ $school['short_name'] }}</title>
+<link rel="icon" href="{{ $school['logo_url'] }}">
 <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
 <link rel="stylesheet" href="{{ asset_v('css/kiosk.css') }}">
+@if ($school['custom_logo'])
+{{-- The uploaded school logo replaces the built-in one behind the page. --}}
+<style>body::before { background-image: url("{{ $school['logo_url'] }}"); }</style>
+@endif
 <script src="{{ asset_v('js/app-shell.js') }}"></script>
 </head>
 
@@ -25,8 +29,8 @@
         <button class="sidebar-close" onclick="closeSidebar()">
             <i class="fa-solid fa-xmark"></i>
         </button>
-        <img src="{{ asset('img/logo.png') }}" alt="School Logo" class="sidebar-logo">
-        <h2>San Jose CHS</h2>
+        <img src="{{ $school['logo_url'] }}" alt="School Logo" class="sidebar-logo">
+        <h2>{{ $school['short_name'] }}</h2>
         <p>Personnel Attendance</p>
     </div>
     <div class="sidebar-menu">
@@ -34,7 +38,7 @@
         <a href="{{ route('login') }}"><i class="fa-solid fa-right-to-bracket"></i> <span>Login</span></a>
     </div>
     <div class="sidebar-footer">
-        &copy; {{ date('Y') }} San Jose CHS
+        &copy; {{ date('Y') }} {{ $school['short_name'] }}
     </div>
 </div>
 

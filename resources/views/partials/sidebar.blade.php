@@ -36,7 +36,7 @@
 <!-- Mobile top bar (hamburger) -->
 <div class="mobile-topbar">
     <button type="button" class="hamburger-btn" onclick="toggleSidebar()" aria-label="Open menu" aria-controls="mainSidebar" aria-expanded="false">&#9776;</button>
-    <span class="mobile-topbar-title">San Jose CHS</span>
+    <span class="mobile-topbar-title">{{ $school['short_name'] }}</span>
 </div>
 
 <!-- Overlay for mobile sidebar -->
@@ -45,8 +45,8 @@
 <aside class="sidebar" id="mainSidebar">
 
     <div class="sidebar-header">
-        <img src="{{ asset('img/logo.png') }}" alt="School Logo" class="sidebar-logo">
-        <h2>San Jose CHS</h2>
+        <img src="{{ $school['logo_url'] }}" alt="School Logo" class="sidebar-logo">
+        <h2>{{ $school['short_name'] }}</h2>
         <p>Personnel Attendance</p>
         <span class="sidebar-role-badge">{{ $account?->roleLabel() }}</span>
     </div>

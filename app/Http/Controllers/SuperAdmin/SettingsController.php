@@ -9,14 +9,17 @@ use App\Support\Audit;
 use App\Support\KioskHealth;
 use App\Support\Printout;
 use App\Support\RecoveryCodes;
+use App\Support\SchoolBranding;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 /**
- * Settings page and its Account Management actions (was superadmin/settings.php).
- * The other cards (recording, breaks, positions, recycle bin, backups,
- * audit log) use the /data endpoints.
+ * Settings page and its Account Management and School Name & Logo actions
+ * (was superadmin/settings.php). The other cards (recording, breaks,
+ * dropdown lists, recycle bin, backups, audit log) use the /data endpoints.
  */
 class SettingsController extends Controller
 {
@@ -39,6 +42,57 @@ class SettingsController extends Controller
             'recoveryCodesLeft' => RecoveryCodes::remaining($request->user()->id),
             'recoveryCodesGeneratedAt' => RecoveryCodes::generatedAt($request->user()->id),
         ]);
+    }
+
+    /**
+     * School Name & Logo: the full and short names, and optionally a new
+     * logo (PNG, JPG or WebP, 2 MB at most). Checked here, whatever the
+     * browser allowed; the logo is then re-encoded (SchoolBranding).
+     */
+    public function saveSchool(Request $request): RedirectResponse
+    {
+        $request->merge([
+            'school_name' => SchoolBranding::cleanName($request->input('school_name')),
+            'school_short_name' => SchoolBranding::cleanName($request->input('school_short_name')),
+        ]);
+
+        $validator = Validator::make($request->all(), [
+            'school_name' => ['required', 'string', 'max:'.SchoolBranding::NAME_MAX],
+            'school_short_name' => ['required', 'string', 'max:'.SchoolBranding::SHORT_NAME_MAX],
+            'school_logo' => ['nullable', 'file', 'image', 'mimes:'.implode(',', SchoolBranding::LOGO_MIMES), 'max:'.SchoolBranding::LOGO_MAX_KILOBYTES],
+        ], [
+            'school_logo.image' => 'The logo must be a PNG, JPG or WebP image.',
+            'school_logo.mimes' => 'The logo must be a PNG, JPG or WebP image.',
+            'school_logo.max' => 'The logo must be 2 MB or smaller.',
+            'school_logo.uploaded' => 'The logo could not be uploaded. It must be 2 MB or smaller.',
+        ], [
+            'school_name' => 'school name',
+            'school_short_name' => 'short name',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->back($validator->errors()->first(), 'error', 'school');
+        }
+
+        $newLogoPath = null;
+
+        if ($request->hasFile('school_logo')) {
+            $newLogoPath = SchoolBranding::storeLogo($request->file('school_logo'));
+
+            if ($newLogoPath === null) {
+                return $this->back('The logo must be a PNG, JPG or WebP image.', 'error', 'school');
+            }
+        }
+
+        SchoolBranding::save($request->input('school_name'), $request->input('school_short_name'), $newLogoPath);
+
+        Audit::log('settings.school', 'system_settings', 1, [
+            'name' => $request->input('school_name'),
+            'short_name' => $request->input('school_short_name'),
+            'logo_changed' => $newLogoPath !== null,
+        ]);
+
+        return $this->back('School name and logo saved.', 'success', 'school');
     }
 
     /**
@@ -172,9 +226,9 @@ class SettingsController extends Controller
         return $this->back('Password reset successfully.');
     }
 
-    private function back(string $message, string $type = 'success')
+    private function back(string $message, string $type = 'success', ?string $tab = null): RedirectResponse
     {
-        return redirect()->route('superadmin.settings')
+        return redirect()->route('superadmin.settings', $tab ? ['tab' => $tab] : [])
             ->with('message', $message)
             ->with('message_type', $type);
     }

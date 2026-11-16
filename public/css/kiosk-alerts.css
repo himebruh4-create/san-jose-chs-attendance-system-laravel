@@ -29,3 +29,10 @@
 @media (max-width: 767.98px) {
     .kiosk-alert-banner { padding: 12px 14px; }
 }
+
+/* Scan photos about to be deleted (Super Admin dashboard), same colors. */
+.scan-deletion-banner p { margin: 0; font-size: 14px; line-height: 1.6; }
+
+.scan-deletion-banner .help-note { margin-top: 8px; }
+
+.scan-deletion-banner a { color: #7a4b00; font-weight: 700; }

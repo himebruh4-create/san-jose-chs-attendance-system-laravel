@@ -15,12 +15,15 @@
         'breaks' => 'Lunch & Paid Breaks',
         'kiosk' => 'Kiosk Devices',
         'accounts' => 'Account Management',
-        'positions' => 'Positions',
+        'school' => 'School Name & Logo',
+        'lists' => 'Dropdown Lists',
         'recycle-bin' => 'Recycle Bin',
         'backup' => 'Database Backup',
         'audit-log' => 'Audit Log',
     ];
-    $activeTab = array_key_exists((string) request('tab'), $settingsTabs) ? (string) request('tab') : 'recording';
+    // Positions had their own tab before Dropdown Lists; old links still open it.
+    $requestedTab = (string) request('tab') === 'positions' ? 'lists' : (string) request('tab');
+    $activeTab = array_key_exists($requestedTab, $settingsTabs) ? $requestedTab : 'recording';
 @endphp
 
 @section('content')
@@ -196,43 +199,120 @@
 
     </div>
 
-    <!-- ===== MANAGE SUBJECTS & POSITIONS ===== -->
+    <!-- ===== SCHOOL NAME & LOGO ===== -->
 
-    <div class="card" id="departmentOptionsCard" role="tabpanel" aria-labelledby="settingsTab-positions" data-settings-panel="positions" @if ($activeTab !== 'positions') hidden @endif>
+    <div class="card" id="schoolBrandingCard" role="tabpanel" aria-labelledby="settingsTab-school" data-settings-panel="school" @if ($activeTab !== 'school') hidden @endif>
 
-        <div class="dept-card-header">
-            <div>
-                <h2>Manage Positions</h2>
-                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Choices in the personnel form's Position list, grouped by Personnel Type.</span></p>
+        <h2>School Name &amp; Logo</h2>
+        <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Shown everywhere in the system: the full name on printouts, ID badges and the login page; the short name in the sidebar and browser tabs.</span></p>
+
+        <form method="POST" action="{{ route('superadmin.settings.school') }}" enctype="multipart/form-data" class="school-branding-form">
+            @csrf
+
+            <div class="school-branding-fields">
+                <label for="schoolNameInput">Full School Name</label>
+                <input type="text" id="schoolNameInput" name="school_name" value="{{ $school['name'] }}" maxlength="{{ \App\Support\SchoolBranding::NAME_MAX }}" required>
+
+                <label for="schoolShortNameInput">Short Name</label>
+                <input type="text" id="schoolShortNameInput" name="school_short_name" value="{{ $school['short_name'] }}" maxlength="{{ \App\Support\SchoolBranding::SHORT_NAME_MAX }}" required>
+
+                <label for="schoolLogoInput">New Logo (PNG, JPG or WebP, 2 MB max)</label>
+                <input type="file" id="schoolLogoInput" name="school_logo" accept="image/png,image/jpeg,image/webp">
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Leave empty to keep the current logo. A square logo looks best.</span></p>
+
+                <button type="submit" class="toggle-btn on">
+                    <i class="fa-solid fa-floppy-disk"></i> Save School Name &amp; Logo
+                </button>
             </div>
-            <button type="button" class="add-option-btn" onclick="openAddOptionModal()">
-                <i class="fa-solid fa-plus"></i> Add
-            </button>
+
+            <div class="school-logo-preview">
+                <img src="{{ $school['logo_url'] }}" alt="Current school logo" id="schoolLogoPreview">
+                <span>Current logo</span>
+            </div>
+        </form>
+
+    </div>
+
+    <!-- ===== DROPDOWN LISTS (Positions and Leave Types) ===== -->
+
+    {{-- Both cards: header (title | + Add), description, tabs, table. Their
+         rows line up across the two cards (superadmin-settings.css). --}}
+    <div class="dashboard-two-column dropdown-lists" role="tabpanel" aria-labelledby="settingsTab-lists" data-settings-panel="lists" @if ($activeTab !== 'lists') hidden @endif>
+
+        <div class="card list-card" id="departmentOptionsCard">
+
+            <div class="list-card-header">
+                <h2>Positions</h2>
+                <button type="button" class="add-option-btn" onclick="openAddOptionModal('Position')">
+                    <i class="fa-solid fa-plus"></i> Add
+                </button>
+            </div>
+
+            <p class="help-note list-card-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Choices in the personnel form's Position list, grouped by Personnel Type.</span></p>
+
+            <div class="dept-tabs list-card-tabs">
+                <button type="button" class="dept-tab-btn active" id="deptTabTeaching" onclick="switchDeptTab('Teaching', 'Position')">
+                    Teaching Staff
+                </button>
+                <button type="button" class="dept-tab-btn" id="deptTabNonTeaching" onclick="switchDeptTab('Non-Teaching', 'Position')">
+                    Non-Teaching Staff / School Administrator
+                </button>
+            </div>
+
+            <div class="table-scroll list-card-table">
+            <table class="dept-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Personnel Type</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="departmentOptionsTableBody">
+                    <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
+                </tbody>
+            </table>
+            </div>
+
         </div>
 
-        <div class="dept-tabs">
-            <button type="button" class="dept-tab-btn active" id="deptTabTeaching" onclick="switchDeptTab('Teaching')">
-                Teaching Staff
-            </button>
-            <button type="button" class="dept-tab-btn" id="deptTabNonTeaching" onclick="switchDeptTab('Non-Teaching')">
-                Non-Teaching Staff / School Administrator
-            </button>
-        </div>
+        <div class="card list-card" id="leaveTypeOptionsCard">
 
-        <div class="table-scroll">
-        <table class="dept-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Personnel Type</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="departmentOptionsTableBody">
-                <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
-            </tbody>
-        </table>
+            <div class="list-card-header">
+                <h2>Leave Types</h2>
+                <button type="button" class="add-option-btn" onclick="openAddOptionModal('Leave Type')">
+                    <i class="fa-solid fa-plus"></i> Add
+                </button>
+            </div>
+
+            <p class="help-note list-card-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Choices in the Add Leave form's Leave Type list, grouped by Personnel Type. "Other" is always offered last. A type used by a leave record cannot be removed.</span></p>
+
+            <div class="dept-tabs list-card-tabs">
+                <button type="button" class="dept-tab-btn active" id="leaveTypeTabTeaching" onclick="switchDeptTab('Teaching', 'Leave Type')">
+                    Teaching Staff
+                </button>
+                <button type="button" class="dept-tab-btn" id="leaveTypeTabNonTeaching" onclick="switchDeptTab('Non-Teaching', 'Leave Type')">
+                    Non-Teaching Staff / School Administrator
+                </button>
+            </div>
+
+            <div class="table-scroll list-card-table">
+            <table class="dept-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Personnel Type</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="leaveTypeOptionsTableBody">
+                    <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
+                </tbody>
+            </table>
+            </div>
+
         </div>
 
     </div>
@@ -254,6 +334,7 @@
             <button type="button" class="dept-tab-btn" data-type="school_event" onclick="switchRecycleBinTab('school_event', this)">School Schedule Changes</button>
             <button type="button" class="dept-tab-btn" data-type="attendance_adjustment" onclick="switchRecycleBinTab('attendance_adjustment', this)">Attendance Adjustments</button>
             <button type="button" class="dept-tab-btn" data-type="position" onclick="switchRecycleBinTab('position', this)">Positions</button>
+            <button type="button" class="dept-tab-btn" data-type="leave_type" onclick="switchRecycleBinTab('leave_type', this)">Leave Types</button>
             <button type="button" class="dept-tab-btn" data-type="account" onclick="switchRecycleBinTab('account', this)">Accounts</button>
         </div>
 
@@ -338,17 +419,17 @@
     </div>
 </div>
 
-    <!-- ADD POSITION MODAL -->
+    <!-- ADD POSITION / LEAVE TYPE MODAL (superadmin-settings.js sets the texts) -->
     <div class="modal-backdrop" id="addOptionModal">
         <div class="modal">
             <button class="modal-close" type="button" onclick="closeAddOptionModal()">×</button>
-            <h3>Add Position</h3>
-            <p style="color: #8a7d5c; font-size: 14px; margin-bottom: 15px;">
+            <h3 id="addOptionTitle">Add Position</h3>
+            <p id="addOptionHelp" style="color: #8a7d5c; font-size: 14px; margin-bottom: 15px;">
                 This will immediately appear as a choice in the Add/Edit Personnel form.
             </p>
 
             <label style="display:block; font-weight:600; margin-bottom:6px; color:#5c5238; font-size: 13px;">Name</label>
-            <input type="text" id="addOptionNameInput" placeholder="e.g. Teacher I, Administrator" data-capitalize="words">
+            <input type="text" id="addOptionNameInput" maxlength="100" placeholder="e.g. Teacher I, Administrator" data-capitalize="words">
 
             <div style="margin-top:12px;">
                 <label style="display:block; font-weight:600; margin-bottom:6px; color:#5c5238; font-size: 13px;">Personnel Type</label>
@@ -375,7 +456,7 @@
             <h3>Deactivate Option</h3>
             <p style="color: #8a7d5c; font-size: 14px;">
                 Are you sure you want to deactivate <strong id="deactivateOptionName" style="color:#14390f;"></strong>?
-                It will no longer appear in the Add/Edit Personnel form, but existing personnel records that reference it are kept as-is.
+                <span id="deactivateOptionEffect">It will no longer appear in the Add/Edit Personnel form, but existing personnel records that reference it are kept as-is.</span>
             </p>
             <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>It moves to the Recycle Bin. You can restore it later.</span></p>
             <div class="modal-actions" style="margin-top: 15px;">

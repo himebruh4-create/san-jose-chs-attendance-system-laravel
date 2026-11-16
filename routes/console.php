@@ -132,5 +132,5 @@ Artisan::command('kiosk:check-offline', function () {
 })->purpose('Alert the Super Admin and Admin when a kiosk stops checking in during a scan window');
 
 Schedule::command('backup:run')->dailyAt('18:30');
-Schedule::command('attendance:prune-scan-photos')->dailyAt('02:00');
+Schedule::command('attendance:prune-scan-photos')->dailyAt(ScanPhotos::PRUNE_TIME);
 Schedule::command('kiosk:check-offline')->everyMinute()->withoutOverlapping();

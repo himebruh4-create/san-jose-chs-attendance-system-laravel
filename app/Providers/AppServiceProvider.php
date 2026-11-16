@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Support\SchoolBranding;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // The school's name and logo on every page and printout (read once per request).
+        View::composer('*', function ($view): void {
+            $view->with('school', SchoolBranding::current());
+        });
     }
 }

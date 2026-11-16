@@ -3477,8 +3477,8 @@ function printDTRWithRemarks(
     const containerHTML = `
         <div class="container">
             <div class="print-logo-block">
-                <img src="${appUrl('img/logo.png')}" alt="School Logo" class="print-logo-img">
-                <div class="print-school-name">San Jose Community High School</div>
+                <img src="${escapeHtml(schoolInfo().logo_url)}" alt="School Logo" class="print-logo-img">
+                <div class="print-school-name">${escapeHtml(schoolInfo().name)}</div>
             </div>
             <div class="header">
                 <div>Civil Service Form No. 48</div>

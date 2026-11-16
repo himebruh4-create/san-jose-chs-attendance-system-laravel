@@ -154,7 +154,7 @@ class ReviewController extends Controller
 
         $query = DB::table('attendance_rejected_scans as r')
             ->leftJoin('teachers as t', 't.id', '=', 'r.teacher_id')
-            ->select('r.id', 'r.teacher_id', 'r.attempted_at', 'r.attendance_date', 'r.reason', 'r.detail',
+            ->select('r.id', 'r.teacher_id', 'r.barcode', 'r.attempted_at', 'r.attendance_date', 'r.reason', 'r.detail',
                 'r.existing_out_time', 'r.reviewed_at', 'r.reviewed_by', 'r.review_remarks',
                 't.fullname', 't.id_number', 't.department')
             ->orderByDesc('r.attempted_at')
@@ -167,10 +167,16 @@ class ReviewController extends Controller
             $query->whereNotNull('r.reviewed_at');
         }
 
+        // An unknown barcode (no teacher) shows the barcode that was scanned.
         $scans = $query->get()->map(fn ($row) => [
             'id' => (int) $row->id,
-            'teacher_id' => (int) $row->teacher_id,
-            'fullname' => $row->fullname ?: ('Personnel #'.$row->teacher_id.' (removed)'),
+            'teacher_id' => $row->teacher_id === null ? null : (int) $row->teacher_id,
+            'barcode' => $row->barcode,
+            'fullname' => match (true) {
+                $row->teacher_id === null => 'Unknown barcode',
+                (bool) $row->fullname => $row->fullname,
+                default => 'Personnel #'.$row->teacher_id.' (removed)',
+            },
             'id_number' => $row->id_number,
             'department' => $row->department,
             'attempted_at' => $row->attempted_at,

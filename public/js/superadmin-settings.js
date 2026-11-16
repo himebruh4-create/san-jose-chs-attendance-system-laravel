@@ -45,16 +45,22 @@ function switchSettingsTab(tab, rememberInUrl = true) {
     }
 }
 
+// Positions had their own tab before Dropdown Lists; an old #positions link opens it.
+function settingsTabFromHash() {
+    const hash = window.location.hash.slice(1);
+    return hash === 'positions' ? 'lists' : hash;
+}
+
 // The hash wins over ?tab= (the server already showed that one).
 (function openInitialSettingsTab() {
-    const fromHash = window.location.hash.slice(1);
+    const fromHash = settingsTabFromHash();
     const shown = document.querySelector('.settings-tabs [role="tab"].active');
 
     switchSettingsTab(SETTINGS_TABS.includes(fromHash) ? fromHash : shown.dataset.tab, false);
 })();
 
 window.addEventListener('hashchange', function () {
-    switchSettingsTab(window.location.hash.slice(1), false);
+    switchSettingsTab(settingsTabFromHash(), false);
 });
 
 // Left / Right / Home / End move between tabs.
@@ -214,7 +220,8 @@ function closeErrorModal() {
 document.addEventListener("DOMContentLoaded", function () {
     loadAttendanceRecordingStatus();
     loadLunchBreak();
-    loadDepartmentOptions(currentDeptTab);
+    loadDepartmentOptions(DROPDOWN_LISTS['Position'].personnelType, 'Position');
+    loadDepartmentOptions(DROPDOWN_LISTS['Leave Type'].personnelType, 'Leave Type');
     loadRecycleBin(currentRecycleBinTab);
 });
 
@@ -231,6 +238,7 @@ const RECYCLE_BIN_LABELS = {
     attendance_adjustment: 'attendance adjustment',
     subject: 'subject',
     position: 'position',
+    leave_type: 'leave type',
     account: 'account'
 };
 
@@ -241,6 +249,7 @@ const RECYCLE_BIN_CATEGORY_NAMES = {
     attendance_adjustment: 'Attendance Adjustments',
     subject: 'Subjects',
     position: 'Positions',
+    leave_type: 'Leave Types',
     account: 'Accounts'
 };
 
@@ -596,7 +605,10 @@ async function saveLunchBreak() {
 }
 
 /* =========================================================
-   MANAGE SUBJECTS & POSITIONS
+   DROPDOWN LISTS (Positions and Leave Types)
+   Both lists are department_options rows, one per Personnel Type, and
+   work the same way: Add, and Deactivate (to the Recycle Bin). A leave
+   type a leave record uses cannot be deactivated (the server says so).
    ========================================================= */
 
 const PERSONNEL_TYPE_LABELS = {
@@ -604,35 +616,61 @@ const PERSONNEL_TYPE_LABELS = {
     'Non-Teaching': 'Non-Teaching Staff / School Administrator'
 };
 
-let currentDeptTab = 'Teaching';
+/* option_type => its card on this page. */
+const DROPDOWN_LISTS = {
+    'Position': {
+        tbody: 'departmentOptionsTableBody',
+        tabPrefix: 'deptTab',
+        noun: 'position',
+        plural: 'positions',
+        placeholder: 'e.g. Teacher I, Administrator',
+        appearsIn: 'This will immediately appear as a choice in the Add/Edit Personnel form.',
+        deactivateEffect: 'It will no longer appear in the Add/Edit Personnel form, but existing personnel records that reference it are kept as-is.',
+        personnelType: 'Teaching'
+    },
+    'Leave Type': {
+        tbody: 'leaveTypeOptionsTableBody',
+        tabPrefix: 'leaveTypeTab',
+        noun: 'leave type',
+        plural: 'leave types',
+        placeholder: 'e.g. Study Leave, Bereavement Leave',
+        appearsIn: 'This will immediately appear as a choice in the Add Leave form.',
+        deactivateEffect: 'It will no longer appear in the Add Leave form.',
+        personnelType: 'Teaching'
+    }
+};
+
+let addOptionListType = 'Position';
 let optionIdToDeactivate = null;
 let optionNameToDeactivate = null;
+let optionListToDeactivate = 'Position';
 
-function switchDeptTab(personnelType) {
+function switchDeptTab(personnelType, listType = 'Position') {
 
-    currentDeptTab = personnelType;
+    const list = DROPDOWN_LISTS[listType];
+    list.personnelType = personnelType;
 
-    document.getElementById('deptTabTeaching').classList.toggle('active', personnelType === 'Teaching');
-    document.getElementById('deptTabNonTeaching').classList.toggle('active', personnelType === 'Non-Teaching');
+    document.getElementById(list.tabPrefix + 'Teaching').classList.toggle('active', personnelType === 'Teaching');
+    document.getElementById(list.tabPrefix + 'NonTeaching').classList.toggle('active', personnelType === 'Non-Teaching');
 
-    loadDepartmentOptions(personnelType);
+    loadDepartmentOptions(personnelType, listType);
 }
 
-async function loadDepartmentOptions(personnelType) {
+async function loadDepartmentOptions(personnelType, listType = 'Position') {
 
-    const tbody = document.getElementById('departmentOptionsTableBody');
+    const list = DROPDOWN_LISTS[listType];
+    const tbody = document.getElementById(list.tbody);
     tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>`;
 
     try {
 
         // Same endpoint/columns the Add/Edit Personnel form's Position
-        // dropdown reads from — option_type is always 'Position' here;
-        // Subjects are never fetched or shown in this management UI.
-        const response = await fetch(appUrl('data/department-options') + `?type=Position&personnel_type=${encodeURIComponent(personnelType)}`);
+        // dropdown reads from. Subjects are never fetched or shown here.
+        const response = await fetch(appUrl('data/department-options') + `?type=${encodeURIComponent(listType)}&personnel_type=${encodeURIComponent(personnelType)}`);
         const result = await response.json();
 
         if (!result.success) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Unable to load positions.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Unable to load ${list.plural}.</td></tr>`;
             return;
         }
 
@@ -642,7 +680,7 @@ async function loadDepartmentOptions(personnelType) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="4" class="dept-empty-state">
-                        No ${PERSONNEL_TYPE_LABELS[personnelType] || personnelType} positions added yet.
+                        No ${PERSONNEL_TYPE_LABELS[personnelType] || personnelType} ${list.plural} added yet.
                     </td>
                 </tr>
             `;
@@ -656,7 +694,7 @@ async function loadDepartmentOptions(personnelType) {
                 <td><span class="status-badge enabled" style="padding:4px 12px; font-size:12px;">${escapeDeptHTML(opt.status)}</span></td>
                 <td>
                     <div class="action-buttons">
-                        <button type="button" class="deactivate-option-btn" onclick="openDeactivateOptionModal(${opt.id}, '${escapeDeptHTML(opt.option_name).replace(/'/g, "\\'")}')">
+                        <button type="button" class="deactivate-option-btn" onclick="openDeactivateOptionModal(${opt.id}, '${escapeDeptHTML(opt.option_name).replace(/'/g, "\\'")}', '${listType}')">
                             Deactivate
                         </button>
                     </div>
@@ -665,8 +703,8 @@ async function loadDepartmentOptions(personnelType) {
         `).join('');
 
     } catch (error) {
-        console.error("Failed to load department options:", error);
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Failed to load positions.</td></tr>`;
+        console.error("Failed to load " + list.plural + ":", error);
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Failed to load ${list.plural}.</td></tr>`;
     }
 }
 
@@ -676,9 +714,15 @@ function escapeDeptHTML(value) {
     return div.innerHTML;
 }
 
-function openAddOptionModal() {
+function openAddOptionModal(listType = 'Position') {
+    const list = DROPDOWN_LISTS[listType];
+    addOptionListType = listType;
+
+    document.getElementById('addOptionTitle').textContent = 'Add ' + (listType === 'Position' ? 'Position' : 'Leave Type');
+    document.getElementById('addOptionHelp').textContent = list.appearsIn;
+    document.getElementById('addOptionNameInput').placeholder = list.placeholder;
     document.getElementById('addOptionNameInput').value = '';
-    document.getElementById('addOptionPersonnelTypeSelect').value = currentDeptTab;
+    document.getElementById('addOptionPersonnelTypeSelect').value = list.personnelType;
     document.getElementById('addOptionModal').classList.add('active');
     lockBodyScroll();
 }
@@ -690,6 +734,8 @@ function closeAddOptionModal() {
 
 async function saveNewOption() {
 
+    const listType = addOptionListType;
+    const list = DROPDOWN_LISTS[listType];
     const name = document.getElementById('addOptionNameInput').value.trim();
     const personnelType = document.getElementById('addOptionPersonnelTypeSelect').value;
 
@@ -699,14 +745,14 @@ async function saveNewOption() {
     }
 
     if (!personnelType) {
-        showToast("Please select a Personnel Type for this position.", "error");
+        showToast("Please select a Personnel Type for this " + list.noun + ".", "error");
         return;
     }
 
     try {
 
         const formData = new FormData();
-        formData.append("option_type", "Position");
+        formData.append("option_type", listType);
         formData.append("option_name", name);
         formData.append("personnel_type", personnelType);
 
@@ -725,8 +771,8 @@ async function saveNewOption() {
         showToast(result.message, "success");
         closeAddOptionModal();
 
-        if (personnelType === currentDeptTab) {
-            loadDepartmentOptions(currentDeptTab);
+        if (personnelType === list.personnelType) {
+            loadDepartmentOptions(list.personnelType, listType);
         }
 
     } catch (error) {
@@ -735,10 +781,12 @@ async function saveNewOption() {
     }
 }
 
-function openDeactivateOptionModal(id, name) {
+function openDeactivateOptionModal(id, name, listType = 'Position') {
     optionIdToDeactivate = id;
     optionNameToDeactivate = name;
+    optionListToDeactivate = listType;
     document.getElementById('deactivateOptionName').textContent = name;
+    document.getElementById('deactivateOptionEffect').textContent = DROPDOWN_LISTS[listType].deactivateEffect;
     document.getElementById('deactivateOptionModal').classList.add('active');
     lockBodyScroll();
 }
@@ -753,6 +801,8 @@ function closeDeactivateOptionModal() {
 async function confirmDeactivateOption() {
 
     if (!optionIdToDeactivate) return;
+
+    const listType = optionListToDeactivate;
 
     try {
 
@@ -774,7 +824,7 @@ async function confirmDeactivateOption() {
 
         showToast("Moved to the Recycle Bin.", "success");
         closeDeactivateOptionModal();
-        loadDepartmentOptions(currentDeptTab);
+        loadDepartmentOptions(DROPDOWN_LISTS[listType].personnelType, listType);
 
     } catch (error) {
         console.error("Deactivate Option Error:", error);
@@ -929,3 +979,42 @@ async function loadAuditLog(page = 1) {
 }
 
 document.addEventListener('DOMContentLoaded', loadAuditLog);
+
+/* =========================================================
+   SCHOOL NAME & LOGO
+   A picked logo is previewed before saving. The server checks the file
+   again (PNG, JPG or WebP, 2 MB max) whatever the browser allowed.
+   ========================================================= */
+
+(function previewSchoolLogo() {
+    const input = document.getElementById('schoolLogoInput');
+    const preview = document.getElementById('schoolLogoPreview');
+    if (!input || !preview) return;
+
+    const original = preview.src;
+
+    input.addEventListener('change', function () {
+        const file = input.files && input.files[0];
+
+        if (!file) {
+            preview.src = original;
+            return;
+        }
+
+        if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+            showToast('The logo must be a PNG, JPG or WebP image.', 'error');
+            input.value = '';
+            preview.src = original;
+            return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+            showToast('The logo must be 2 MB or smaller.', 'error');
+            input.value = '';
+            preview.src = original;
+            return;
+        }
+
+        preview.src = URL.createObjectURL(file);
+    });
+})();

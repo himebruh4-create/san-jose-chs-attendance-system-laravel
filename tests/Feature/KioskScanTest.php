@@ -246,6 +246,7 @@ class KioskScanTest extends TestCase
         $this->assertCount(2, $photos);
         $this->assertSame('accepted', $photos[0]->outcome);
         $this->assertStringStartsWith('scan-photos/2026/10/05/', $photos[0]->path);
+        $this->assertStringEndsWith('.webp', $photos[0]->path);
         Storage::disk('local')->assertExists($photos[0]->path);
         $this->assertNull($photos[1]->path);
 
@@ -255,7 +256,84 @@ class KioskScanTest extends TestCase
         // Never kept in the browser cache (shared office PC).
         $this->actingAs($this->account('superadmin'))->get(route('photos.scan', $photos[0]->id))
             ->assertOk()
+            ->assertHeader('Content-Type', 'image/webp')
             ->assertHeader('Cache-Control', 'no-store, private');
+    }
+
+    private function jpegDataUrl(int $width = 40, int $height = 30): string
+    {
+        $image = imagecreatetruecolor($width, $height);
+        ob_start();
+        imagejpeg($image);
+
+        return 'data:image/jpeg;base64,'.base64_encode(ob_get_clean());
+    }
+
+    public function test_only_time_in_and_lunch_in_keep_their_photo(): void
+    {
+        $t = $this->teacher();
+        $photo = $this->jpegDataUrl();
+
+        $this->scan($t->barcode, '2026-10-05 06:55:00', $photo)->assertJson(['success' => true, 'kind' => 'IN']);
+        $this->scan($t->barcode, '2026-10-05 12:20:00', $photo)->assertJson(['success' => true, 'kind' => 'BREAK_OUT']);
+        $this->scan($t->barcode, '2026-10-05 12:58:00', $photo)->assertJson(['success' => true, 'kind' => 'BREAK_IN']);
+        $this->scan($t->barcode, '2026-10-05 15:05:00', $photo)->assertJson(['success' => true, 'kind' => 'OUT']);
+
+        $kept = DB::table('scan_photos')->orderBy('id')->get()->mapWithKeys(fn ($row) => [$row->scan_kind => $row->path !== null])->all();
+        $this->assertSame(['IN' => true, 'BREAK_OUT' => false, 'BREAK_IN' => true, 'OUT' => false], $kept);
+        $this->assertCount(2, Storage::disk('local')->allFiles('scan-photos'));
+    }
+
+    public function test_a_rejected_scan_keeps_no_photo(): void
+    {
+        $t = $this->teacher();
+
+        $this->scan($t->barcode, '2026-10-05 06:55:00')->assertJson(['success' => true]);
+        $this->scan($t->barcode, '2026-10-05 06:57:00', $this->jpegDataUrl())->assertJson(['success' => false, 'title' => 'Duplicate Scan']);
+
+        $this->assertDatabaseHas('scan_photos', ['teacher_id' => $t->id, 'outcome' => 'duplicate', 'path' => null]);
+        $this->assertSame([], Storage::disk('local')->allFiles('scan-photos'));
+    }
+
+    public function test_an_unknown_barcode_keeps_no_photo_and_is_logged_as_text_in_the_rejected_scan_log(): void
+    {
+        $this->scan('000123', '2026-10-05 06:55:00', $this->jpegDataUrl())->assertJson(['success' => false, 'title' => 'Not Found']);
+
+        $this->assertDatabaseHas('scan_photos', ['teacher_id' => null, 'barcode' => '000123', 'outcome' => 'not_found', 'path' => null]);
+        $this->assertSame([], Storage::disk('local')->allFiles('scan-photos'));
+        $this->assertDatabaseHas('attendance_rejected_scans', [
+            'teacher_id' => null, 'barcode' => '000123', 'reason' => 'UNKNOWN_BARCODE', 'attempted_at' => '2026-10-05 06:55:00',
+        ]);
+
+        $this->actingAs($this->account('superadmin'))->getJson('/data/rejected-scans')
+            ->assertJsonPath('scans.0.fullname', 'Unknown barcode')
+            ->assertJsonPath('scans.0.barcode', '000123')
+            ->assertJsonPath('scans.0.teacher_id', null)
+            ->assertJsonPath('unreviewed', 1);
+    }
+
+    public function test_a_wide_photo_is_stored_at_most_320_pixels_wide_keeping_its_shape(): void
+    {
+        $t = $this->teacher();
+
+        $this->scan($t->barcode, '2026-10-05 06:55:00', $this->jpegDataUrl(640, 480))->assertJson(['success' => true]);
+
+        $stored = Storage::disk('local')->get(DB::table('scan_photos')->value('path'));
+        $this->assertSame([320, 240, 'image/webp'], [getimagesizefromstring($stored)[0], getimagesizefromstring($stored)[1], getimagesizefromstring($stored)['mime']]);
+    }
+
+    public function test_an_older_jpeg_scan_photo_is_still_served_as_jpeg(): void
+    {
+        $t = $this->teacher();
+        Storage::disk('local')->put('scan-photos/2026/10/01/old.jpg', base64_decode(substr($this->jpegDataUrl(), strlen('data:image/jpeg;base64,'))));
+        $id = DB::table('scan_photos')->insertGetId([
+            'teacher_id' => $t->id, 'attendance_date' => '2026-10-01', 'scanned_at' => '2026-10-01 06:55:00',
+            'outcome' => 'accepted', 'scan_kind' => 'IN', 'input_method' => 'scanned', 'path' => 'scan-photos/2026/10/01/old.jpg',
+        ]);
+
+        $this->actingAs($this->account('superadmin'))->get(route('photos.scan', $id))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg');
     }
 
     public function test_a_non_image_photo_is_ignored(): void

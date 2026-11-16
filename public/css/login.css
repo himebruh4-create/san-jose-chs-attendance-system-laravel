@@ -67,6 +67,15 @@ body::before {
     color: #fffdf8;
 }
 
+.login-card p.school-title {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #7a5c0f;
+}
+
 .login-card h2 {
     margin: 0 0 6px;
     font-size: 21px;

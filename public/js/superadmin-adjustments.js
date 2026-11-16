@@ -1202,7 +1202,7 @@ function scanPhotosHTML(r) {
     const outcome = o => (o === 'accepted' ? '' : ' (' + o + ')');
 
     let html = '<div class="scan-photo-strip"><div class="scan-photo"><img src="' +
-        escapeHtml(r.registered_photo || appUrl('img/logo.png')) + '" alt="Registered photo"><span>Registered</span></div>';
+        escapeHtml(r.registered_photo || schoolInfo().logo_url) + '" alt="Registered photo"><span>Registered</span></div>';
 
     photos.forEach(p => {
         const time = formatScanTime((p.scanned_at || '').slice(11, 19));
@@ -1222,7 +1222,16 @@ function scanPhotosHTML(r) {
 function rejectedReasonLabel(reason) {
     if (reason === 'DUPLICATE_SCAN') return 'Duplicate scan';
     if (reason === 'ATTENDANCE_COMPLETE') return 'Attendance already complete';
+    if (reason === 'UNKNOWN_BARCODE') return 'Unknown barcode';
     return reason;
+}
+
+/* Name and ID number, or for an unknown barcode the barcode that was scanned. */
+function rejectedPersonHTML(s) {
+    if (s.teacher_id === null) {
+        return '<strong>' + escapeHTML(s.fullname) + '</strong><br><small>Barcode: ' + escapeHTML(s.barcode || '') + '</small>';
+    }
+    return '<strong>' + escapeHTML(s.fullname) + '</strong><br><small>' + escapeHTML(s.id_number || '') + '</small>';
 }
 
 async function loadRejectedScans() {
@@ -1261,7 +1270,7 @@ async function loadRejectedScans() {
                   '</div>';
 
             return '<tr>' +
-                '<td><strong>' + escapeHTML(s.fullname) + '</strong><br><small>' + escapeHTML(s.id_number || '') + '</small></td>' +
+                '<td>' + rejectedPersonHTML(s) + '</td>' +
                 '<td>' + escapeHTML(attempted) + '</td>' +
                 '<td>' + escapeHTML(attDate) + '</td>' +
                 '<td><span class="pending-reason-tag">' + escapeHTML(rejectedReasonLabel(s.reason)) + '</span>' + (s.detail ? '<br><small>' + escapeHTML(s.detail) + '</small>' : '') + '</td>' +

@@ -8,8 +8,9 @@
    - a scan that cannot reach the server says so on screen
    - Late / On-Time comes from the response's `status` field
    - names and messages are escaped before being shown
-   - a webcam photo is taken with each scan (when a camera is available)
-     and shown in the result
+   - a webcam photo is kept for each Time In and Lunch In (when a camera
+     is available) and shown in the result; departures and rejected scans
+     keep none
    - the camera is checked on every scan and every few minutes (blocked,
      too dark, disconnected, not allowed) and the kiosk checks in; the
      Super Admin and Admin are alerted. Scanning never waits on it.
@@ -155,7 +156,7 @@ const camera = {
 const CAMERA_ALERT_STATES = ["blocked", "disconnected", "denied"];
 
 const CAMERA_MESSAGES = {
-    ok: ["Camera on — a photo is taken with each scan", true],
+    ok: ["Camera on — a photo is taken at each time-in", true],
     blocked: ["Camera blocked or too dark — scans are still saved", false],
     disconnected: ["Camera not available — scans are saved without a photo", false],
     denied: ["Camera not allowed in this browser — scans are saved without a photo", false]
@@ -362,16 +363,34 @@ function faceResult(image) {
     }
 }
 
+/* =========================
+   SCAN PHOTO
+   Only an arrival (Time In, Lunch In) keeps its photo. Which kind a scan is
+   only the server knows, so the frame is grabbed at the moment of the scan
+   and sent with it; the server stores it for an arrival and drops it for
+   anything else (App\Domain\Attendance\ScanPhotos). It is kept small: at
+   most 320 px wide, low-quality WebP, or JPEG where the browser cannot
+   make WebP (canvas then answers with a PNG data URL).
+========================= */
+
+const PHOTO_KINDS = ["IN", "BREAK_IN"];
+const PHOTO_MAX_WIDTH = 320;
+const PHOTO_WEBP_QUALITY = 0.5;
+const PHOTO_JPEG_QUALITY = 0.6;
+
 function capturePhoto() {
     if (!camera.ready || camera.video.readyState < 2 || !camera.video.videoWidth) return "";
 
-    const width = 480;
+    const width = Math.min(PHOTO_MAX_WIDTH, camera.video.videoWidth);
     const height = Math.round(width * camera.video.videoHeight / camera.video.videoWidth);
     camera.canvas.width = width;
     camera.canvas.height = height;
     camera.canvas.getContext("2d").drawImage(camera.video, 0, 0, width, height);
 
-    return camera.canvas.toDataURL("image/jpeg", 0.7);
+    const webp = camera.canvas.toDataURL("image/webp", PHOTO_WEBP_QUALITY);
+    if (webp.startsWith("data:image/webp")) return webp;
+
+    return camera.canvas.toDataURL("image/jpeg", PHOTO_JPEG_QUALITY);
 }
 
 /* =========================
@@ -403,7 +422,9 @@ function wasTypedManually(barcode) {
 
 /* =========================
    SCAN RESULT PHOTO
-   Only the webcam snapshot sent with this scan ("Just now").
+   Only the webcam snapshot sent with this scan ("Just now"), and only for
+   an arrival: a departure or a rejected scan keeps no photo, so none is
+   shown.
 ========================= */
 
 function scanPhotoHTML(snapshot) {
@@ -425,12 +446,12 @@ function shortTime(time) {
     return String(time || "").replace(/^0(?=\d:)/, "");
 }
 
-function rejectionHTML(data, snapshot, reason) {
+function rejectionHTML(data, reason) {
     const name = data && data.fullname
         ? `<b>Name:</b> ${escapeHtml(data.fullname)}<br>`
         : "";
 
-    return scanPhotoHTML(snapshot) + `
+    return `
         <div class="scan-details">
             ${name}
             <b>Reason:</b> ${reason}
@@ -480,7 +501,7 @@ function processBarcode() {
     .then(data => {
 
         if (!data.success) {
-            showModal(data.title || "Not Recorded", rejectionHTML(data, snapshot, escapeHtml(data.message || "Your scan was not recorded. Please try again.")), data.badge);
+            showModal(data.title || "Not Recorded", rejectionHTML(data, escapeHtml(data.message || "Your scan was not recorded. Please try again.")), data.badge);
             return;
         }
 
@@ -497,11 +518,13 @@ function processBarcode() {
             </div>
         `;
 
-        showModal(data.title, scanPhotoHTML(snapshot) + messageHTML, data.badge);
+        const photoHTML = PHOTO_KINDS.includes(data.kind) ? scanPhotoHTML(snapshot) : "";
+
+        showModal(data.title, photoHTML + messageHTML, data.badge);
     })
     .catch(err => {
         console.error("Scan request failed:", err);
-        showModal("Not Recorded", rejectionHTML(null, snapshot, "The attendance server could not be reached, so this scan was <b>not saved</b>. Please scan again. If this keeps happening, tell the Super Admin."));
+        showModal("Not Recorded", rejectionHTML(null, "The attendance server could not be reached, so this scan was <b>not saved</b>. Please scan again. If this keeps happening, tell the Super Admin."));
     })
     .finally(() => {
         scanInProgress = false;

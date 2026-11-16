@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <meta name="app-base" content="{{ url('/') }}">
-<title>Signed In on Another Device</title>
-<link rel="icon" href="{{ asset('img/logo.png') }}">
+<title>Signed In on Another Device - {{ $school['short_name'] }}</title>
+<link rel="icon" href="{{ $school['logo_url'] }}">
 <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
 <link rel="stylesheet" href="{{ asset_v('css/app-shell.css') }}">
 <script src="{{ asset_v('js/app-shell.js') }}"></script>

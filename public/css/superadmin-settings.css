@@ -168,16 +168,67 @@ body { margin: 0; background: #f5f0e1; }
 
 .table-scroll { overflow-x: auto; }
 
-/* Manage Subjects & Positions — internal vertical scroll only,
-   so the card itself stays a fixed height regardless of how many
-   subjects/positions exist. Scoped to this card only; the Recycle
-   Bin's identical .table-scroll wrapper is untouched. */
-#departmentOptionsCard .table-scroll { max-height: 340px; overflow-y: auto; }
+/* ===== DROPDOWN LISTS: Positions | Leave Types =====
+   Both cards: header (title left, + Add right), description, tabs, table.
+   Each card is a fixed height and its table scrolls inside it (internal
+   vertical scroll only; the Recycle Bin's .table-scroll is untouched). */
 
-#departmentOptionsCard table.dept-table thead th { position: sticky; top: 0; z-index: 1; }
+.dropdown-lists .list-card {
+    display: flex;
+    flex-direction: column;
+    height: 520px;
+    min-width: 0;
+}
 
+.list-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.list-card-header h2 { margin: 0; min-width: 0; }
+
+.list-card-header .add-option-btn { flex-shrink: 0; white-space: nowrap; }
+
+.dropdown-lists .list-card-note { margin: 6px 0 12px; }
+
+.dropdown-lists .list-card-table {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.dropdown-lists table.dept-table thead th { position: sticky; top: 0; z-index: 1; }
+
+/* Side by side: the four rows line up across the two cards. With subgrid
+   both cards share each row's height, so a description that wraps to more
+   lines moves the tabs down in BOTH cards, never in one. The table row is
+   fixed, so both cards are the same height. */
+@media (min-width: 1366px) {
+    @supports (grid-template-rows: subgrid) {
+        .dropdown-lists { grid-template-rows: auto auto auto 380px; row-gap: 0; }
+
+        .dropdown-lists .list-card {
+            display: grid;
+            grid-row: span 4;
+            grid-template-rows: subgrid;
+            row-gap: 0;
+            height: auto;
+        }
+    }
+
+    /* Older browsers: the same room for both descriptions instead. */
+    @supports not (grid-template-rows: subgrid) {
+        .dropdown-lists .list-card-note { min-height: 4.6em; }
+    }
+}
+
+/* Phones: title, then + Add, then description, tabs and table. */
 @media (max-width: 767.98px) {
-    #departmentOptionsCard .table-scroll { max-height: 260px; }
+    .list-card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+    .dropdown-lists .list-card { height: 480px; }
 }
 
 /* Recycle Bin — same internal vertical scroll treatment as Manage
@@ -295,3 +346,72 @@ table.dept-table tbody tr:hover { background: #fbf8f0; }
 }
 
 .recovery-codes-form input:focus { outline: none; border-color: #e8a317; box-shadow: 0 0 0 3px rgba(232, 163, 23, 0.2); }
+
+/* ===== DROPDOWN LISTS: Positions | Leave Types side by side (the
+   2-column layout of the Personnel page); one column on narrow screens. */
+
+.dashboard-two-column {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+}
+
+@media (max-width: 1365.98px) {
+    .dashboard-two-column { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ===== SCHOOL NAME & LOGO ===== */
+
+.school-branding-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: flex-start;
+    margin-top: 12px;
+}
+
+.school-branding-fields {
+    flex: 1 1 340px;
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.school-branding-fields label {
+    font-weight: 600;
+    color: #5c5238;
+    font-size: 13px;
+    margin-top: 8px;
+}
+
+.school-branding-fields input[type="text"],
+.school-branding-fields input[type="file"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #e6dcc4;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+}
+
+.school-branding-fields input:focus { outline: none; border-color: #e8a317; box-shadow: 0 0 0 3px rgba(232, 163, 23, 0.2); }
+
+.school-branding-fields button { align-self: flex-start; margin-top: 8px; }
+
+.school-logo-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    border: 1px dashed #e6dcc4;
+    border-radius: 12px;
+    background: #fffdf8;
+    color: #8a7d5c;
+    font-size: 12px;
+}
+
+.school-logo-preview img { width: 120px; height: 120px; object-fit: contain; }

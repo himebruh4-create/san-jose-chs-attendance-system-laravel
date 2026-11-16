@@ -22,6 +22,8 @@
 
     @include('partials.kiosk-alerts')
 
+    @include('superadmin.partials.scan-photo-deletion-warning')
+
     @if ($resetRequests->isNotEmpty())
         <div class="card password-reset-alert">
             <h3><i class="fa-solid fa-triangle-exclamation"></i> Password Reset Request{{ $resetRequests->count() > 1 ? 's' : '' }}</h3>

@@ -28,6 +28,7 @@ const context = vm.createContext({
     Date,
     escapeHtml,
     appUrl: p => '/' + p,
+    schoolInfo: () => ({ name: 'San Jose Community High School', short_name: 'San Jose CHS', logo_url: '/img/logo.png' }),
     showMessageModal: () => {},
     printHTMLDocument: () => {},
 });

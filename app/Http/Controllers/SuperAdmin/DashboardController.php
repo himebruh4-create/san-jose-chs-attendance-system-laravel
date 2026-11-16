@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Domain\Attendance\DashboardStats;
+use App\Domain\Attendance\ScanPhotos;
 use App\Http\Controllers\Controller;
 use App\Support\KioskHealth;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,7 @@ class DashboardController extends Controller
             'monthTotals' => $stats->thisMonth($today),
             'monthChangeDays' => $stats->thisMonthScheduleChangeDays($today),
             'kioskAlerts' => KioskHealth::openAlerts(),
+            'scanPhotoDeletion' => ScanPhotos::upcomingDeletion(),
             'teachersOnLeaveToday' => $todayStats['on_leave'],
             'week' => $stats->week($today),
             'resetRequests' => $resetRequests,

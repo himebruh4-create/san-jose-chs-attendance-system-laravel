@@ -9,11 +9,13 @@ class DepartmentOptionsSeeder extends Seeder
 {
     /**
      * Default Subject / Position dropdown values for a fresh install. Only
-     * runs on an empty table, so it never touches imported data.
+     * runs when there are none yet, so it never touches imported data. (The
+     * default leave types come from their migration, so they are not
+     * counted here.)
      */
     public function run(): void
     {
-        if (DB::table('department_options')->exists()) {
+        if (DB::table('department_options')->whereIn('option_type', ['Subject', 'Position'])->exists()) {
             return;
         }
 

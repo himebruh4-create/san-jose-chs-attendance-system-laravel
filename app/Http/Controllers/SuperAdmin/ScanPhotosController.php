@@ -96,6 +96,8 @@ class ScanPhotosController extends Controller
             'no_face' => $p->face_detected !== null && ! $p->face_detected,
             'kiosk' => $p->kiosk_name,
             'url' => $p->path ? route('photos.scan', $p->id) : null,
+            // Departures and rejected scans keep no photo by design.
+            'photo_expected' => ScanPhotos::takesPhoto(['outcome' => $p->outcome, 'kind' => $p->scan_kind]),
             'registered_photo' => $p->photo ? route('photos.personnel', basename($p->photo)) : null,
         ]);
 

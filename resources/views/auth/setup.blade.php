@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>First-Time Setup</title>
-<link rel="icon" href="{{ asset('img/logo.png') }}">
+<title>First-Time Setup - {{ $school['short_name'] }}</title>
+<link rel="icon" href="{{ $school['logo_url'] }}">
 <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
 <link rel="stylesheet" href="{{ asset_v('css/forgot-password.css') }}">
 </head>

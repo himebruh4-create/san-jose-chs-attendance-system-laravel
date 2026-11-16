@@ -28,36 +28,11 @@
 
     </div>
 
-    <!-- PERSONNEL LIST -->
-    <div class="card">
-
-        <div class="list-header">
-            <div>
-                <h2><i class="fa-solid fa-users"></i> Personnel List</h2>
-                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Select View More for a person's schedule, barcode and actions.</span></p>
-            </div>
-            <button type="button" class="btn btn-primary" onclick="openAddPersonnelModal()">
-                <i class="fa-solid fa-user-plus"></i> Add Personnel
-            </button>
-        </div>
-
-        @if ($errors->any())
-            <div class="error-box">
-                @foreach ($errors->all() as $error)
-                    <div>{{ $error }}</div>
-                @endforeach
-            </div>
-        @endif
-
-        @include('partials.personnel-list', ['route' => 'superadmin.personnel', 'canManage' => true])
-
-    </div>
-
     <!-- PERSONNEL ON LEAVE + SCHOOL SCHEDULE CHANGES -->
-    <div class="dashboard-two-column">
+    <div class="dashboard-two-column side-cards">
 
         <!-- TEACHERS ON LEAVE -->
-        <div class="card">
+        <div class="card side-card">
 
             <div class="section-header">
                 <div>
@@ -120,7 +95,7 @@
         </div>
 
         <!-- SCHOOL SCHEDULE CHANGES (holidays, asynchronous classes, other changes) -->
-        <div class="card">
+        <div class="card side-card">
 
             <div class="section-header">
                 <div>
@@ -157,6 +132,31 @@
             </div>
 
         </div>
+
+    </div>
+
+    <!-- PERSONNEL LIST -->
+    <div class="card">
+
+        <div class="list-header">
+            <div>
+                <h2><i class="fa-solid fa-users"></i> Personnel List</h2>
+                <p class="help-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Select View More for a person's schedule, barcode and actions.</span></p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="openAddPersonnelModal()">
+                <i class="fa-solid fa-user-plus"></i> Add Personnel
+            </button>
+        </div>
+
+        @if ($errors->any())
+            <div class="error-box">
+                @foreach ($errors->all() as $error)
+                    <div>{{ $error }}</div>
+                @endforeach
+            </div>
+        @endif
+
+        @include('partials.personnel-list', ['route' => 'superadmin.personnel', 'canManage' => true])
 
     </div>
 
@@ -445,7 +445,10 @@
                 @include('superadmin.partials.return-fields')
 
                 <div class="field-group">
-                    <label>Personnel</label>
+                    <label for="leaveTeacherSelect">Personnel</label>
+                    {{-- Narrows the list below by name or ID number (superadmin-personnel.js). --}}
+                    <input type="search" id="leaveTeacherSearch" class="leave-personnel-search" placeholder="Search by name or ID number"
+                        autocomplete="off" aria-label="Search personnel by name or ID number" aria-controls="leaveTeacherSelect">
                     <select name="leave_teacher_id" id="leaveTeacherSelect" required>
                         <option value="">Select Personnel</option>
                         @foreach ($allTeachers as $option)

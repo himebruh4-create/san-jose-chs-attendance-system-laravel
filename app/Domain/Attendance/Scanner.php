@@ -32,6 +32,9 @@ class Scanner
 
     public const UNKNOWN_BARCODE = 'This barcode is not registered in the system. Please check your ID or contact the Administrative Aide.';
 
+    /** Rejected Scan Log reason of a barcode that matches nobody. */
+    public const REASON_UNKNOWN_BARCODE = 'UNKNOWN_BARCODE';
+
     public function scan(string $barcode, ?string $now = null): array
     {
         $now = $now ?? date('Y-m-d H:i:s');
@@ -57,6 +60,10 @@ class Scanner
             ->first(['id', 'fullname', 'department', 'photo']);
 
         if (! $t) {
+            // No photo is kept of a rejected scan; the attempted barcode is
+            // kept as text in the Rejected Scan Log instead.
+            $this->logRejected(null, $now, substr($now, 0, 10), self::REASON_UNKNOWN_BARCODE, null, null, $barcode);
+
             return ['success' => false, 'outcome' => 'not_found', 'badge' => 'unknown', 'title' => 'Not Found', 'message' => self::UNKNOWN_BARCODE];
         }
 
@@ -279,10 +286,10 @@ class Scanner
         return $row ? (array) $row : null;
     }
 
-    private function logRejected(int $teacherId, string $attemptedAt, string $attendanceDate, string $reason, ?string $detail, ?string $existingOut): void
+    private function logRejected(?int $teacherId, string $attemptedAt, string $attendanceDate, string $reason, ?string $detail, ?string $existingOut, ?string $barcode = null): void
     {
         try {
-            AttendanceData::logRejectedScan($teacherId, $attemptedAt, $attendanceDate, $reason, $detail, $existingOut);
+            AttendanceData::logRejectedScan($teacherId, $attemptedAt, $attendanceDate, $reason, $detail, $existingOut, $barcode);
         } catch (\Throwable $e) {
             // The kiosk must still answer even if the audit table is unavailable.
             Log::warning('Could not log a rejected scan: '.$e->getMessage());

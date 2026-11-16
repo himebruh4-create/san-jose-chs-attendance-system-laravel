@@ -3,10 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - Barcode Attendance</title>
-<link rel="icon" href="{{ asset('img/logo.png') }}">
+<title>Login - {{ $school['short_name'] }}</title>
+<link rel="icon" href="{{ $school['logo_url'] }}">
 <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
 <link rel="stylesheet" href="{{ asset_v('css/login.css') }}">
+@if ($school['custom_logo'])
+{{-- The uploaded school logo replaces the built-in one behind the card. --}}
+<style>body::before { background-image: url("{{ $school['logo_url'] }}"); }</style>
+@endif
 </head>
 <body>
 
@@ -16,6 +20,7 @@
         <i class="fa-solid fa-shield-halved"></i>
     </div>
 
+    <p class="school-title">{{ $school['name'] }}</p>
     <h2>Welcome Back</h2>
     <p class="subtitle">Admin / Super Admin / Principal Login</p>
 

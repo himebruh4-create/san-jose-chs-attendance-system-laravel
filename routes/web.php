@@ -15,6 +15,7 @@ use App\Http\Controllers\Reports\AbsenceReportController;
 use App\Http\Controllers\Reports\AttendancePrintController;
 use App\Http\Controllers\Reports\MonthlySummaryController;
 use App\Http\Controllers\Reports\PrintLogController;
+use App\Http\Controllers\SchoolLogoController;
 use App\Http\Controllers\SuperAdmin;
 use Illuminate\Support\Facades\Route;
 
@@ -63,6 +64,9 @@ Route::middleware('kiosk')->group(function () {
 // Local CA certificate for kiosk devices (public: needed before anyone signs in).
 Route::get('/certificate', [CertificateController::class, 'show'])->name('certificate');
 Route::get('/certificate/download', [CertificateController::class, 'download'])->name('certificate.download');
+
+// The school logo (Settings -> School Name & Logo). Public: the login page shows it.
+Route::get('/school-logo', SchoolLogoController::class)->name('school-logo');
 
 // Personnel photos: shown on the signed-in staff pages only.
 Route::get('/photos/{filename}', [PhotoController::class, 'personnel'])
@@ -117,6 +121,7 @@ Route::middleware(['auth', 'single.session', 'security.questions'])->group(funct
         Route::post('/settings/accounts/reset-password', [SuperAdmin\SettingsController::class, 'resetPassword'])->name('settings.accounts.reset-password');
         Route::post('/settings/kiosk-devices', [SuperAdmin\KioskDeviceController::class, 'register'])->name('settings.kiosk.register');
         Route::post('/settings/kiosk-devices/revoke', [SuperAdmin\KioskDeviceController::class, 'revoke'])->name('settings.kiosk.revoke');
+        Route::post('/settings/school', [SuperAdmin\SettingsController::class, 'saveSchool'])->name('settings.school');
         Route::post('/settings/recovery-codes', [SuperAdmin\SettingsController::class, 'generateRecoveryCodes'])
             ->middleware('throttle:5,1')->name('settings.recovery-codes');
 

@@ -291,7 +291,7 @@ class PersonnelController extends Controller
         if ($type === '') {
             $errors[] = 'Please select a leave type.';
         } elseif ($teacher && ! LeaveTypes::allows($teacher->academic_status, $type)) {
-            $personnelType = isset(LeaveTypes::BY_PERSONNEL_TYPE[$teacher->academic_status])
+            $personnelType = isset(LeaveTypes::PERSONNEL_TYPES[$teacher->academic_status])
                 ? Str::lower(PersonnelDirectory::TYPE_TABS[$teacher->academic_status])
                 : 'this personnel';
             $errors[] = "{$type} is not available for {$personnelType}. Please choose another leave type.";

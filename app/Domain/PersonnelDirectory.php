@@ -3,6 +3,7 @@
 namespace App\Domain;
 
 use App\Models\Teacher;
+use App\Support\SchoolBranding;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -102,6 +103,6 @@ class PersonnelDirectory
 
     public static function photoUrl(?string $photo): string
     {
-        return $photo ? route('photos.personnel', basename($photo)) : asset('img/logo.png');
+        return $photo ? route('photos.personnel', basename($photo)) : SchoolBranding::logoUrl();
     }
 }

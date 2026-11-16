@@ -279,7 +279,7 @@ async function openEditModal(teacher) {
 
     } else {
 
-        preview.src = appUrl('img/logo.png');
+        preview.src = schoolInfo().logo_url;
         preview.style.display = 'block';
         text.style.display = 'none';
 
@@ -393,94 +393,81 @@ function closeErrorModal() {
 }
 
 // =====================================================
-// PRINT INDIVIDUAL BADGE
+// ID BADGE (shared by Print and Print All)
+// The badge is exactly 7 cm x 11 cm, on screen (the print preview) and on
+// paper / PDF; print at 100% scale ("Actual size"). The photo frame stays
+// square, as before, scaled to the smaller card. The barcode sits on
+// white, a little larger than before, with a quiet zone of 10 bar widths
+// on each side so scanners still read it.
 // =====================================================
 
-function printTeacherBadge(button) {
+const BADGE_BARCODE_OPTIONS = {
+    format: 'CODE128',
+    displayValue: true,
+    fontSize: 15,
+    textMargin: 2,
+    height: 80,
+    width: 2.5,
+    // Quiet zone left and right (10 x the bar width); little above / below.
+    marginLeft: 25,
+    marginRight: 25,
+    marginTop: 4,
+    marginBottom: 4,
+    background: '#ffffff',
+    lineColor: '#000000'
+};
 
-    const idNumber = button.dataset.idnumber;
-    const name = button.dataset.name;
-    const department = button.dataset.department;
-    const academic = button.dataset.academic;
-    const employment = button.dataset.employment;
-    const barcode = button.dataset.barcode;
-    const photo = button.dataset.photo;
-    const printJob = window.PAGE.badgePrints[idNumber] || null;
-
-    const photoPath = photo
-        ? appUrl('photos/' + encodeURIComponent(photo))
-        : appUrl('img/logo.png');
-
-    const content = `
-
-<!DOCTYPE html>
-
-<html>
-
-<head>
-
-<title>${escapeHtml(printJob ? printJob.title : 'Print Badge')}</title>
-
-<style>
-
+const BADGE_CSS = `
 * {
     box-sizing: border-box;
 }
 
-/* Screen view of this staging window — the actual printed
-   paper background is forced white separately below. */
-body {
-    margin: 0;
-    padding: 20px;
-    font-family: Arial, sans-serif;
-    background: #f5f0e1;
-}
-
 .badge {
-    width: 340px;
-    margin: 0 auto;
+    width: 70mm;
+    height: 110mm;
+    display: flex;
+    flex-direction: column;
     background: #ffffff;
-    border-radius: 20px;
+    border-radius: 4mm;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(20, 57, 15, 0.15);
     border: 1px solid #e6dcc4;
     break-inside: avoid;
     page-break-inside: avoid;
+    text-align: center;
 }
 
 .badge-header {
     background: #14390f;
     color: white;
-    padding: 12px 16px;
-    text-align: center;
+    padding: 2.2mm 3mm;
 }
 
 .badge-header .school-name {
-    font-size: 12px;
+    font-size: 7.5pt;
     font-weight: 700;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
+    line-height: 1.2;
     text-transform: uppercase;
 }
 
 .badge-header .school-location {
-    font-size: 9px;
+    font-size: 5.5pt;
     color: #e8a317;
-    margin-top: 2px;
+    margin-top: 0.5mm;
     letter-spacing: 0.3px;
 }
 
 .photo-zone {
     background: linear-gradient(to bottom, #ffffff 85%, #fffdf8 100%);
-    padding: 22px 20px 16px;
-    text-align: center;
+    padding: 3mm 0 2.5mm;
 }
 
 .photo-frame {
-    width: 150px;
-    height: 150px;
+    width: 30mm;
+    height: 30mm;
     margin: 0 auto;
-    border-radius: 12px;
-    padding: 3px;
+    border-radius: 2.5mm;
+    padding: 0.7mm;
     background: linear-gradient(135deg, #e8a317, #f2c94c);
 }
 
@@ -488,14 +475,17 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 10px;
+    border-radius: 2mm;
     display: block;
 }
 
 .content-zone {
     position: relative;
-    padding: 18px 22px 20px;
-    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2.5mm 3mm 3mm;
     background: linear-gradient(
         to bottom,
         #fffdf8 0%,
@@ -527,32 +517,33 @@ body {
 }
 
 .badge-name {
-    font-size: 21px;
+    font-size: 11pt;
     font-weight: 700;
     color: #14390f;
-    margin: 0 0 12px;
-    line-height: 1.2;
+    margin: 0 0 1.8mm;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
 }
 
 .badge-info {
     display: flex;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 16px;
+    gap: 1.5mm;
 }
 
 .info-pill {
+    min-width: 0;
+    max-width: 50%;
     background: #f1ede0;
     border: 1px solid #e6dcc4;
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 11px;
+    border-radius: 1.5mm;
+    padding: 1mm 2mm;
     text-align: left;
 }
 
 .info-pill .info-label {
     color: #8a7d5c;
-    font-size: 9px;
+    font-size: 5.5pt;
     text-transform: uppercase;
     letter-spacing: 0.3px;
     display: block;
@@ -561,35 +552,40 @@ body {
 .info-pill .info-value {
     color: #14390f;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 7.5pt;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
 }
 
 .gold-divider {
     height: 2px;
     background: linear-gradient(90deg, transparent, #e8a317, transparent);
-    margin: 0 0 14px;
+    margin: 2mm 0;
 }
 
+/* White behind the whole barcode, its quiet zone included. */
 .barcode-wrap {
-    text-align: center;
+    display: inline-block;
+    max-width: 100%;
+    background: #ffffff;
+    border-radius: 1.5mm;
+    padding: 0.8mm 0;
+    line-height: 0;
 }
 
-/* ===== PRINT ===== */
+.barcode-wrap svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
 
 @media print {
-
-    @page {
-        margin: 10mm;
-    }
-
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
 
-    /* Bond paper stays white. Only the badge itself keeps its
-       colored design — see .badge / .badge-header / .content-zone
-       rules above, which are untouched and still apply during print. */
+    /* Bond paper stays white; only the badge keeps its colored design. */
     html, body {
         background: #ffffff !important;
         padding: 0 !important;
@@ -597,93 +593,138 @@ body {
     }
 
     .badge {
-        break-inside: avoid;
-        page-break-inside: avoid;
-        box-shadow: none;
+        box-shadow: none !important;
     }
 }
+`;
 
-</style>
+/** One badge's HTML; the barcode is drawn into #barcodeId afterwards. */
+function badgeCardHTML(person, barcodeId) {
 
-</head>
+    const photoPath = person.photo
+        ? appUrl('photos/' + encodeURIComponent(person.photo))
+        : schoolInfo().logo_url;
 
-<body>
-
+    return `
 <div class="badge">
 
     <div class="badge-header">
-        <div class="school-name">San Jose Community High School</div>
+        <div class="school-name">${escapeHtml(schoolInfo().name)}</div>
         <div class="school-location">Gen. Mariano Alvarez, Cavite</div>
     </div>
 
     <div class="photo-zone">
         <div class="photo-frame">
-            <img src="${photoPath}" alt="Personnel Photo" id="badgePhotoImg">
+            <img src="${escapeHtml(photoPath)}" alt="Personnel Photo" class="badgePhotoImg">
         </div>
     </div>
 
     <div class="content-zone">
         <div class="content-inner">
 
-            <h2 class="badge-name">${name}</h2>
+            <h2 class="badge-name">${escapeHtml(person.name)}</h2>
 
             <div class="badge-info">
                 <div class="info-pill">
                     <span class="info-label">ID Number</span>
-                    <span class="info-value">${idNumber}</span>
+                    <span class="info-value">${escapeHtml(person.idNumber)}</span>
                 </div>
                 <div class="info-pill">
                     <span class="info-label">Department</span>
-                    <span class="info-value">${department}</span>
+                    <span class="info-value">${escapeHtml(person.department)}</span>
                 </div>
             </div>
 
+        </div>
+
+        <div class="content-inner">
             <div class="gold-divider"></div>
 
             <div class="barcode-wrap">
-                <svg id="print-barcode"></svg>
+                <svg id="${barcodeId}"></svg>
             </div>
-
         </div>
     </div>
 
+</div>
+`;
+}
+
+/**
+ * The print document for one or more badges: draws each barcode, waits
+ * for every photo (or the logo fallback) to load, then opens the print
+ * dialog, so a photo can never print blank.
+ */
+function badgePrintDocument(title, people, pageCss) {
+
+    const cards = people.map((person, index) => badgeCardHTML(person, 'badge-barcode-' + index)).join('');
+
+    return `
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>${escapeHtml(title)}</title>
+
+<style>
+${BADGE_CSS}
+${pageCss}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+${cards}
 </div>
 
 <script src="${appUrl('vendor/jsbarcode/JsBarcode.all.min.js')}"><\/script>
 
 <script>
 
-JsBarcode(
-    '#print-barcode',
-    '${barcode}',
-    {
-        format:'CODE128',
-        displayValue:true,
-        fontSize:14,
-        height:70,
-        width:2,
-        margin: 0,
-        background: "transparent"
+// One scope per print: the print frame is reused, and writing a new
+// document into it keeps the previous print's top-level declarations, so
+// a second "const" of the same name would throw. Nothing here is global.
+(function () {
+
+    const badgeBarcodes = ${JSON.stringify(people.map(person => String(person.barcode)))};
+    const badgeBarcodeOptions = ${JSON.stringify(BADGE_BARCODE_OPTIONS)};
+
+    badgeBarcodes.forEach((barcode, index) => {
+        JsBarcode('#badge-barcode-' + index, barcode, badgeBarcodeOptions);
+    });
+
+    function waitForImagesThenPrint() {
+
+        const pending = Array.from(document.querySelectorAll('.badgePhotoImg')).filter(img => !img.complete);
+
+        if (pending.length === 0) {
+            window.print();
+            return;
+        }
+
+        let remaining = pending.length;
+
+        function tryPrint() {
+            remaining--;
+            if (remaining <= 0) {
+                window.print();
+            }
+        }
+
+        pending.forEach(img => {
+            img.addEventListener('load', tryPrint);
+            img.addEventListener('error', tryPrint);
+        });
     }
-);
 
-// Explicitly wait for the teacher photo (or logo fallback) to finish
-// loading before opening the print dialog, so it can never race ahead
-// of the image and print a blank photo area.
-function waitForImagesThenPrint() {
+    window.onload = waitForImagesThenPrint;
 
-    const img = document.getElementById('badgePhotoImg');
-
-    if (img.complete) {
-        window.print();
-        return;
-    }
-
-    img.addEventListener('load', () => window.print());
-    img.addEventListener('error', () => window.print());
-}
-
-window.onload = waitForImagesThenPrint;
+})();
 
 <\/script>
 
@@ -692,9 +733,46 @@ window.onload = waitForImagesThenPrint;
 </html>
 
 `;
+}
 
-    printHTMLDocument(content, printJob);
+// =====================================================
+// PRINT INDIVIDUAL BADGE
+// =====================================================
 
+function printTeacherBadge(button) {
+
+    const idNumber = button.dataset.idnumber;
+    const printJob = window.PAGE.badgePrints[idNumber] || null;
+
+    const person = {
+        name: button.dataset.name,
+        idNumber: idNumber,
+        department: button.dataset.department,
+        barcode: button.dataset.barcode,
+        photo: button.dataset.photo
+    };
+
+    const pageCss = `
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background: #f5f0e1;
+}
+
+.badge {
+    margin: 0 auto;
+    box-shadow: 0 10px 30px rgba(20, 57, 15, 0.15);
+}
+
+@media print {
+    @page {
+        margin: 10mm;
+    }
+}
+`;
+
+    printHTMLDocument(badgePrintDocument(printJob ? printJob.title : 'Print Badge', [person], pageCss), printJob);
 }
 
 
@@ -704,81 +782,16 @@ window.onload = waitForImagesThenPrint;
 
 function printAllTeacherBadges() {
 
-    const teachers = allTeachersData;
+    const people = allTeachersData.map(teacher => ({
+        name: teacher.fullname,
+        idNumber: teacher.id_number,
+        department: teacher.department,
+        barcode: teacher.barcode,
+        photo: teacher.photo
+    }));
 
-    let badgeHTML = '';
-
-    teachers.forEach((teacher, index) => {
-
-        const photoPath = teacher.photo
-            ? appUrl('photos/' + encodeURIComponent(teacher.photo))
-            : appUrl('img/logo.png');
-
-        badgeHTML += `
-
-<div class="badge">
-
-    <div class="badge-header">
-        <div class="school-name">San Jose Community High School</div>
-        <div class="school-location">Gen. Mariano Alvarez, Cavite</div>
-    </div>
-
-    <div class="photo-zone">
-        <div class="photo-frame">
-            <img src="${photoPath}" alt="Personnel Photo" class="badgePhotoImg">
-        </div>
-    </div>
-
-    <div class="content-zone">
-        <div class="content-inner">
-
-            <h2 class="badge-name">${teacher.fullname}</h2>
-
-            <div class="badge-info">
-                <div class="info-pill">
-                    <span class="info-label">ID Number</span>
-                    <span class="info-value">${teacher.id_number}</span>
-                </div>
-                <div class="info-pill">
-                    <span class="info-label">Department</span>
-                    <span class="info-value">${teacher.department}</span>
-                </div>
-            </div>
-
-            <div class="gold-divider"></div>
-
-            <div class="barcode-wrap">
-                <svg id="barcode-all-${index}"></svg>
-            </div>
-
-        </div>
-    </div>
-
-</div>
-
-`;
-
-    });
-
-
-    const content = `
-
-<!DOCTYPE html>
-
-<html>
-
-<head>
-
-<title>${escapeHtml(window.PAGE.allBadgesPrint.title)}</title>
-
-<style>
-
-* {
-    box-sizing: border-box;
-}
-
-/* Screen view of this staging window — the actual printed
-   paper background is forced white separately below. */
+    // Two badges across an A4 page, two rows down.
+    const pageCss = `
 body {
     margin: 0;
     font-family: Arial, sans-serif;
@@ -791,239 +804,22 @@ body {
     text-align: center;
 }
 
-/* ===== SAME BADGE DESIGN AS THE INDIVIDUAL PRINT — REAL SIZE ===== */
-
 .badge {
-    display: inline-block;
+    display: inline-flex;
     vertical-align: top;
-    width: 340px;
-    background: #ffffff;
-    border-radius: 20px;
-    overflow: hidden;
+    margin: 0 3mm 4mm;
     box-shadow: 0 6px 16px rgba(20, 57, 15, 0.12);
-    border: 1px solid #e6dcc4;
-    box-sizing: border-box;
-    break-inside: avoid;
-    page-break-inside: avoid;
-    margin: 0 8px 16px;
 }
-
-.badge-header {
-    background: #14390f;
-    color: white;
-    padding: 12px 16px;
-    text-align: center;
-}
-
-.badge-header .school-name {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-}
-
-.badge-header .school-location {
-    font-size: 9px;
-    color: #e8a317;
-    margin-top: 2px;
-    letter-spacing: 0.3px;
-}
-
-.photo-zone {
-    background: linear-gradient(to bottom, #ffffff 85%, #fffdf8 100%);
-    padding: 22px 20px 16px;
-    text-align: center;
-}
-
-.photo-frame {
-    width: 150px;
-    height: 150px;
-    margin: 0 auto;
-    border-radius: 12px;
-    padding: 3px;
-    background: linear-gradient(135deg, #e8a317, #f2c94c);
-}
-
-.photo-frame img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 10px;
-    display: block;
-}
-
-.content-zone {
-    position: relative;
-    padding: 18px 22px 20px;
-    text-align: center;
-    background: linear-gradient(
-        to bottom,
-        #fffdf8 0%,
-        #fbf3e6 25%,
-        #f3e9d4 50%,
-        #e9dfc4 75%,
-        #d9dfc0 100%
-    );
-    overflow: hidden;
-}
-
-.content-inner {
-    position: relative;
-    z-index: 1;
-}
-
-.badge-name {
-    font-size: 21px;
-    font-weight: 700;
-    color: #14390f;
-    margin: 0 0 12px;
-    line-height: 1.2;
-}
-
-.badge-info {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 16px;
-}
-
-.info-pill {
-    background: #f1ede0;
-    border: 1px solid #e6dcc4;
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 11px;
-    text-align: left;
-}
-
-.info-pill .info-label {
-    color: #8a7d5c;
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    display: block;
-}
-
-.info-pill .info-value {
-    color: #14390f;
-    font-weight: 700;
-    font-size: 13px;
-}
-
-.gold-divider {
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #e8a317, transparent);
-    margin: 0 0 14px;
-}
-
-.barcode-wrap {
-    text-align: center;
-}
-
-/* ===== PRINT ===== */
 
 @media print {
-
     @page {
         size: A4 portrait;
         margin: 6mm;
     }
-
-    * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    /* Bond paper stays white. Only each badge keeps its
-       colored design — see .badge / .badge-header / .content-zone
-       rules above, which are untouched and still apply during print. */
-    html, body {
-        background: #ffffff !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    .badge {
-        break-inside: avoid;
-        page-break-inside: avoid;
-        box-shadow: none;
-    }
 }
-
-</style>
-
-</head>
-
-<body>
-
-<div class="container">
-${badgeHTML}
-</div>
-
-<script src="${appUrl('vendor/jsbarcode/JsBarcode.all.min.js')}"><\/script>
-
-<script>
-
-const teacherBarcodes = ${JSON.stringify(teachers.map(t => t.barcode))};
-
-teacherBarcodes.forEach((barcode, index) => {
-
-    JsBarcode(
-        '#barcode-all-' + index,
-        barcode,
-        {
-            format: 'CODE128',
-            displayValue: true,
-            fontSize: 14,
-            height: 70,
-            width: 2,
-            margin: 0,
-            background: "transparent"
-        }
-    );
-
-});
-
-// Explicitly wait for every teacher photo (or logo fallback) to finish
-// loading before opening the print dialog, so photos can never race
-// ahead of the images and print blank.
-function waitForImagesThenPrint() {
-
-    const images = Array.from(document.querySelectorAll('.badgePhotoImg'));
-
-    const pending = images.filter(img => !img.complete);
-
-    if (pending.length === 0) {
-        window.print();
-        return;
-    }
-
-    let remaining = pending.length;
-
-    function tryPrint() {
-        remaining--;
-        if (remaining <= 0) {
-            window.print();
-        }
-    }
-
-    pending.forEach(img => {
-        img.addEventListener('load', tryPrint);
-        img.addEventListener('error', tryPrint);
-    });
-}
-
-window.onload = waitForImagesThenPrint;
-
-<\/script>
-
-</body>
-
-</html>
-
 `;
 
-    printHTMLDocument(content, window.PAGE.allBadgesPrint);
+    printHTMLDocument(badgePrintDocument(window.PAGE.allBadgesPrint.title, people, pageCss), window.PAGE.allBadgesPrint);
 
 }
 
@@ -1159,10 +955,57 @@ async function populateDeptOptions(context, academicStatus, currentValue) {
 // =====================================================
 
 function openLeaveModal() {
+    const search = document.getElementById('leaveTeacherSearch');
+    if (search && search.value) {
+        search.value = '';
+        filterLeavePersonnel();
+    }
+
     refreshLeaveTypes();
     document.getElementById('leaveModal').classList.add('active');
     lockBodyScroll();
 }
+
+// The search box above Personnel narrows the dropdown by name or ID number
+// (every word typed must match). The full list is kept from page load; a
+// chosen person who no longer matches is cleared, which also resets the
+// Leave Type list.
+let leavePersonnelOptions = null;
+
+function filterLeavePersonnel() {
+    const search = document.getElementById('leaveTeacherSearch');
+    const personSelect = document.getElementById('leaveTeacherSelect');
+    if (!search || !personSelect) return;
+
+    if (leavePersonnelOptions === null) {
+        leavePersonnelOptions = Array.from(personSelect.options).filter(option => option.value !== '');
+    }
+
+    const words = search.value.toLowerCase().split(/\s+/).filter(Boolean);
+    const selected = personSelect.value;
+    const matches = leavePersonnelOptions.filter(option => {
+        const text = option.textContent.toLowerCase();
+        return words.every(word => text.includes(word));
+    });
+
+    personSelect.innerHTML = '';
+    personSelect.appendChild(new Option(matches.length ? 'Select Personnel' : 'No personnel match your search', ''));
+    matches.forEach(option => personSelect.appendChild(option));
+
+    personSelect.value = matches.some(option => option.value === selected) ? selected : '';
+
+    // One match: pick it, so the Leave Type list opens right away.
+    if (matches.length === 1 && words.length) {
+        personSelect.value = matches[0].value;
+    }
+
+    refreshLeaveTypes();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const search = document.getElementById('leaveTeacherSearch');
+    if (search) search.addEventListener('input', filterLeavePersonnel);
+});
 
 // The Leave Type options follow the selected personnel's type (teaching /
 // non-teaching; App\Domain\LeaveTypes). Disabled until someone is chosen;

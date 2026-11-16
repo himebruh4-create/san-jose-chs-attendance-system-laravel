@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recovery Codes</title>
-<link rel="icon" href="{{ asset('img/logo.png') }}">
+<link rel="icon" href="{{ $school['logo_url'] }}">
 <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
 <style>
     /* Shown once, right after the codes are generated (Settings -> Account
@@ -122,8 +122,8 @@
 <div class="sheet">
 
     <div class="letterhead">
-        <img src="{{ asset('img/logo.png') }}" alt="School Logo">
-        <div class="school-name">San Jose Community High School</div>
+        <img src="{{ $school['logo_url'] }}" alt="School Logo">
+        <div class="school-name">{{ $school['name'] }}</div>
         <h1>Super Admin Recovery Codes</h1>
         <div class="meta">{{ $account->email }} &middot; generated {{ $generatedAt->format('F j, Y g:i A') }}</div>
     </div>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Attendance\ScanPhotos;
 use App\Support\PersonnelPhotos;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,8 +39,9 @@ class PhotoController extends Controller
         // no-store: the Super Admin may be on a shared office PC, so the
         // browser must not keep a copy of anyone's scan photo. File
         // responses default to "public"; a scan photo never is.
+        // WebP since 2026-11; older photos are JPEG.
         return response()->file(Storage::disk('local')->path($path), [
-            'Content-Type' => 'image/jpeg',
+            'Content-Type' => ScanPhotos::contentType($path),
             'Cache-Control' => 'no-store',
         ])->setPrivate();
     }

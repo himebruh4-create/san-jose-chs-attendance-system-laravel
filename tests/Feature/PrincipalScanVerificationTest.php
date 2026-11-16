@@ -24,7 +24,8 @@ class PrincipalScanVerificationTest extends TestCase
         $this->travelTo(Carbon::parse('2026-10-07 10:00:00', 'Asia/Manila'));
     }
 
-    private function scan(string $scannedAt, string $outcome, bool $withPhoto = true, string $inputMethod = 'scanned', ?int $teacherId = null, ?int $kioskId = null): void
+    /** An accepted scan is a Time In unless $kind says otherwise; a rejected one has no kind. */
+    private function scan(string $scannedAt, string $outcome, bool $withPhoto = true, string $inputMethod = 'scanned', ?int $teacherId = null, ?int $kioskId = null, ?string $kind = null): void
     {
         DB::table('scan_photos')->insert([
             'teacher_id' => $teacherId,
@@ -32,6 +33,7 @@ class PrincipalScanVerificationTest extends TestCase
             'attendance_date' => substr($scannedAt, 0, 10),
             'scanned_at' => $scannedAt,
             'outcome' => $outcome,
+            'scan_kind' => $kind ?? ($outcome === 'accepted' ? 'IN' : null),
             'input_method' => $inputMethod,
             'path' => $withPhoto ? 'scan-photos/x/'.uniqid().'.jpg' : null,
         ]);
@@ -53,10 +55,13 @@ class PrincipalScanVerificationTest extends TestCase
         $teacher = $this->teacher(['fullname' => 'Secret Name']);
 
         $this->scan('2026-10-05 00:00:00', 'accepted');                   // not flagged (Monday 00:00 is in)
-        $this->scan('2026-10-05 07:00:00', 'duplicate', withPhoto: false); // repeat + no photo: counts once in the total
+        $this->scan('2026-10-05 07:00:00', 'duplicate', withPhoto: false); // repeat (a rejected scan keeps no photo by design)
         $this->scan('2026-10-06 07:00:00', 'complete');                   // repeat
         $this->scan('2026-10-06 07:05:00', 'not_found');                  // unknown barcode
-        $this->scan('2026-10-07 07:00:00', 'accepted', withPhoto: false); // no photo
+        $this->scan('2026-10-07 07:00:00', 'accepted', withPhoto: false); // no photo (a Time In)
+        $this->scan('2026-10-07 07:02:00', 'accepted', withPhoto: false, kind: 'BREAK_IN'); // no photo (a Lunch In)
+        $this->scan('2026-10-07 07:04:00', 'accepted', withPhoto: false, kind: 'OUT');      // not flagged: a Time Out keeps no photo
+        $this->scan('2026-10-07 07:06:00', 'accepted', withPhoto: false, kind: 'BREAK_OUT'); // not flagged: nor does a Lunch Out
         $this->scan('2026-10-07 07:10:00', 'recording_disabled');         // not flagged
         $this->scan('2026-10-07 07:20:00', 'accepted', inputMethod: 'typed');  // manual entry
         $this->scan('2026-10-07 07:30:00', 'duplicate', inputMethod: 'typed'); // repeat + manual entry: counts once in the total
@@ -69,7 +74,7 @@ class PrincipalScanVerificationTest extends TestCase
         $response = $this->actingAs($this->account('principal'))->getJson(self::ENDPOINT)->assertOk();
 
         $this->assertSame([
-            'flagged_week' => 6,
+            'flagged_week' => 7,
             'repeat_week' => 3,
             'rapid_week' => 0,
             'unknown_week' => 1,

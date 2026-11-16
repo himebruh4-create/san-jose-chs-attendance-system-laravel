@@ -167,8 +167,8 @@
 <!-- School/report header: a normal block before the table (NOT inside <thead>),
      so it appears only on the first printed page. -->
 <div class="print-header">
-    <img src="{{ asset('img/logo.png') }}" alt="School Logo" class="print-logo">
-    <div class="school-name">San Jose Community High School</div>
+    <img src="{{ $school['logo_url'] }}" alt="School Logo" class="print-logo">
+    <div class="school-name">{{ $school['name'] }}</div>
     <div class="school-location">Gen. Mariano Alvarez, Cavite</div>
     <div class="report-title">Monthly Attendance Summary Report</div>
     <div class="week-range">{{ $monthLabel }}</div>

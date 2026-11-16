@@ -47,7 +47,8 @@ class ScanPhotosPageTest extends TestCase
         $this->actingAs($this->account('superadmin'))
             ->get(route('superadmin.scan-photos', ['date' => '2026-10-05']))
             ->assertOk()
-            ->assertSeeInOrder(['No photo', 'Ben Noon</strong>', '12:20:00 PM', 'Lunch out', 'Ana Morning</strong>', '6:55:00 AM', 'Time in'], false)
+            // A Lunch Out keeps no photo by design: "Not taken", not "No photo".
+            ->assertSeeInOrder(['Not taken', 'Ben Noon</strong>', '12:20:00 PM', 'Lunch out', 'Ana Morning</strong>', '6:55:00 AM', 'Time in'], false)
             ->assertSee(route('photos.scan', $withPhoto))
             ->assertDontSee(route('photos.scan', $otherDay));
     }
