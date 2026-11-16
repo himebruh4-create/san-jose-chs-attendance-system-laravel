@@ -530,9 +530,10 @@ function dtrRepeatGuard($date, $nowTs, $sched, $row, $prevRow, $prevDate)
     if ($elapsed < 0 || $elapsed >= DTR_REPEAT_GUARD_SECONDS) {
         return null;
     }
-//NEED TO PALTAN KAY NEIL
-        return dtrReject('DUPLICATE_SCAN', $basisDate, '', 'Repeat scan within '.intdiv(DTR_REPEAT_GUARD_SECONDS, 60).' minutes of the last recorded scan');
+
+    return dtrReject('DUPLICATE_SCAN', $basisDate, '', 'Repeat scan within '.intdiv(DTR_REPEAT_GUARD_SECONDS, 60).' minutes of the last recorded scan');
 }
+
 // Timestamp of the latest real scan stored on a row (an overnight
 // shift's OUT time-of-day belongs to the following calendar day).
 function dtrLastScanTs($row, $date, $overnight)
